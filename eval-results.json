@@ -1,0 +1,637 @@
+{
+  "model": "gemma4-local:e2b-q3km",
+  "context_tokens": 4096,
+  "output_tokens": 96,
+  "rlm_budget_tokens": 16000,
+  "max_depth": 2,
+  "max_calls": 4,
+  "temperature": 0,
+  "questions": 24,
+  "measurement": "one sequential local run per question; model requests counted from durable reserved steps; failures count incorrect",
+  "rows": [
+    {
+      "repo": "pm-vcs",
+      "index": 0,
+      "question": "How many items have type Issue and status open? Answer only the integer.",
+      "expected": "4",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 342,
+        "reserved": 9420,
+        "calls": 1,
+        "ms": 6117,
+        "error": "budget",
+        "model_calls": 1,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1191,
+        "calls": 1,
+        "ms": 7006,
+        "error": "",
+        "answer_sha256": "ebb7edafc56c8644f0e3609fc5b39e7feac2c7ad32f788af0febd5b3eac4632d"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 1,
+      "question": "How many items have type Issue and status closed? Answer only the integer.",
+      "expected": "37",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 1962,
+        "reserved": 15262,
+        "calls": 1,
+        "ms": 52452,
+        "error": "budget",
+        "model_calls": 5,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1191,
+        "calls": 1,
+        "ms": 6036,
+        "error": "",
+        "answer_sha256": "bfa626beaf30c0e5c774557cc6c338b2e9e8641fd2d1e451e7ea2630e72325fa"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 2,
+      "question": "How many items have type Task and status open? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 1782,
+        "reserved": 12799,
+        "calls": 1,
+        "ms": 47913,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1191,
+        "calls": 1,
+        "ms": 6521,
+        "error": "",
+        "answer_sha256": "ebb7edafc56c8644f0e3609fc5b39e7feac2c7ad32f788af0febd5b3eac4632d"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 3,
+      "question": "How many items have type Task and status closed? Answer only the integer.",
+      "expected": "23",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 1962,
+        "reserved": 15250,
+        "calls": 1,
+        "ms": 31691,
+        "error": "budget",
+        "model_calls": 5,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1191,
+        "calls": 1,
+        "ms": 6633,
+        "error": "",
+        "answer_sha256": "ebb7edafc56c8644f0e3609fc5b39e7feac2c7ad32f788af0febd5b3eac4632d"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 4,
+      "question": "How many items have type Feature and status open? Answer only the integer.",
+      "expected": "4",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 342,
+        "reserved": 7173,
+        "calls": 1,
+        "ms": 9140,
+        "error": "budget",
+        "model_calls": 1,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1191,
+        "calls": 1,
+        "ms": 6165,
+        "error": "",
+        "answer_sha256": "ebb7edafc56c8644f0e3609fc5b39e7feac2c7ad32f788af0febd5b3eac4632d"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 5,
+      "question": "How many items have type Feature and status closed? Answer only the integer.",
+      "expected": "38",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 1962,
+        "reserved": 15286,
+        "calls": 1,
+        "ms": 29662,
+        "error": "budget",
+        "model_calls": 5,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1132,
+        "calls": 1,
+        "ms": 2382,
+        "error": "",
+        "answer_sha256": "59f2ab769f9b7574d560e6abb863b220199fe378b48c8d8ba7b2e151a77caa16"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 6,
+      "question": "How many open Issues have acceptance_criteria containing \"coverage\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "1",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": true,
+        "tokens": 1400,
+        "reserved": 10391,
+        "calls": 1,
+        "ms": 29292,
+        "error": "",
+        "model_calls": 2,
+        "answer_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1116,
+        "calls": 1,
+        "ms": 2030,
+        "error": "",
+        "answer_sha256": "beee61b8f14f52137e9f0c6348e3fbc5afafaf90bf9afbf51cc3a0d6e8f63f95"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 7,
+      "question": "How many open Issues have acceptance_criteria containing \"test\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "1",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 356,
+        "reserved": 6070,
+        "calls": 1,
+        "ms": 19938,
+        "error": "budget",
+        "model_calls": 1,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1116,
+        "calls": 1,
+        "ms": 1136,
+        "error": "",
+        "answer_sha256": "beee61b8f14f52137e9f0c6348e3fbc5afafaf90bf9afbf51cc3a0d6e8f63f95"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 8,
+      "question": "How many open Issues have acceptance_criteria containing \"SDK\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 1753,
+        "reserved": 12827,
+        "calls": 1,
+        "ms": 41053,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1116,
+        "calls": 1,
+        "ms": 1389,
+        "error": "",
+        "answer_sha256": "beee61b8f14f52137e9f0c6348e3fbc5afafaf90bf9afbf51cc3a0d6e8f63f95"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 9,
+      "question": "How many open Issues have acceptance_criteria containing \"release\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "1",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 356,
+        "reserved": 6073,
+        "calls": 1,
+        "ms": 14894,
+        "error": "budget",
+        "model_calls": 1,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1116,
+        "calls": 1,
+        "ms": 4883,
+        "error": "",
+        "answer_sha256": "beee61b8f14f52137e9f0c6348e3fbc5afafaf90bf9afbf51cc3a0d6e8f63f95"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 10,
+      "question": "How many open Issues have acceptance_criteria containing \"budget\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 1758,
+        "reserved": 12877,
+        "calls": 1,
+        "ms": 31889,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1199,
+        "calls": 1,
+        "ms": 12106,
+        "error": "",
+        "answer_sha256": "ebb7edafc56c8644f0e3609fc5b39e7feac2c7ad32f788af0febd5b3eac4632d"
+      }
+    },
+    {
+      "repo": "pm-vcs",
+      "index": 11,
+      "question": "Which Epic has the most direct closed children? Break ties by lexicographically smallest id. Answer only its id, or none if there are no Epics.",
+      "expected": "pm-vcs-tr2a",
+      "corpus_items": 145,
+      "corpus_bytes": 814268,
+      "rlm": {
+        "correct": false,
+        "tokens": 358,
+        "reserved": 9158,
+        "calls": 1,
+        "ms": 15848,
+        "error": "budget",
+        "model_calls": 1,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 1010,
+        "calls": 1,
+        "ms": 4476,
+        "error": "",
+        "answer_sha256": "beee61b8f14f52137e9f0c6348e3fbc5afafaf90bf9afbf51cc3a0d6e8f63f95"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 0,
+      "question": "How many items have type Issue and status open? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 2183,
+        "reserved": 15966,
+        "calls": 1,
+        "ms": 18878,
+        "error": "budget",
+        "model_calls": 5,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 947,
+        "calls": 1,
+        "ms": 4245,
+        "error": "",
+        "answer_sha256": "783cf32f165ff45dabdce3cfcbc8f858fe317693c527378f0e6862d4c93c2388"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 1,
+      "question": "How many items have type Issue and status closed? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 2173,
+        "reserved": 15978,
+        "calls": 1,
+        "ms": 31928,
+        "error": "budget",
+        "model_calls": 5,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 947,
+        "calls": 1,
+        "ms": 4448,
+        "error": "",
+        "answer_sha256": "783cf32f165ff45dabdce3cfcbc8f858fe317693c527378f0e6862d4c93c2388"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 2,
+      "question": "How many items have type Task and status open? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1771,
+        "reserved": 12789,
+        "calls": 1,
+        "ms": 23152,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 947,
+        "calls": 1,
+        "ms": 4765,
+        "error": "",
+        "answer_sha256": "bd80e5897d4c354a2c4a6b1289d010065a453c12d2bef5a7ad813d69fd11b23a"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 3,
+      "question": "How many items have type Task and status closed? Answer only the integer.",
+      "expected": "3",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 342,
+        "reserved": 14730,
+        "calls": 1,
+        "ms": 7520,
+        "error": "budget",
+        "model_calls": 1,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 942,
+        "calls": 1,
+        "ms": 3710,
+        "error": "",
+        "answer_sha256": "037c9214eef74cc3887f3a4f085b4e17d76280dafd273b0ee160c09c4ba1cfd4"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 4,
+      "question": "How many items have type Feature and status open? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1768,
+        "reserved": 12811,
+        "calls": 1,
+        "ms": 23217,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 955,
+        "calls": 1,
+        "ms": 4886,
+        "error": "",
+        "answer_sha256": "655d46cbdb7809b59fbdd596e790c12346d0479b87db220e63074523e82d34cd"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 5,
+      "question": "How many items have type Feature and status closed? Answer only the integer.",
+      "expected": "6",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1962,
+        "reserved": 15286,
+        "calls": 1,
+        "ms": 26546,
+        "error": "budget",
+        "model_calls": 5,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 947,
+        "calls": 1,
+        "ms": 4457,
+        "error": "",
+        "answer_sha256": "783cf32f165ff45dabdce3cfcbc8f858fe317693c527378f0e6862d4c93c2388"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 6,
+      "question": "How many open Issues have acceptance_criteria containing \"coverage\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1747,
+        "reserved": 12866,
+        "calls": 1,
+        "ms": 22740,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 963,
+        "calls": 1,
+        "ms": 4643,
+        "error": "",
+        "answer_sha256": "655d46cbdb7809b59fbdd596e790c12346d0479b87db220e63074523e82d34cd"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 7,
+      "question": "How many open Issues have acceptance_criteria containing \"test\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1894,
+        "reserved": 13331,
+        "calls": 1,
+        "ms": 20590,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 963,
+        "calls": 1,
+        "ms": 4048,
+        "error": "",
+        "answer_sha256": "655d46cbdb7809b59fbdd596e790c12346d0479b87db220e63074523e82d34cd"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 8,
+      "question": "How many open Issues have acceptance_criteria containing \"SDK\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1747,
+        "reserved": 12821,
+        "calls": 1,
+        "ms": 31835,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 963,
+        "calls": 1,
+        "ms": 5391,
+        "error": "",
+        "answer_sha256": "655d46cbdb7809b59fbdd596e790c12346d0479b87db220e63074523e82d34cd"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 9,
+      "question": "How many open Issues have acceptance_criteria containing \"release\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1904,
+        "reserved": 13387,
+        "calls": 1,
+        "ms": 30522,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 963,
+        "calls": 1,
+        "ms": 5484,
+        "error": "",
+        "answer_sha256": "655d46cbdb7809b59fbdd596e790c12346d0479b87db220e63074523e82d34cd"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 10,
+      "question": "How many open Issues have acceptance_criteria containing \"budget\" (case-insensitive substring)? Answer only the integer.",
+      "expected": "0",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1752,
+        "reserved": 12871,
+        "calls": 1,
+        "ms": 29390,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 963,
+        "calls": 1,
+        "ms": 5829,
+        "error": "",
+        "answer_sha256": "655d46cbdb7809b59fbdd596e790c12346d0479b87db220e63074523e82d34cd"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "index": 11,
+      "question": "Which Epic has the most direct closed children? Break ties by lexicographically smallest id. Answer only its id, or none if there are no Epics.",
+      "expected": "pm-lint-epic",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "tokens": 1981,
+        "reserved": 13561,
+        "calls": 1,
+        "ms": 26177,
+        "error": "budget",
+        "model_calls": 4,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "stuffing": {
+        "correct": false,
+        "tokens": 965,
+        "calls": 1,
+        "ms": 4904,
+        "error": "",
+        "answer_sha256": "b7bc4af4d7a8e62d96d0a03bacaba0de8880599ff575f8c0cdbd252bbb6f085c"
+      }
+    }
+  ]
+}

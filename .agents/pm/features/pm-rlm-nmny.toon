@@ -6,10 +6,24 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:36.868Z"
-updated_at: "2026-10-18T19:32:40.372Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-18T20:05:55.281Z"
 author: codex-agent
+estimated_minutes: 80
 acceptance_criteria: "All seven read operations use certified complete SDK reads, enforce scope and budget; partitions fit their exact estimate."
 parent: pm-rlm-a1ih
+comments[3]{created_at,author,text}:
+  "2026-10-18T19:38:29.717Z",codex-agent,"Implemented seven scoped operations with certified all-status full SDK reads and conservative UTF-8 byte estimates. Exact boundary and lossless escaped-Unicode partition tests pass on real trackers. SDK gap: standalone registered schema fields need native schema options; --field requires active extension registrations."
+  "2026-10-18T19:51:43.784Z",codex-agent,"Behavioral revert proofs: node test/revert.ts passed 3/3. Removing only the reservation budget guard made the exact-boundary regression fail (exit 1). Replacing only completed-digest lookup with no reuse made the real SIGKILL resume regression fail (exit 1). Removing only the partition fit check made slice-budget reconstruction regression fail (exit 1). Original source SHA-256 bytes were restored after each mutation; tests import authored TypeScript directly."
+  "2026-10-18T20:01:52.042Z",codex-agent,"Pinned pm test --run --progress passed both linked commands: 2 selected, 2 passed, zero failures/skips/timeouts. Commands ran real SDK tracker tests. The minimal tracker disables automatic test-result tracking, so this comment records the result explicitly. Environment, exact read boundaries, scope, history corruption and lossless partition checks passed."
+files[4]{path,scope}:
+  src/environment.ts,project
+  src/errors.ts,project
+  test/core.test.ts,project
+  test/environment.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/core.test.ts,project,codex-agent,"2026-10-18T19:38:38.912Z",local_mutation,feat/rlm
+  node --test test/core.test.ts test/environment.test.ts,project,codex-agent,"2026-10-18T19:53:10.961Z",local_mutation,feat/rlm
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""

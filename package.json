@@ -19,7 +19,8 @@
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
-    "ARCHITECTURE.md"
+    "ARCHITECTURE.md",
+    "eval-results.json"
   ],
   "scripts": {
     "build": "tsc",

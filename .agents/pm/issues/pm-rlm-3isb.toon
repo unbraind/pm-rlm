@@ -1,0 +1,14 @@
+id: pm-rlm-3isb
+title: Reduce full-snapshot ledger storage amplification for large repeated runs
+description: The first implementation stores source snapshot and transcript in the root checkpoint. Public eval corpora expose repeated full-string history updates and complete-read cost as run count grows. A future storage design should distribute immutable snapshots while preserving one atomic budget coordinate.
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-18T19:54:28.820Z"
+updated_at: "2026-10-18T20:03:19.183Z"
+author: codex-agent
+estimated_minutes: 180
+acceptance_criteria: Measure storage and scan amplification on a public synthetic corpus; preserve byte-identical replay and all crash/reservation proofs; document scale limits independently of correctness gates.
+parent: pm-rlm-a1ih
+body: ""

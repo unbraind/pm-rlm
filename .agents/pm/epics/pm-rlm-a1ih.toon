@@ -6,11 +6,18 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:30:47.797Z"
-updated_at: "2026-10-18T19:32:35.298Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-18T20:05:51.123Z"
 author: codex-agent
+estimated_minutes: 480
 acceptance_criteria: Typed complete reads; durable atomic budgets; crash resume and replay; honest public tracker evaluation; npm and Bun release gates pass at 100 percent coverage.
-comments[1]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-18T19:32:35.295Z",codex-agent,"Companion specification: pm-cli-website-y3xy. Read-only reference; implementation and all evidence belong to this package. Plan: certified environment, SDK ledger, atomic reservations and digest resume, bounded adapters and commands, measured local eval, full fleet gates. No agents, publication or remote writes."
+  "2026-10-18T19:51:35.483Z",codex-agent,"Behavioral revert proofs: node test/revert.ts passed 3/3. Removing only the reservation budget guard made the exact-boundary regression fail (exit 1). Replacing only completed-digest lookup with no reuse made the real SIGKILL resume regression fail (exit 1). Removing only the partition fit check made slice-budget reconstruction regression fail (exit 1). Original source SHA-256 bytes were restored after each mutation; tests import authored TypeScript directly."
+  "2026-10-18T20:05:10.957Z",codex-agent,"Implementation preflight passed: frozen-source coverage is 100 percent statements/branches/functions/lines across all 19 authored source and tooling files; 71 unit tests passed with zero failures, skips, cancellation or TODO. Packed npm/npx and Bun/bunx acceptance passed 1/1. Docstrings: 57/57 declarations; jscpd zero clones at unchanged zero threshold; eslint clean. Three behavioral revert proofs passed. Strict tracker health and separate validation pass with zero warnings. Final committed-head npm and Bun release gates follow. Known SDK integration gaps: --field needs active registration despite persisted schema; pm-changelog needs canonical full output controls; package describe uses the full package name. Snapshot storage scale follow-up: pm-rlm-3isb."
+files[1]{path,scope}:
+  LICENSE,project
+docs[3]{path,scope}:
+  ARCHITECTURE.md,project
+  CHANGELOG.md,project
+  README.md,project
 body: ""

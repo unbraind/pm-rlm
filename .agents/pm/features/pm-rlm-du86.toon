@@ -6,10 +6,21 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:52.555Z"
-updated_at: "2026-10-18T19:32:56.407Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-18T20:06:07.761Z"
 author: codex-agent
+estimated_minutes: 60
 acceptance_criteria: "Ollama and compatible transports validate responses, never persist env keys; malformed actions spend reserved budget; scripted double is test only."
 parent: pm-rlm-a1ih
+comments[1]{created_at,author,text}:
+  "2026-10-18T20:05:18.970Z",codex-agent,"Actual ephemeral HTTP endpoints verified Ollama and compatible payloads, env-only credentials, provider usage, malformed responses and transport failures. Invalid JSON and unknown actions remain billable refused steps. Settings use audited SDK workspace mutation. Production adapters contain no scripted model."
+files[4]{path,scope}:
+  src/adapters.ts,project
+  src/protocol.ts,project
+  src/settings.ts,project
+  test/adapters.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/adapters.test.ts,project,codex-agent,"2026-10-18T19:57:02.306Z",local_mutation,feat/rlm
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""
