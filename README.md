@@ -117,17 +117,19 @@ A model step reserves prompt bytes plus `16 × output_tokens` before inference. 
 PM_RLM_LIVE_MODEL=gemma4-local:e2b-q3km PM_RLM_LIVE_BASE_URL=http://127.0.0.1:11434 npm run test:live
 ```
 
-Twenty-four questions cover type/status counts, acceptance-criterion substrings and the Epic with most closed direct children. Truth is computed exactly through the SDK before inference. Both arms use the same local model and limits. Stuffing selects complete items that fit and always supplies a valid JSON array; its explicit JSON answer envelope is parsed before exact scoring. RLM refusals and endpoint failures count as incorrect. This is one deterministic-temperature run per question, not a statistical performance claim. Defaults are calibrated independently on synthetic long context to fit the protocol, two partition operations and two child calls; they do not guarantee that a model chooses recursion or answers correctly.
+Twenty-four questions cover type/status counts, acceptance-criterion substrings and the Epic with most closed direct children. Truth is computed exactly through the SDK before inference. Both arms use the same local model, context allocation and output allowance. Stuffing selects complete items that fit and always supplies a valid JSON array; its explicit JSON answer envelope is parsed before exact scoring. RLM refusals and endpoint failures count as incorrect. This is one deterministic-temperature run per question, not a statistical performance claim. Defaults are calibrated independently on synthetic long context to fit the protocol, two partition operations and two child calls; they do not guarantee that a model chooses recursion or answers correctly.
 
 <!-- eval-table:start -->
-Model: `gemma4-local:e2b-q3km`; 4096 context tokens, 96 output tokens, temperature 0, one run per question, 24 questions. Source snapshots: pm-vcs 145 items / 814268 JSON bytes; pm-lint 12 items / 54941 JSON bytes.
+Model: `gemma4-local:e2b-q3km`; 32768 context tokens, 512 output tokens, temperature 0, one run per question, 24 questions. RLM limits: 300000 estimated tokens, depth 2, 8 ledger calls. Source snapshots: pm-vcs 145 items / 814268 JSON bytes; pm-lint 12 items / 54941 JSON bytes. Published revision hashes are recorded in the artifact. Ollama reported GPU execution during the run.
 
-| Arm | Accuracy | Provider tokens / answer | Model requests / answer | Wall seconds / answer |
+| Arm | Accuracy | Provider tokens / question | Model requests / question | Wall seconds / question |
 | --- | ---: | ---: | ---: | ---: |
-| RLM | 1/24 (4.17%) | 1481.54 | 3.42 | 25.93 |
-| Truncated context stuffing | 0/24 (0.00%) | 1051.04 | 1.00 | 4.90 |
+| RLM | 7/24 (29.17%) | 14151.71 | 10.58 | 67.60 |
+| Complete-item context stuffing | 2/24 (8.33%) | 9998.92 | 1.00 | 41.72 |
 
-RLM had 23 budget refusals, all counted incorrect, and one ledger root per question with no child calls. The local model frequently copied input or requested oversized reads. This does **not** establish an RLM advantage. Provider usage is measured separately from conservative byte reservations. Model requests are the persisted inference-step count; ledger call counts are also retained. Wall time includes SDK ledger overhead and concurrent host load. Results are single-run measurements, with no confidence interval. See [eval-results.json](eval-results.json) for per-question truth, usage, calls, timing and response digests; raw source content and raw model responses are not published.
+RLM had 8 outer budget refusals, all counted incorrect. **0/24 runs reached a child call**: there were 24 ledger roots and 254 model requests. The independent synthetic calibration test successfully executes two partitions and two children, but this small model's measured runs do not establish recursive aggregation quality. Twelve ground truths are zero; a constant-zero answer would match 12/24, outperforming both measured arms. These results do **not** establish an RLM advantage.
+
+All per-question averages include failures. Provider usage is separate from conservative byte reservations. Wall time includes SDK ledger overhead and concurrent host load; the arms ran sequentially, stuffing first. Results are single-run measurements with no confidence interval. See [eval-results.json](eval-results.json) for source revisions, exact truth, usage, calls, timing and response digests; raw source content and model responses are not published.
 <!-- eval-table:end -->
 
 Validation commands:
@@ -142,7 +144,7 @@ npm run release:check
 bun run release:check
 ```
 
-Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove the terminal child refusal, projected observation and scoped privacy guards as well as the reservation guard, digest reuse and partition budget check separately and require the regression to fail before restoring exact source bytes.
+Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove the calibrated eval limits, terminal child refusal, projected observation and scoped privacy guards as well as the reservation guard, digest reuse and partition budget check separately and require the regression to fail before restoring exact source bytes.
 
 Exit codes: `0` success; `2` invalid command, scope, model, integrity, replay or executor-conflict failure; `3` exhausted token, depth or call budget. Tool-level refusals can be recovered within a run; an exhausted outer budget ends the command. `test:live` counts refused answers rather than presenting them as successes.
 

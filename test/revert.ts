@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 const mutations = [
+  { name: 'eval calibrated limits', file: 'test/live.ts', before: 'context_tokens: 32768, output_tokens: 512, budget_tokens: 300000, ', after: '', test: 'test/eval.test.ts', pattern: '^eval pins' },
   { name: 'terminal child refusal (#4)', file: 'src/engine.ts', before: 'call.failure = { code: error.code };', after: 'void error.code;', test: 'test/review.test.ts', pattern: '^terminal child model' },
   { name: 'projected observation guard', file: 'src/engine.ts', before: "    if (estimateTokens(this.prompt(call, observation)) + state.settings.output_tokens > state.settings.context_tokens) throw new RlmError('budget', 'Observation does not fit the next model prompt');", after: '', test: 'test/review.test.ts', pattern: '^oversized read' },
   { name: 'scoped privacy', file: 'src/engine.ts', before: 'assertLedgerPrivacy({ question, items: snapshot, settings }', after: 'assertLedgerPrivacy({ question, items: corpus.items, settings }', test: 'test/review.test.ts', pattern: '^privacy applies' },

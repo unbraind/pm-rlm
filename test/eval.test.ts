@@ -40,11 +40,13 @@ test('eval pins local transport and scores explicit JSON answers', async t => {
     if (originalModel === undefined) delete process.env.PM_RLM_LIVE_MODEL; else process.env.PM_RLM_LIVE_MODEL = originalModel;
     if (originalEndpoint === undefined) delete process.env.PM_RLM_LIVE_BASE_URL; else process.env.PM_RLM_LIVE_BASE_URL = originalEndpoint;
   });
-  await writeRlmSettings(workspace, { adapter: 'openai', endpoint: 'https://example.invalid', key_env: 'RLM_OTHER_PROVIDER_KEY' }, 'rlm-test');
+  const defaults = await readRlmSettings(workspace);
+  await writeRlmSettings(workspace, { adapter: 'openai', endpoint: 'https://example.invalid', key_env: 'RLM_OTHER_PROVIDER_KEY', context_tokens: 1024, output_tokens: 32, budget_tokens: 1000 }, 'rlm-test');
   process.env.PM_RLM_LIVE_MODEL = 'synthetic-local';
   process.env.PM_RLM_LIVE_BASE_URL = 'http://127.0.0.1:11434';
   const config = await liveSettings(workspace);
   assert.equal(config.adapter, 'ollama'); assert.equal(config.model, 'synthetic-local');
+  for (const key of ['context_tokens', 'output_tokens', 'budget_tokens'] as const) assert.equal(config[key], defaults[key]);
   assert.equal(config.key_env, 'PM_RLM_LIVE_UNUSED_KEY');
   for (const endpoint of ['https://example.invalid', 'http://localhost@external.invalid', 'http://127.0.0.1/path', 'http://localhost?key=x']) {
     process.env.PM_RLM_LIVE_BASE_URL = endpoint;

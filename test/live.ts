@@ -52,7 +52,7 @@ export async function liveSettings(workspace: string): Promise<RlmSettings> {
   const endpoint = process.env.PM_RLM_LIVE_BASE_URL ?? 'http://localhost:11434';
   const url = new URL(endpoint);
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new RlmError('invalid', 'Live evaluation requires a loopback Ollama endpoint');
-  return readRlmSettings(workspace, { model: process.env.PM_RLM_LIVE_MODEL ?? 'gemma4-local:e2b-q3km', adapter: 'ollama', endpoint, key_env: 'PM_RLM_LIVE_UNUSED_KEY', max_depth: 2, max_calls: 8, timeout_ms: 60000 });
+  return readRlmSettings(workspace, { model: process.env.PM_RLM_LIVE_MODEL ?? 'gemma4-local:e2b-q3km', adapter: 'ollama', endpoint, key_env: 'PM_RLM_LIVE_UNUSED_KEY', context_tokens: 32768, output_tokens: 512, budget_tokens: 300000, max_depth: 2, max_calls: 8, timeout_ms: 60000 });
 }
 /** Copy only committed tracker data from a revision independently verified as public. */
 export async function copyPublicTracker(repo: string, base: string): Promise<{ workspace: string; revision: string }> {
