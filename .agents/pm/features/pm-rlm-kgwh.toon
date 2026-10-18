@@ -6,7 +6,7 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:46.952Z"
-updated_at: "2026-10-18T20:06:03.317Z"
+updated_at: "2026-10-18T21:59:43.677Z"
 author: codex-agent
 estimated_minutes: 140
 acceptance_criteria: Reservations are idempotent; limits refuse before execution; killed recursion resumes without repeating completed calls; replay answer is byte identical.
@@ -14,15 +14,19 @@ parent: pm-rlm-a1ih
 blocked_by: pm-rlm-6a8t
 dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
   pm-rlm-6a8t,blocked_by,"2026-10-18T20:00:17.582Z",codex-agent,"cli:update:blocked_by",detected
-comments[3]{created_at,author,text}:
+comments[6]{created_at,author,text}:
   "2026-10-18T19:38:33.186Z",codex-agent,"Run state is a single SDK checkpoint: reservations precede inference; model outputs precede observations; child digests and deterministic ids survive interruption. Runtime process leases prevent concurrent executors. Completed run resume and replay pass without new model calls. Process-kill and behavioral reversion proofs follow."
   "2026-10-18T19:44:05.585Z",codex-agent,"SIGKILL proof passed: interruption after child result checkpoint and before parent observation; resume made zero repeated completed-child model calls, reproduced answer 7+11 byte-for-byte, and matched uninterrupted reserved tokens. Three call items exactly matched parent/depth graph and all call results had closed ledger evidence."
   "2026-10-18T19:51:58.129Z",codex-agent,"Behavioral revert proofs: node test/revert.ts passed 3/3. Removing only the reservation budget guard made the exact-boundary regression fail (exit 1). Replacing only completed-digest lookup with no reuse made the real SIGKILL resume regression fail (exit 1). Removing only the partition fit check made slice-budget reconstruction regression fail (exit 1). Original source SHA-256 bytes were restored after each mutation; tests import authored TypeScript directly."
-files[4]{path,scope}:
+  "2026-10-18T21:16:42.006Z",codex-agent,"Confirmed engine failures: delivered read envelopes were not checked against the next prompt; child typed transport/context failures were swallowed without terminal evidence. Implement terminal refusal checkpoints with idempotent closure, digest reuse, and replay traversal; refuse projected oversized observations before charging."
+  "2026-10-18T21:30:53.779Z",codex-agent,"Behavioral engine proofs: deleting the projected next-prompt guard makes oversized-read recovery fail with ERR_ASSERTION; checking the unfiltered corpus instead of the scoped snapshot makes the scoped-privacy regression fail with ERR_ASSERTION. Both are isolated source mutations restored by hash in finally. The original reservation, real SIGKILL digest-reuse and partition-fit mutations also fail their regressions: 6/6 proofs total."
+  "2026-10-18T21:44:10.878Z",codex-agent,"Full verification passed 84/84 tests with 100% statement/branch/function/line coverage over 19 authored files. Added a further real-SDK compatibility regression: existing full-slice partition receipts replay exactly after compact references; changed legacy data still refuses. The focused compatibility test passed 1/1 and all six behavioral revert proofs passed again with restored source hashes. Full npm/Bun release checks follow with the expanded 85-test suite."
+files[5]{path,scope}:
   src/engine.ts,project
   test/crash-worker.ts,project
   test/recovery.test.ts,project
   test/revert.ts,project
+  test/review.test.ts,project
 tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/recovery.test.ts,project,codex-agent,"2026-10-18T19:55:50.309Z",local_mutation,feat/rlm
 docs[2]{path,scope}:

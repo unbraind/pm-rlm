@@ -73,7 +73,7 @@ function stubPm(name: string, status: number, body = ""): string {
  * @param extraEnv - Lifecycle variables such as `npm_command`.
  */
 function prepare(cwd: string, path: string, extraEnv: NodeJS.ProcessEnv = {}): SpawnSyncReturns<string> {
-  return spawnSync(process.execPath, [launcher], { cwd, encoding: "utf8", env: { ...process.env, PATH: path, ...extraEnv } });
+  return spawnSync(process.execPath, [launcher], { cwd, encoding: "utf8", env: { ...process.env, PATH: path, ...extraEnv, PM_PATH: join(cwd, ".agents", "pm") } });
 }
 
 /** The merge drivers registered in a checkout's LOCAL Git config, by name. */
@@ -90,7 +90,7 @@ function registeredDrivers(cwd: string): string[] {
 test("a full install registers every merge driver .gitattributes declares", posixOnly, () => {
   const directory = checkout("full", "pinned");
   assert.deepEqual(registeredDrivers(directory), []);
-  const result = prepare(directory, hostPath);
+  const result = prepare(directory, hostPath, { PM_PATH: join(root, ".agents", "pm") });
   assert.equal(result.status, 0, result.stderr);
   assert.ok(declaredDrivers.length > 0, ".gitattributes declares no pm merge drivers");
   assert.deepEqual(registeredDrivers(directory), declaredDrivers);

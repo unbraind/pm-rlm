@@ -29,7 +29,7 @@ The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are
 
 | Command | Example | Result |
 | --- | --- | --- |
-| `run` | `pm rlm run "Count open Issues" --scope '{"type":"Issue"}' --max-depth 3 --max-calls 32 --budget-tokens 200000` | Answer, run id, calls, reservations and measured usage |
+| `run` | `pm rlm run "Count open Issues" --scope '{"type":"Issue"}' --max-depth 3 --max-calls 32 --budget-tokens 300000` | Answer, run id, calls, reservations and measured usage |
 | `tree` | `pm rlm tree run-id` | One compact row per call: parent, depth, status, tokens and result excerpt |
 | `tree --full` | `pm rlm tree run-id --full --json` | Entire ledger checkpoint, including snapshot and recorded outputs |
 | `resume` | `pm rlm resume run-id` | Recovered answer; completed digests and recorded model responses are reused |
@@ -87,7 +87,7 @@ Implement `RlmModel` to supply a third-party model. Its `complete({prompt, max_o
 {"action":"finish","answer":"3"}
 ```
 
-The model receives the protocol, subgoal, selected slice and recorded observations. `spawn` takes `{subgoal, slice}`; slices must be lossless authorized fragments from the calling scope. Child tools can access only whole items completely represented by their slice; partial JSON fragments remain visible in the child prompt and can be subdivided for descendants. Invalid JSON, unknown actions, invalid ranges and denied reads become recorded refusals and consume a reserved model step. Depth, call count, total estimated tokens and per-prompt context all bound execution. There is no unrestricted shell, JavaScript execution, filesystem tool or hidden agent delegation.
+The model receives the protocol, subgoal, selected slice and recorded observations. `partition` returns compact `{partition_step,index,estimated_tokens}` references in the model protocol. `spawn` takes `{subgoal,slice:{partition_step:0,index:0}}`, where the step is the zero-based transcript index of a successful partition. The engine resolves the reference to lossless authorized fragments without requiring the parent to copy their text. Explicit fragment slices are also accepted. The exported environment API continues to return full slices. Child tools can access only whole items completely represented by their slice; partial JSON fragments remain visible in the child prompt and can be subdivided for descendants. Invalid JSON, unknown actions, invalid ranges and denied reads become recorded refusals and consume a reserved model step. Depth, call count, total estimated tokens and per-prompt context all bound execution. There is no unrestricted shell, JavaScript execution, filesystem tool or hidden agent delegation.
 
 Configure the model with the audited SDK settings API:
 
@@ -100,8 +100,8 @@ await writeRlmSettings('.agents/pm', {
   model: 'gemma4:e4b',
   max_depth: 3,
   max_calls: 32,
-  budget_tokens: 200000,
-  context_tokens: 8192,
+  budget_tokens: 300000,
+  context_tokens: 32768,
   output_tokens: 512,
   timeout_ms: 120000,
 }, 'my-agent');
@@ -109,9 +109,15 @@ await writeRlmSettings('.agents/pm', {
 
 `readRlmSettings` resolves defaults, the `rlm` section in workspace settings, then explicit overrides. The compatible adapter uses `adapter: 'openai'`, an endpoint ending in the provider's version prefix, and `key_env` naming an environment variable. It appends `/chat/completions`; Ollama appends `/api/generate`. Credentials are read only at request time and never put in settings. Endpoints cannot contain URL credentials, query strings or fragments. Transport diagnostics omit raw responses, keys and paths; ledger creation and model-response checkpoints reject disclosure of the active scratch workspace or configured credential.
 
-A model step reserves prompt bytes plus `16 × output_tokens` before inference. The output byte ceiling is enforced, and reservations are not refunded. Provider-reported tokens are retained separately. A process can die between an HTTP response and its durable checkpoint; that unfinished inference may be repeated by resume. Its logical reservation is reused. Completed model outputs and completed child results are never inferred again. This is not an exactly-once guarantee for a remote provider's billing. Large complete reads and growing transcripts can legitimately hit the conservative context or total budget and refuse; use narrower filters, `get`, `peek`, suitable partitions and explicit limits.
+A model step reserves prompt bytes plus `16 × output_tokens` before inference. The output byte ceiling is enforced, and reservations are not refunded. Provider-reported tokens are retained separately. A process can die between an HTTP response and its durable checkpoint; that unfinished inference may be repeated by resume. Its logical reservation is reused. Completed model outputs and terminal child outcomes are never inferred again. A typed child failure is checkpointed as a failure code, recorded in an `RLM refusal:` evidence comment, closed and released. Resume and replay accept that terminal refusal when its parent finishes successfully. This is not an exactly-once guarantee for a remote provider's billing. Observations are checked against the exact next prompt before charging, so oversized reads become recoverable tool refusals. Large complete reads and growing transcripts can legitimately hit the conservative context or total budget and refuse; use narrower filters, `get`, `peek`, suitable partitions and explicit limits.
 
-Evaluation results are recorded after the measured run in the table below. `npm run test:live` verifies repository visibility, copies public fleet trackers with `cp -a`, computes exact answers through the SDK, and runs both arms sequentially with the same local model. It never reads hosted data. Twenty-four questions cover counts by type/status, acceptance-criterion substrings and the Epic with most closed direct children. Context stuffing is truncated to the configured context; RLM refusals and endpoint failures count as incorrect. This is one deterministic-temperature run per question, not a statistical performance claim.
+`npm run test:live` verifies public repository visibility and a published revision, archives only tracked regular files from that revision, then copies the tracker with `cp -a` into a scratch project. Dirty and untracked local records are excluded; symlinks refuse evaluation. The copied workspace cannot select the transport: the harness explicitly uses Ollama at a validated loopback URL with no authorization header. It never reads hosted data.
+
+```sh
+PM_RLM_LIVE_MODEL=gemma4-local:e2b-q3km PM_RLM_LIVE_BASE_URL=http://127.0.0.1:11434 npm run test:live
+```
+
+Twenty-four questions cover type/status counts, acceptance-criterion substrings and the Epic with most closed direct children. Truth is computed exactly through the SDK before inference. Both arms use the same local model and limits. Stuffing selects complete items that fit and always supplies a valid JSON array; its explicit JSON answer envelope is parsed before exact scoring. RLM refusals and endpoint failures count as incorrect. This is one deterministic-temperature run per question, not a statistical performance claim. Defaults are calibrated independently on synthetic long context to fit the protocol, two partition operations and two child calls; they do not guarantee that a model chooses recursion or answers correctly.
 
 <!-- eval-table:start -->
 Model: `gemma4-local:e2b-q3km`; 4096 context tokens, 96 output tokens, temperature 0, one run per question, 24 questions. Source snapshots: pm-vcs 145 items / 814268 JSON bytes; pm-lint 12 items / 54941 JSON bytes.
@@ -136,7 +142,7 @@ npm run release:check
 bun run release:check
 ```
 
-Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The three behavioral revert proofs remove the reservation guard, digest reuse and partition budget check separately and require the regression to fail before restoring exact source bytes.
+Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove the terminal child refusal, projected observation and scoped privacy guards as well as the reservation guard, digest reuse and partition budget check separately and require the regression to fail before restoring exact source bytes.
 
 Exit codes: `0` success; `2` invalid command, scope, model, integrity, replay or executor-conflict failure; `3` exhausted token, depth or call budget. Tool-level refusals can be recovered within a run; an exhausted outer budget ends the command. `test:live` counts refused answers rather than presenting them as successes.
 

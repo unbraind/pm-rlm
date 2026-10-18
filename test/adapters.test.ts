@@ -42,9 +42,9 @@ test('HTTP adapters use real endpoints, transient env credentials and provider u
   payload = { choices: [{ message: { content: 'fallback' } }] };
   assert.equal((await compatible.complete(request)).tokens_out, 8);
   for (const bad of [{}, { choices: [] }, { choices: [null] }, { choices: [{ message: { content: '' } }] }, { choices: [{ message: { content: 'x'.repeat(1100) } }] }, { choices: [{ message: { content: 'x' } }], usage: { prompt_tokens: -1 } }]) {
-    payload = bad; await assert.rejects(compatible.complete(request), { code: 'model' });
+    payload = bad; await assert.rejects(compatible.complete(request), error => error instanceof Error && /Model response has no choices|Expected a JSON object|Expected nonempty text|Model output exceeds transport allowance|Expected a bounded integer/.test(error.message));
   }
-  status = 500; await assert.rejects(local.complete(request), { code: 'model' });
+  status = 500; await assert.rejects(local.complete(request), { code: 'model', message: 'Model endpoint refused the request' });
   server.close(); server.closeAllConnections();
   await assert.rejects(local.complete(request), { code: 'model' });
 });
@@ -58,7 +58,7 @@ test('settings defaults, audited persistence, overrides and invalid configuratio
   assert.equal((await readRlmSettings(workspace)).model, 'local-test');
   assert.equal((await readRlmSettings(workspace, { model: 'override' })).model, 'override');
   assert.equal(saved.budget_tokens, 50000);
-  for (const overrides of [{ adapter: 'invalid' }, { model: '' }, { endpoint: 'file:invalid' }, { endpoint: 'https://name:password@example.invalid' }, { endpoint: 'https://example.invalid?q=x' }, { endpoint: 'https://example.invalid#x' }, { key_env: 'not-an-env' }, { max_depth: 33 }, { max_calls: 0 }, { output_tokens: 8192 }]) await assert.rejects(readRlmSettings(workspace, overrides as never));
+  for (const overrides of [{ adapter: 'invalid' }, { model: '' }, { endpoint: 'file:invalid' }, { endpoint: 'https://name:password@example.invalid' }, { endpoint: 'https://example.invalid?q=x' }, { endpoint: 'https://example.invalid#x' }, { key_env: 'not-an-env' }, { max_depth: 33 }, { max_calls: 0 }, { output_tokens: 32768 }]) await assert.rejects(readRlmSettings(workspace, overrides as never));
 });
 
 /** All protocol alternatives have typed validation rather than unchecked model arguments. */

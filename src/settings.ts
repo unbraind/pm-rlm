@@ -9,7 +9,7 @@ export async function readRlmSettings(workspace: string, overrides: Partial<RlmS
   const section = source.rlm === undefined ? {} : record(source.rlm);
   const config: RlmSettings = {
     model: 'gemma4:e4b', adapter: 'ollama', endpoint: 'http://localhost:11434', key_env: 'OPENAI_API_KEY',
-    max_depth: 3, max_calls: 32, budget_tokens: 200000, output_tokens: 512, context_tokens: 8192, timeout_ms: 120000,
+    max_depth: 3, max_calls: 32, budget_tokens: 300000, output_tokens: 512, context_tokens: 32768, timeout_ms: 120000,
     ...section, ...overrides,
   };
   for (const key of Object.keys(section)) if (!['model', 'adapter', 'endpoint', 'key_env', 'max_depth', 'max_calls', 'budget_tokens', 'output_tokens', 'context_tokens', 'timeout_ms'].includes(key)) throw new RlmError('invalid', 'Unknown rlm setting');

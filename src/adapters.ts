@@ -39,6 +39,6 @@ export class HttpModel implements RlmModel {
       }
       if (estimateTokens(output) > request.max_output_tokens * 16) throw new RlmError('model', 'Model output exceeds transport allowance');
       return { text: output, tokens_in: inputTokens === undefined ? estimateTokens(request.prompt) : integer(inputTokens, 0), tokens_out: outputTokens === undefined ? estimateTokens(output) : integer(outputTokens, 0) };
-    } catch { throw new RlmError('model', 'Model request failed; inspect endpoint availability and configuration'); }
+    } catch (error) { if (error instanceof RlmError) throw error; throw new RlmError('model', 'Model request failed; inspect endpoint availability and configuration'); }
   }
 }

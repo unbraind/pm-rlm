@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { questions, stuffing } from './live.ts';
+import { questions, stuffing, stuffingAnswer, liveSettings, newRoot, rootIds } from './live.ts';
 import { tracker } from './helpers.ts';
 import { readCorpus } from '../src/environment.ts';
-import { readRlmSettings } from '../src/settings.ts';
+import { writeRlmSettings, readRlmSettings } from '../src/settings.ts';
 
 /** Ground truth is derived exactly from complete real SDK data, including deterministic tie breaking. */
 test('eval generates twenty-four exact public-tracker-style aggregation questions and bounded stuffing', async t => {
@@ -27,5 +27,33 @@ test('eval generates twenty-four exact public-tracker-style aggregation question
   const prompt = stuffing(cases[0].question, items, config);
   assert.ok(Buffer.byteLength(prompt) <= 480);
   assert.ok(prompt.includes('Question:'));
+  assert.ok(Array.isArray(JSON.parse(prompt.split('Workspace:\n')[1])));
   assert.ok(stuffing('question', [], config).endsWith('[]'));
+});
+
+/** Eval transport and attribution cannot inherit provider settings or reuse old roots. */
+test('eval pins local transport and scores explicit JSON answers', async t => {
+  const { workspace } = await tracker(t);
+  const originalModel = process.env.PM_RLM_LIVE_MODEL;
+  const originalEndpoint = process.env.PM_RLM_LIVE_BASE_URL;
+  t.after(() => {
+    if (originalModel === undefined) delete process.env.PM_RLM_LIVE_MODEL; else process.env.PM_RLM_LIVE_MODEL = originalModel;
+    if (originalEndpoint === undefined) delete process.env.PM_RLM_LIVE_BASE_URL; else process.env.PM_RLM_LIVE_BASE_URL = originalEndpoint;
+  });
+  await writeRlmSettings(workspace, { adapter: 'openai', endpoint: 'https://example.invalid', key_env: 'RLM_OTHER_PROVIDER_KEY' }, 'rlm-test');
+  process.env.PM_RLM_LIVE_MODEL = 'synthetic-local';
+  process.env.PM_RLM_LIVE_BASE_URL = 'http://127.0.0.1:11434';
+  const config = await liveSettings(workspace);
+  assert.equal(config.adapter, 'ollama'); assert.equal(config.model, 'synthetic-local');
+  assert.equal(config.key_env, 'PM_RLM_LIVE_UNUSED_KEY');
+  for (const endpoint of ['https://example.invalid', 'http://localhost@external.invalid', 'http://127.0.0.1/path', 'http://localhost?key=x']) {
+    process.env.PM_RLM_LIVE_BASE_URL = endpoint;
+    await assert.rejects(liveSettings(workspace));
+  }
+  assert.equal(stuffingAnswer('{"answer":"epic-id"}'), 'epic-id');
+  assert.equal(stuffingAnswer('{"answer":"12"}'), '12');
+  for (const response of ['12', 'null', '{', '{"answer":12}']) assert.equal(stuffingAnswer(response), '');
+  assert.equal(newRoot(['old'], ['old']), undefined);
+  assert.equal(newRoot(['old'], ['old', 'new']), 'new');
+  assert.deepEqual(await rootIds(workspace), []);
 });

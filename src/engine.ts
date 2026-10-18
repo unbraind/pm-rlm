@@ -1,5 +1,5 @@
 import { assertLedgerPrivacy, estimateTokens, RlmError, text } from './errors.ts';
-import { matches, parseFilter, readCorpus, RlmContext } from './environment.ts';
+import { matches, parseFilter, partitionItems, readCorpus, RlmContext } from './environment.ts';
 import { HttpModel } from './adapters.ts';
 import { promptDigest, reserveStep, RlmLedger } from './ledger.ts';
 import { parseAction, parseSlice, PROTOCOL } from './protocol.ts';
@@ -41,15 +41,25 @@ function validateSlice(state: RlmState, parent: RlmCall, slice: RlmSlice): void 
     if (!covered && !inherited) throw new RlmError('scope', 'Sub-call slice exceeds its parent scope');
   }
 }
+/** Resolve a compact partition reference deterministically against the frozen authorized snapshot. */
+function resolveSlice(state: RlmState, call: RlmCall, slice: RlmSlice | { partition_step: number; index: number }): RlmSlice {
+  if ('fragments' in slice) return slice;
+  const step = call.steps[slice.partition_step];
+  if (step?.response === undefined || step.observation === undefined || typeof step.observation !== 'object' || step.observation === null || 'refused' in step.observation) throw new RlmError('scope', 'Partition reference is unavailable');
+  const action = parseAction(step.response.text);
+  if (action.action !== 'partition') throw new RlmError('scope', 'Reference must select a partition step');
+  const result = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens)[slice.index];
+  if (result === undefined) throw new RlmError('scope', 'Partition slice index is unavailable');
+  return result;
+}
 /** Execute the read protocol identically for live runs and read-only replay. */
-async function readAction(context: RlmContext, action: Exclude<RlmAction, { action: 'spawn' | 'finish' }>) {
+async function readAction(context: RlmContext, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'partition' }>) {
   switch (action.action) {
     case 'list': return context.list(action.filter);
     case 'search': return context.search(action.query, action.limit);
     case 'get': return context.get(action.id, action.fields);
     case 'history': return context.history(action.id, action);
     case 'peek': return context.peek(action.id, action.field, action.start, action.end);
-    case 'partition': return context.partition(action.filter, action.maxTokens);
   }
 }
 /** Bounded recursive loop backed by a durable SDK call graph. */
@@ -78,50 +88,78 @@ export class RlmEngine {
       state.calls.push(call);
       await this.ledger.save(state);
     }
-    return this.execute(call);
+    try { return await this.execute(call); }
+    catch (error) {
+      if (!(error instanceof RlmError)) throw error;
+      if (call.result === undefined) {
+        call.failure = { code: error.code };
+        await this.ledger.save(state);
+        await this.ledger.complete(state, call);
+      }
+      throw error;
+    }
   }
-  /** Execute one environment action, charging its delivered observation once before checkpoint. */
+  /** Construct the exact prompt used by projection checks and the next inference. */
+  private prompt(call: RlmCall, observation?: unknown): string {
+    return `${PROTOCOL}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
+  }
+  /** Execute one action, refusing oversized observations before charging or retaining data. */
   private async observe(action: Exclude<RlmAction, { action: 'finish' }>, call: RlmCall): Promise<unknown> {
-    if (action.action === 'spawn') return { result: await this.spawn(call.id, action.subgoal, action.slice) };
     const state = this.state;
-    const context = new RlmContext(this.ledger.workspace, callItems(state, call), state.certificate, state.settings.budget_tokens - state.reserved_tokens);
-    const read = await readAction(context, action);
-    state.reserved_tokens += read.estimated_tokens;
-    return read;
+    let observation: unknown;
+    let charge = 0;
+    if (action.action === 'spawn') observation = { result: await this.spawn(call.id, action.subgoal, resolveSlice(state, call, action.slice)) };
+    else if (action.action === 'partition') {
+      const slices = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens);
+      const data = slices.map((slice, index) => ({ partition_step: call.steps.length - 1, index, estimated_tokens: slice.estimated_tokens }));
+      charge = estimateTokens(data);
+      if (charge > state.settings.budget_tokens - state.reserved_tokens) throw new RlmError('budget', 'Partition index exceeds remaining budget');
+      observation = { data, estimated_tokens: charge, complete_list: state.certificate };
+    } else {
+      const context = new RlmContext(this.ledger.workspace, callItems(state, call), state.certificate, state.settings.budget_tokens - state.reserved_tokens);
+      const read = await readAction(context, action);
+      charge = read.estimated_tokens;
+      observation = read;
+    }
+    if (estimateTokens(this.prompt(call, observation)) + state.settings.output_tokens > state.settings.context_tokens) throw new RlmError('budget', 'Observation does not fit the next model prompt');
+    state.reserved_tokens += charge;
+    return observation;
   }
   /** Reuse persisted outputs and observations; unfinished inference alone is retried. */
   private async execute(call: RlmCall): Promise<string> {
     const state = this.state;
     await this.ledger.materialize(state, call);
+    if (call.failure !== undefined) { await this.ledger.complete(state, call); throw new RlmError(call.failure.code, 'Recorded child refusal'); }
     if (call.result !== undefined) { await this.ledger.complete(state, call); return call.result; }
     let index = 0;
     for (;;) {
       let step = call.steps[index];
       if (step === undefined) {
-        const prompt = `${PROTOCOL}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map(step => ({ action: step.response!.text, observation: step.observation })) })}`;
-        step = reserveStep(state, call, prompt);
+        step = reserveStep(state, call, this.prompt(call));
         await this.ledger.save(state);
       }
       if (step.response === undefined) {
-        step.response = await this.model.complete({ prompt: step.prompt, max_output_tokens: state.settings.output_tokens, context_tokens: state.settings.context_tokens });
-        if (typeof step.response.text !== 'string' || estimateTokens(step.response.text) > state.settings.output_tokens * 16 || !Number.isSafeInteger(step.response.tokens_in) || !Number.isSafeInteger(step.response.tokens_out) || step.response.tokens_in < 0 || step.response.tokens_out < 0) throw new RlmError('model', 'Invalid model response');
-        assertLedgerPrivacy(step.response, this.ledger.workspace, state.settings.key_env);
+        const response = await this.model.complete({ prompt: step.prompt, max_output_tokens: state.settings.output_tokens, context_tokens: state.settings.context_tokens });
+        if (typeof response.text !== 'string' || estimateTokens(response.text) > state.settings.output_tokens * 16 || !Number.isSafeInteger(response.tokens_in) || !Number.isSafeInteger(response.tokens_out) || response.tokens_in < 0 || response.tokens_out < 0) throw new RlmError('model', 'Invalid model response');
+        assertLedgerPrivacy(response, this.ledger.workspace, state.settings.key_env);
+        step.response = response;
         await this.ledger.save(state);
       }
       if (step.observation === undefined) {
+        let action: RlmAction | undefined;
         try {
-          const action = parseAction(step.response.text);
-          if (action.action === 'finish') {
-            Object.assign(call, { result: action.answer });
-            await this.ledger.save(state);
-            await this.ledger.complete(state, call);
-            await this.onComplete?.(structuredClone(call));
-            return action.answer;
-          }
-          step.observation = await this.observe(action, call);
+          action = parseAction(step.response.text);
+          if (action.action !== 'finish') step.observation = await this.observe(action, call);
         } catch (error) {
           if (!(error instanceof RlmError)) throw error;
           step.observation = { refused: error.code };
+        }
+        if (action?.action === 'finish') {
+          Object.assign(call, { result: action.answer });
+          await this.ledger.save(state);
+          await this.ledger.complete(state, call);
+          await this.onComplete?.(structuredClone(call));
+          return action.answer;
         }
         await this.ledger.save(state);
       }
@@ -133,7 +171,8 @@ export class RlmEngine {
     const release = await this.ledger.lease(this.state.run);
     try {
       this.state = await this.ledger.load(this.state.run);
-      for (const call of this.state.calls) if (call.result !== undefined) await this.ledger.complete(this.state, call);
+      if (this.state.calls[0].result !== undefined && this.state.calls.some(call => call.result === undefined && call.failure === undefined)) throw new RlmError('incomplete', 'Completed run contains an unfinished call');
+      for (const call of this.state.calls) if (call.result !== undefined || call.failure !== undefined) await this.ledger.complete(this.state, call);
       await this.execute(this.state.calls[0]);
       return result(this.state);
     } finally { await release(); }
@@ -146,12 +185,13 @@ export async function runRlm(question: string, options: RlmRunOptions): Promise<
   if (options.model !== undefined) settings.model = options.model.name;
   const scope = parseFilter(options.scope ?? {});
   const corpus = await readCorpus(options.workspace);
-  assertLedgerPrivacy({ question, items: corpus.items, settings }, options.workspace, settings.key_env);
+  const snapshot = corpus.items.filter(item => matches(item, scope));
+  assertLedgerPrivacy({ question, items: snapshot, settings }, options.workspace, settings.key_env);
   const ledger = new RlmLedger(options.workspace, options.author);
   await ledger.registerFields();
   const run = await ledger.newRunId();
   const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
-  const state: RlmState = { version: 1, run, question, settings, scope, snapshot: corpus.items.filter(item => matches(item, scope)), certificate: corpus.complete_list, calls: [], reserved_tokens: 0 };
+  const state: RlmState = { version: 1, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0 };
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
   await ledger.materialize(state, state.calls[0]);
   return new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete).run();
@@ -168,24 +208,49 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
   const state = await new RlmLedger(workspace).load(run);
   const visited = new Set<string>();
   /** Follow recorded spawn edges and finish actions without executing a model or writing the tracker. */
-  async function replay(call: RlmCall): Promise<string> {
+  async function replay(call: RlmCall): Promise<string | undefined> {
     visited.add(call.id);
     for (const step of call.steps) {
-      if (step.response === undefined || step.observation !== undefined && typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation) continue;
+      if (step.response === undefined) continue;
+      const refused = step.observation !== undefined && typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation;
+      if (refused) {
+        let action: RlmAction;
+        try { action = parseAction(step.response.text); } catch { continue; }
+        if (action.action === 'spawn') {
+          let slice: RlmSlice;
+          try { slice = resolveSlice(state, call, action.slice); }
+          catch (error) {
+            if (error instanceof RlmError && error.code === (step.observation as { refused: string }).refused) continue;
+            throw new RlmError('replay', 'Recorded partition refusal differs');
+          }
+          const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, slice, state.settings));
+          if (child !== undefined) {
+            await replay(child);
+            if (child.failure !== undefined && child.failure.code !== (step.observation as { refused: string }).refused) throw new RlmError('replay', 'Recorded child refusal differs');
+          }
+        }
+        continue;
+      }
       const action = parseAction(step.response.text);
       if (action.action === 'spawn') {
-        const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, action.slice, state.settings));
+        const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, resolveSlice(state, call, action.slice), state.settings));
         if (child === undefined || await replay(child) !== (step.observation as { result: string }).result) throw new RlmError('replay', 'Recorded child result differs');
       }
       if (action.action !== 'finish' && action.action !== 'spawn') {
         const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens);
-        if (JSON.stringify(await readAction(context, action)) !== JSON.stringify(step.observation)) throw new RlmError('replay', 'Recorded environment observation differs');
+        const read = action.action === 'partition'
+          ? (() => { const data = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens).map((slice, index) => ({ partition_step: call.steps.indexOf(step), index, estimated_tokens: slice.estimated_tokens })); return { data, estimated_tokens: estimateTokens(data), complete_list: state.certificate }; })()
+          : await readAction(context, action);
+        if (JSON.stringify(read) !== JSON.stringify(step.observation)) {
+          if (action.action !== 'partition' || JSON.stringify(await context.partition(action.filter, action.maxTokens)) !== JSON.stringify(step.observation)) throw new RlmError('replay', 'Recorded environment observation differs');
+        }
       }
       if (action.action === 'finish') {
         if (action.answer !== call.result) throw new RlmError('replay', 'Recorded answer differs');
         return action.answer;
       }
     }
+    if (call.failure !== undefined) return undefined;
     throw new RlmError('replay', 'Run has no completed finish action');
   }
   await replay(state.calls[0]);
@@ -195,5 +260,5 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
 /** Read a compact, ordered call tree, retaining the full checkpoint only when explicitly requested. */
 export async function treeRlm(workspace: string, run: string, full = false): Promise<Record<string, unknown>> {
   const state = await new RlmLedger(workspace).load(run);
-  return full ? { state } : { run, calls: state.calls.map(call => ({ id: call.id, parent: call.parent, depth: call.depth, status: call.result === undefined ? 'in_progress' : 'closed', tokens: call.steps.reduce((sum, step) => sum + step.reserved, 0), result: (call.result ?? '').replace(/\s+/g, ' ').slice(0, 100) })) };
+  return full ? { state } : { run, calls: state.calls.map(call => ({ id: call.id, parent: call.parent, depth: call.depth, status: call.failure !== undefined ? 'failed' : call.result === undefined ? 'in_progress' : 'closed', tokens: call.steps.reduce((sum, step) => sum + step.reserved, 0), result: (call.result ?? '').replace(/\s+/g, ' ').slice(0, 100) })) };
 }

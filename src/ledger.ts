@@ -81,7 +81,7 @@ export class RlmLedger {
   async complete(state: RlmState, call: RlmCall): Promise<void> {
     assertLedgerPrivacy(call, this.workspace, state.settings.key_env);
     await this.materialize(state, call);
-    await this.client.comments(call.id, { add: `RLM result:\n${call.result}`, ifAbsent: true });
+    await this.client.comments(call.id, { add: call.failure === undefined ? `RLM result:\n${call.result}` : `RLM refusal:\n${JSON.stringify(call.failure)}`, ifAbsent: true });
     const corpus = certifyCompleteListResult(await this.client.listAllComplete());
     const row = corpus.items.find(item => item.id === call.id)!;
     if (row.status !== 'closed') {
@@ -89,7 +89,7 @@ export class RlmLedger {
         rlmTokensIn: call.steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0), 0),
         rlmTokensOut: call.steps.reduce((sum, step) => sum + (step.response?.tokens_out ?? 0), 0),
       } });
-      await this.client.close(call.id, 'Model returned; evidence recorded', { validateClose: 'off' });
+      await this.client.close(call.id, 'Call terminated; evidence recorded', { validateClose: 'off' });
     }
     await this.client.release(call.id);
   }

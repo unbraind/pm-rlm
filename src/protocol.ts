@@ -32,7 +32,7 @@ export function parseAction(output: string): RlmAction {
     case 'history': return { action: 'history', id: text(value.id), start: integer(value.start, 0), end: integer(value.end, integer(value.start, 0)) };
     case 'peek': return { action: 'peek', id: text(value.id), field: text(value.field), start: integer(value.start, 0), end: integer(value.end, integer(value.start, 0)) };
     case 'partition': return { action: 'partition', filter: parseFilter(value.filter ?? {}), maxTokens: integer(value.maxTokens, 1) };
-    case 'spawn': return { action: 'spawn', subgoal: text(value.subgoal), slice: parseSlice(value.slice) };
+    case 'spawn': return { action: 'spawn', subgoal: text(value.subgoal), slice: 'partition_step' in record(value.slice) ? { partition_step: integer(record(value.slice).partition_step, 0), index: integer(record(value.slice).index, 0) } : parseSlice(value.slice) };
     case 'finish': return { action: 'finish', answer: typeof value.answer === 'string' ? value.answer : text(value.answer) };
     default: throw new RlmError('invalid', 'Unknown model action');
   }
@@ -45,7 +45,7 @@ Actions:
 {"action":"get","id":"item-id","fields":["title","acceptance_criteria"]}
 {"action":"history","id":"item-id","start":0,"end":10}
 {"action":"peek","id":"item-id","field":"description","start":0,"end":200}
-{"action":"partition","filter":{},"maxTokens":2000}
-{"action":"spawn","subgoal":"Count matching items in this slice","slice":{"fragments":[],"estimated_tokens":2}}
+{"action":"partition","filter":{},"maxTokens":4096}
+{"action":"spawn","subgoal":"Count matching items in this slice","slice":{"partition_step":0,"index":0}}
 {"action":"finish","answer":"your exact answer"}
-Filters support type,status,parent,tag,text,ids. Omit predicates to match all. list returns all matches or refuses if too large. partition returns lossless JSON fragments. spawn can only use fragments from this call's environment. Recurse over slices for aggregation. Finish with only the requested number or ids; do not invent data. A refused step spends budget.`;
+Filters support type,status,parent,tag,text,ids. Omit predicates to match all. list returns all matches or refuses if too large. partition returns compact slice references (partition_step,index,estimated_tokens); spawn passes that reference to receive its lossless JSON fragments. partition_step is the zero-based transcript index of the partition action. Raw fragment slices are also accepted. spawn can only use fragments from this call's environment. Recurse over slices for aggregation. Finish with only the requested number or ids; do not invent data. A refused step spends budget.`;

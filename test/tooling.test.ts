@@ -583,3 +583,14 @@ test("publish attestation verifier audits the tracked repository as main", () =>
   assert.equal(outcome.status, 0);
   assert.ok(outcome.stdout.length > 0);
 });
+test('identity gate ignores inherited repository selection overrides', () => {
+  const root = identityFixture('identity-selection');
+  const other = identityFixture('identity-selection-other');
+  const env = { ...process.env, GIT_DIR: join(other, '.git'), GIT_WORK_TREE: other, GIT_COMMON_DIR: join(other, '.git'), GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'core.bare', GIT_CONFIG_VALUE_0: 'true' };
+  const result = spawnSync(process.execPath, [join(repositoryRoot, 'scripts/identity-gate.ts'), root], { env, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  writeFileSync(join(root, 'violation.txt'), 'identity');
+  fixtureGit(root, ['add', 'violation.txt']);
+  fixtureGit(root, ['commit', '-m', 'Unapproved fixture'], 'unapproved@example.invalid');
+  assert.equal(spawnSync(process.execPath, [join(repositoryRoot, 'scripts/identity-gate.ts'), root], { env, encoding: 'utf8' }).status, 1);
+});

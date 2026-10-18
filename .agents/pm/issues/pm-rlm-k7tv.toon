@@ -1,0 +1,29 @@
+id: pm-rlm-k7tv
+title: Record terminal typed failures for child calls
+description: "GitHub issue: https://github.com/unbraind/pm-rlm/issues/4. Successful roots currently retain unfinished children after a typed child model refusal."
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-18T21:15:53.713Z"
+updated_at: "2026-10-18T21:59:40.010Z"
+author: codex-agent
+estimated_minutes: 180
+acceptance_criteria: Every materialized child reaches completed result or terminal typed refusal evidence before its parent handles that refusal; successful runs replay byte-identically and resume without retrying terminal failed calls; cover transport and child context refusals.
+parent: pm-rlm-a1ih
+comments[4]{created_at,author,text}:
+  "2026-10-18T21:23:58.470Z",codex-agent,"Regression reproduces issue #4 using a real SDK tracker and deterministic LM only. Repeated spawn of a terminal model/budget-refused digest makes one child inference, closes the child with RLM refusal evidence, and both replay and resume return the root answer without new inference. Also cover a context refusal before child inference and replay tampering of the typed refusal code."
+  "2026-10-18T21:30:49.384Z",codex-agent,"Behavioral revert proof: node test/revert.ts passed 6/6 mutations with exact source hash restoration. Removing only the child terminal-failure assignment makes the issue #4 regression fail with ERR_ASSERTION (exit 1). Typed model refusal, repeated digest reuse, real child context refusal, closure evidence, replay and resume are covered in test/review.test.ts. Legacy completed checkpoints with unfinished children now fail closed as incomplete instead of reporting recovery."
+  "2026-10-18T21:34:37.080Z",codex-agent,"pm test pm-rlm-k7tv --run --progress passed 1/1 linked commands and 3/3 selected real-SDK regressions, with zero assertion/trust/configuration/timeout failures. Tests cover model and budget child refusals plus actual child context refusal before inference."
+  "2026-10-18T21:59:33.109Z",codex-agent,"Review fix verified: isolated npm run release:check and bun run release:check each passed all 12 gates, 85/85 suite tests and 1/1 packed npm/npx plus Bun/bunx acceptance. Coverage is 1514/1514 statements and lines, 634/634 branches, 77/77 functions across 19 authored files. Issue #4 regressions and all six behavioral revert proofs pass. No development items were closed."
+files[4]{path,scope}:
+  src/engine.ts,project
+  src/ledger.ts,project
+  src/types.ts,project
+  test/review.test.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "node --test --test-name-pattern=\"terminal child|child context\" test/review.test.ts",project,codex-agent,"2026-10-18T21:23:19.720Z",local_mutation,feat/rlm
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
+body: ""

@@ -1,3 +1,4 @@
+import type { RlmErrorCode } from './errors.ts';
 import type { ListedItem, PmCompleteListCertificate } from '@unbrained/pm-cli/sdk';
 
 /** Fully materialized SDK item, including its body when available. */
@@ -67,7 +68,7 @@ export type RlmAction =
   | { action: 'history'; id: string; start: number; end: number }
   | { action: 'peek'; id: string; field: string; start: number; end: number }
   | { action: 'partition'; filter: RlmFilter; maxTokens: number }
-  | { action: 'spawn'; subgoal: string; slice: RlmSlice }
+  | { action: 'spawn'; subgoal: string; slice: RlmSlice | { partition_step: number; index: number } }
   | { action: 'finish'; answer: string };
 /** Recorded model step: reserving and checkpointing are separate crash-safe transitions. */
 export interface RlmStep {
@@ -86,6 +87,7 @@ export interface RlmCall {
   digest: string;
   steps: RlmStep[];
   result?: string;
+  failure?: { code: RlmErrorCode };
 }
 /** Durable run checkpoint stored through the SDK in the root call's registered field. */
 export interface RlmState {
