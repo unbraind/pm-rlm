@@ -6,7 +6,7 @@ import { readCorpus } from '../src/environment.ts';
 import { writeRlmSettings, readRlmSettings } from '../src/settings.ts';
 
 /** Ground truth is derived exactly from complete real SDK data, including deterministic tie breaking. */
-test('eval generates twenty-four exact public-tracker-style aggregation questions and bounded stuffing', async t => {
+test('eval refuses insufficiently diverse corpora and bounds valid JSON stuffing', async t => {
   const { workspace, client } = await tracker(t);
   const epic = (await client.create({ id: 'epic-a', title: 'Most children', type: 'Epic' })).item;
   await client.create({ id: 'epic-b', title: 'Other', type: 'Epic' });
@@ -17,14 +17,9 @@ test('eval generates twenty-four exact public-tracker-style aggregation question
   await client.create({ title: 'Execution call', type: 'Task', tags: 'rlm:call' });
   const items = (await readCorpus(workspace)).items;
   assert.equal(items.length, 4);
-  const cases = questions(items);
-  assert.equal([...cases, ...questions(items)].length, 24);
-  assert.equal(cases[0].answer, '1'); assert.equal(cases[2].answer, '0'); assert.equal(cases[3].answer, '1');
-  assert.ok(cases.slice(6, 11).every(item => item.answer === '1'));
-  assert.equal(cases[11].answer, epic.id);
-  assert.equal(questions([])[11].answer, 'none');
+  assert.throws(() => questions([]), { code: 'invalid' });
   const config = await readRlmSettings(workspace, { context_tokens: 512, output_tokens: 32 });
-  const prompt = stuffing(cases[0].question, items, config);
+  const prompt = stuffing('Count all items', items, config);
   assert.ok(Buffer.byteLength(prompt) <= 480);
   assert.ok(prompt.includes('Question:'));
   assert.ok(Array.isArray(JSON.parse(prompt.split('Workspace:\n')[1])));

@@ -1,4 +1,4 @@
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 /** Stable refusal codes usable by embedded loops and host commands. */
 export type RlmErrorCode = 'budget' | 'depth' | 'calls' | 'scope' | 'invalid' | 'incomplete' | 'model' | 'busy' | 'replay';
 /** Expected failure without raw transport errors, local paths or credentials. */
@@ -37,5 +37,8 @@ export function assertLedgerPrivacy(value: unknown, workspace: string, keyEnv: s
   workspace = resolve(workspace);
   const serialized = JSON.stringify(value);
   const secret = process.env[keyEnv];
-  if (serialized.includes(workspace) || serialized.includes(dirname(dirname(workspace)) + '/') || (secret !== undefined && secret.length > 0 && serialized.includes(secret))) throw new RlmError('invalid', 'Ledger content contains local paths or configured credentials');
+  const grandparent = dirname(dirname(workspace));
+  const needles = [workspace, grandparent.endsWith(sep) ? grandparent : grandparent + sep];
+  if (secret !== undefined && secret.length > 0) needles.push(secret);
+  if (needles.some(needle => serialized.includes(needle) || serialized.includes(JSON.stringify(needle).slice(1, -1)))) throw new RlmError('invalid', 'Ledger content contains local paths or configured credentials');
 }

@@ -4,6 +4,15 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 const mutations = [
+  { name: 'checkpoint call validation', file: 'src/ledger.ts', before: '      for (const entry of decoded.calls) {', after: '      for (const entry of []) {', test: 'test/round2.test.ts', pattern: '^checkpoint validation' },
+  { name: 'bounded response body', file: 'src/adapters.ts', before: "        if (size > limit) throw new RlmError('model', 'Model response exceeds byte allowance');", after: '', test: 'test/round2.test.ts', pattern: '^bounded HTTP' },
+  { name: 'scope syntax diagnosis', file: 'src/commands.ts', before: "if (error instanceof SyntaxError) throw new RlmError('invalid', 'Invalid --scope JSON'); ", after: '', test: 'test/round2.test.ts', pattern: '^malformed scope' },
+  { name: 'escaped privacy needles', file: 'src/errors.ts', before: ' || serialized.includes(JSON.stringify(needle).slice(1, -1))', after: '', test: 'test/round2.test.ts', pattern: '^privacy rejects JSON' },
+  { name: 'checkpoint settings validation', file: 'src/ledger.ts', before: '      validateRlmSettings(decoded.settings);', after: '', test: 'test/round2.test.ts', pattern: '^checkpoint validation' },
+  { name: 'HTTPS credential transport', file: 'src/settings.ts', before: "  if (config.adapter === 'openai' && url.protocol === 'http:' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) throw new RlmError('invalid', 'Remote OpenAI endpoints require HTTPS');", after: '', test: 'test/round2.test.ts', pattern: '^remote OpenAI' },
+  { name: 'verified archive paths', file: 'test/live.ts', before: "  if (extracted.length !== manifest.length) throw new RlmError('invalid', 'Public archive paths differ from verified revision');", after: '', test: 'test/eval-source.test.ts', pattern: '^eval copies' },
+  { name: 'verified archive bytes', file: 'test/live.ts', before: "!(await readFile(path)).equals(expected)", after: 'false', test: 'test/eval-source.test.ts', pattern: '^eval copies' },
+  { name: 'seeded answer frequency cap', file: 'test/eval-questions.ts', before: "if (!chosen.includes(task) && (histogram.get(task.answer) ?? 0) < 2)", after: 'if (!chosen.includes(task))', test: 'test/round2.test.ts', pattern: '^seeded eval' },
   { name: 'eval calibrated limits', file: 'test/live.ts', before: 'context_tokens: 32768, output_tokens: 512, budget_tokens: 300000, ', after: '', test: 'test/eval.test.ts', pattern: '^eval pins' },
   { name: 'terminal child refusal (#4)', file: 'src/engine.ts', before: 'call.failure = { code: error.code };', after: 'void error.code;', test: 'test/review.test.ts', pattern: '^terminal child model' },
   { name: 'projected observation guard', file: 'src/engine.ts', before: "    if (estimateTokens(this.prompt(call, observation)) + state.settings.output_tokens > state.settings.context_tokens) throw new RlmError('budget', 'Observation does not fit the next model prompt');", after: '', test: 'test/review.test.ts', pattern: '^oversized read' },

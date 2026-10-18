@@ -24,7 +24,16 @@ export class HttpModel implements RlmModel {
     try {
       const response = await fetch(`${config.endpoint.replace(/\/$/, '')}${compatible ? '/chat/completions' : '/api/generate'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(config.timeout_ms) });
       if (!response.ok) throw new RlmError('model', 'Model endpoint refused the request');
-      const result = record(await response.json());
+      const limit = 8 * 1024 * 1024;
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      if (response.body === null) throw new RlmError('model', 'Model response body is missing');
+      for await (const chunk of response.body) {
+        size += chunk.byteLength;
+        if (size > limit) throw new RlmError('model', 'Model response exceeds byte allowance');
+        chunks.push(chunk);
+      }
+      const result = record(JSON.parse(Buffer.concat(chunks).toString('utf8')));
       let output: string;
       let inputTokens: unknown;
       let outputTokens: unknown;

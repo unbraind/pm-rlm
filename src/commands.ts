@@ -20,7 +20,13 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
       if (ctx.options[option] !== undefined) settings[setting] = Number(text(ctx.options[option]));
     }
     if (ctx.options.model !== undefined) settings.model = text(ctx.options.model);
-    const scope = ctx.options.scope === undefined ? {} : parseFilter(JSON.parse(text(ctx.options.scope)));
+    let scope = {};
+    if (ctx.options.scope !== undefined) {
+      let decoded: unknown;
+      try { decoded = JSON.parse(text(ctx.options.scope)); }
+      catch (error) { if (error instanceof SyntaxError) throw new RlmError('invalid', 'Invalid --scope JSON'); throw error; }
+      scope = parseFilter(decoded);
+    }
     return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';

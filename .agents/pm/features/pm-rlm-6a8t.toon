@@ -6,7 +6,7 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:41.735Z"
-updated_at: "2026-10-18T21:59:50.260Z"
+updated_at: "2026-10-18T23:39:02.368Z"
 author: codex-agent
 estimated_minutes: 80
 acceptance_criteria: "Each call is a Task with registered fields and parent link, claims and evidence comments; tree matches call graph."
@@ -14,14 +14,17 @@ parent: pm-rlm-a1ih
 blocked_by: pm-rlm-nmny
 dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
   pm-rlm-nmny,blocked_by,"2026-10-18T20:00:10.619Z",codex-agent,"cli:update:blocked_by",detected
-comments[2]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-18T20:05:14.463Z",codex-agent,"Verified real SDK Task call items, parent/depth graph equality, idempotent result comments, closure and claim release through the SIGKILL and replay suites. Standalone library writes use native schema-field options with public SDK registration, not direct item files."
   "2026-10-18T21:34:24.874Z",codex-agent,"Review round 1 extends terminal ledger evidence: failed child calls persist a typed failure code, append an idempotent RLM refusal comment, update usage, close and release. Resume reconciles terminal result and refusal evidence before returning a completed root. Root interruptions and untyped child interruptions remain resumable; completed roots with legacy unterminated children fail closed."
-files[4]{path,scope}:
+  "2026-10-18T23:30:58.684Z",codex-agent,"Review threads WKg and WKi: privacy checks test raw and JSON-escaped workspace, platform-separated ancestor and active credential needles. Loaded checkpoints validate complete settings, scope, snapshot ids, calls, fragment slices, steps, response usage and optional outcomes before casting. Corrupt null/scalar calls, missing steps, malformed slices and unsafe transport settings produce incomplete refusals for resume and replay; no transport inference occurs. Checkpoint settings reuse the same validator as normal reads."
+  "2026-10-18T23:31:50.720Z",codex-agent,"Revert proof: bypassing the decoded.calls validation loop makes the malformed-checkpoint regression fail with a non-incomplete error; removing validateRlmSettings from load makes unsafe checkpoint settings regressions fail. Removing escaped privacy matching makes the quoted/backslash/control-character secret regression fail. All three reverted functions restored byte-for-byte; complete proof runner passed 16/16."
+files[5]{path,scope}:
   src/ledger.ts,project
   src/types.ts,project
   test/failures.test.ts,project
   test/recovery.test.ts,project
+  test/round2.test.ts,project
 tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/recovery.test.ts,project,codex-agent,"2026-10-18T19:54:21.298Z",local_mutation,feat/rlm
 docs[2]{path,scope}:

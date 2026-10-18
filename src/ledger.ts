@@ -1,7 +1,10 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { acquireLock, certifyCompleteListResult, PmClient, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
-import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError } from './errors.ts';
+import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, text } from './errors.ts';
+import { parseFilter } from './environment.ts';
+import { parseSlice } from './protocol.ts';
+import { validateRlmSettings } from './settings.ts';
 import type { RlmCall, RlmSettings, RlmSlice, RlmState, RlmStep } from './types.ts';
 import type { SchemaFieldDefinition } from '@unbrained/pm-cli/sdk/authoring';
 
@@ -58,6 +61,27 @@ export class RlmLedger {
     try {
       const decoded = record(JSON.parse(root.rlm_state));
       if (decoded.version !== 1 || decoded.run !== run || !Array.isArray(decoded.calls) || decoded.calls.length === 0) throw new Error('Invalid checkpoint');
+      validateRlmSettings(decoded.settings);
+      text(decoded.question); parseFilter(decoded.scope); record(decoded.certificate);
+      integer(decoded.reserved_tokens, 0);
+      if (!Array.isArray(decoded.snapshot)) throw new Error('Invalid snapshot');
+      for (const item of decoded.snapshot) text(record(item).id);
+      for (const entry of decoded.calls) {
+        const call = record(entry);
+        text(call.id); integer(call.depth, 0, 32); text(call.subgoal); text(call.digest); parseSlice(call.slice);
+        if (call.parent !== undefined) text(call.parent);
+        if (call.result !== undefined && typeof call.result !== 'string') throw new Error('Invalid result');
+        if (call.failure !== undefined && !['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay'].includes(text(record(call.failure).code))) throw new Error('Invalid refusal');
+        if (!Array.isArray(call.steps)) throw new Error('Invalid steps');
+        for (const entry of call.steps) {
+          const step = record(entry);
+          text(step.prompt); integer(step.reserved, 0);
+          if (step.response !== undefined) {
+            const response = record(step.response);
+            text(response.text); integer(response.tokens_in, 0); integer(response.tokens_out, 0);
+          }
+        }
+      }
       return decoded as unknown as RlmState;
     } catch { throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
   }

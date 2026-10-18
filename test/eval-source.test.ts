@@ -22,6 +22,13 @@ test('eval copies only the verified revision using real Git and SDK data', async
   const copy = await copyVerifiedRevision(root, revision, base);
   const items = (await readCorpus(copy.workspace)).items;
   assert.equal(items.length, 1); assert.equal(items[0].title, 'Public revision');
+  await writeFile(join(root, '.gitattributes'), '.agents/pm/attribute-data export-ignore\n');
+  await writeFile(join(workspace, 'attribute-data'), '$Format:%H$\n');
+  git('add', '.gitattributes', '.agents/pm/attribute-data'); git('commit', '-m', 'Ignored archive fixture');
+  await assert.rejects(copyVerifiedRevision(root, git('rev-parse', 'HEAD'), join(root, 'ignored-archive')), { code: 'invalid', message: 'Public archive paths differ from verified revision' });
+  await writeFile(join(root, '.gitattributes'), '.agents/pm/attribute-data export-subst\n');
+  git('add', '.gitattributes'); git('commit', '-m', 'Substituted archive fixture');
+  await assert.rejects(copyVerifiedRevision(root, git('rev-parse', 'HEAD'), join(root, 'substituted-archive')), { code: 'invalid', message: 'Public archive bytes differ from verified revision' });
   await writeFile(join(root, 'private.txt'), 'private fixture data');
   await symlink(join(root, 'private.txt'), join(workspace, 'private-link'));
   git('add', '.agents/pm/private-link'); git('commit', '-m', 'Symlink fixture');

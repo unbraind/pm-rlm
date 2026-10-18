@@ -1,4 +1,6 @@
 {
+  "design": "legacy-v1-unbalanced",
+  "status": "historical measurements; superseded question design, not v2 scores",
   "model": "gemma4-local:e2b-q3km",
   "context_tokens": 32768,
   "output_tokens": 512,
