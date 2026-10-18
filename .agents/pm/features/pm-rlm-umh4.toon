@@ -1,0 +1,15 @@
+id: pm-rlm-umh4
+title: Measured public tracker aggregation evaluation
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-18T19:33:05.897Z"
+updated_at: "2026-10-18T19:33:10.807Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: "At least twenty exact questions on copies of verified public trackers compare recursive and truncated one-call runs with the same local model; report accuracy, tokens, calls and wall time honestly."
+parent: pm-rlm-a1ih
+body: ""

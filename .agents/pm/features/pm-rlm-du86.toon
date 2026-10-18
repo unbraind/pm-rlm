@@ -1,0 +1,15 @@
+id: pm-rlm-du86
+title: Bounded local and compatible model adapters
+description: ""
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-18T19:32:52.555Z"
+updated_at: "2026-10-18T19:32:56.407Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: "Ollama and compatible transports validate responses, never persist env keys; malformed actions spend reserved budget; scripted double is test only."
+parent: pm-rlm-a1ih
+body: ""

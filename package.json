@@ -1,0 +1,135 @@
+{
+  "name": "pm-rlm",
+  "version": "2026.10.18",
+  "description": "Recursive language models with a typed pm environment and durable call ledger",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/unbraind/pm-rlm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/unbraind/pm-rlm/issues"
+  },
+  "homepage": "https://github.com/unbraind/pm-rlm#readme",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "manifest.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "ARCHITECTURE.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "npm run build && npm run build:test && node --test test/*.test.ts",
+    "test:install": "npm run build && node --test --test-reporter=spec test/install.acceptance.ts",
+    "prepack": "npm run build",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "check": "npm run typecheck",
+    "docstring": "node scripts/docstring-gate.ts",
+    "lint": "node scripts/lint.ts",
+    "duplication": "node scripts/duplication-gate.ts",
+    "audit:prod": "node --input-type=module -e \"import { spawnSync } from 'node:child_process'; import { devNull } from 'node:os'; const env = { ...process.env, npm_config_userconfig: devNull, NPM_CONFIG_USERCONFIG: devNull }; for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts') delete env[key]; const win = process.platform === 'win32'; const r = spawnSync(win ? 'npm.cmd' : 'npm', ['audit', '--omit=dev', '--ignore-scripts'], { stdio: 'inherit', env, shell: win }); process.exit(r.status ?? 1);\"",
+    "pack:dry-run": "npm pack --dry-run",
+    "changelog": "pm-changelog --pm-root .agents/pm --mode prepend --output CHANGELOG.md --release-version-from-package --date-from-version --since-previous-tag --until-release-tag --item-url-base https://github.com/unbraind/pm-rlm/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "changelog:full": "pm-changelog --pm-root .agents/pm --mode replace --output CHANGELOG.md --all-release-tags --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-rlm/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "changelog:check": "pm-changelog --pm-root .agents/pm --mode replace --output CHANGELOG.md --all-release-tags --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-rlm/blob/main/.agents/pm --respect-item-release --status closed,in_progress --check --pm-bin ./node_modules/.bin/pm --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "release:check": "npm run identity:check && npm run typecheck && npm run lint && npm run duplication && npm run build && npm run docstring && npm run coverage && npm run audit:prod && npm run pack:dry-run && npm run changelog:check && npm run verify:release-publish-attestation && npm run test:install",
+    "prepublishOnly": "npm run release:check",
+    "release:notes": "pm-changelog --pm-root .agents/pm --stdout --since-previous-tag --until-release-tag --release-version-from-package --date-from-version --item-url-base https://github.com/unbraind/pm-rlm/blob/main/.agents/pm --respect-item-release --status closed,in_progress --pm-bin ./node_modules/.bin/pm --github-step-summary --pm-arg=--output-budget --pm-arg=unbounded --pm-arg=--output-limit --pm-arg=unbounded --pm-arg=--output-include --pm-arg=full",
+    "prepare": "node scripts/prepare-merge-driver.ts",
+    "merge:install": "pm merge install",
+    "coverage": "npm run build && npm run build:test && node scripts/coverage-gate.ts",
+    "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
+    "identity:check": "node scripts/identity-gate.ts",
+    "test:live": "node test/live.ts"
+  },
+  "peerDependencies": {
+    "@unbrained/pm-cli": ">=2026.10.18"
+  },
+  "devDependencies": {
+    "@babel/eslint-parser": "8.0.7",
+    "@babel/plugin-syntax-typescript": "8.0.3",
+    "@types/node": "26.6.5",
+    "@unbrained/pm-cli": "2026.10.18",
+    "c8": "^12.0.0",
+    "eslint": "10.12.0",
+    "fast-glob": "3.3.3",
+    "jscpd": "5.4.1",
+    "pm-changelog": "2026.10.13",
+    "pm-ops": "2026.10.14",
+    "typescript": "7.0.2"
+  },
+  "keywords": [
+    "pm-cli",
+    "pm-extension",
+    "rlm",
+    "context",
+    "agents"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "author": "@unbraind",
+  "pm": {
+    "aliases": [
+      "rlm"
+    ],
+    "extensions": [
+      "."
+    ],
+    "catalog": {
+      "display_name": "pm-rlm",
+      "category": "workflow",
+      "summary": "Recursive language models with a typed pm environment and durable call ledger",
+      "tags": [
+        "rlm",
+        "context",
+        "agents"
+      ],
+      "links": {
+        "docs": "https://github.com/unbraind/pm-rlm#readme",
+        "npm": "https://www.npmjs.com/package/pm-rlm",
+        "repository": "https://github.com/unbraind/pm-rlm",
+        "report": "https://github.com/unbraind/pm-rlm/issues"
+      }
+    },
+    "docs": [
+      "README.md",
+      "CHANGELOG.md",
+      "ARCHITECTURE.md"
+    ],
+    "examples": [
+      "README.md"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "coverageGate": {
+    "sources": [
+      "src",
+      "scripts",
+      "index.ts",
+      "eslint.config.ts"
+    ],
+    "tests": [
+      "test/*.test.ts"
+    ],
+    "thresholds": {
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    "ignore": []
+  },
+  "duplicationGate": {
+    "threshold": 0,
+    "minTokens": 50
+  }
+}

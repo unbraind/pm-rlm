@@ -1,0 +1,16 @@
+id: pm-rlm-a1ih
+title: Recursive language models use pm as environment and ledger
+description: ""
+type: Epic
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-18T19:30:47.797Z"
+updated_at: "2026-10-18T19:32:35.298Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: Typed complete reads; durable atomic budgets; crash resume and replay; honest public tracker evaluation; npm and Bun release gates pass at 100 percent coverage.
+comments[1]{created_at,author,text}:
+  "2026-10-18T19:32:35.295Z",codex-agent,"Companion specification: pm-cli-website-y3xy. Read-only reference; implementation and all evidence belong to this package. Plan: certified environment, SDK ledger, atomic reservations and digest resume, bounded adapters and commands, measured local eval, full fleet gates. No agents, publication or remote writes."
+body: ""
