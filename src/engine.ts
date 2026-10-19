@@ -129,7 +129,7 @@ export class RlmEngine {
       if (charge > state.settings.budget_tokens - state.reserved_tokens) throw new RlmError('budget', 'Partition index exceeds remaining budget');
       observation = { data, estimated_tokens: charge, complete_list: state.certificate };
     } else {
-      const context = new RlmContext(this.ledger.workspace, callItems(state, call), state.certificate, state.settings.budget_tokens - state.reserved_tokens);
+      const context = new RlmContext(this.ledger.workspace, callItems(state, call), state.certificate, state.settings.budget_tokens - state.reserved_tokens, state.aggregate_version ?? 1);
       const read = await readAction(context, action);
       charge = read.estimated_tokens;
       observation = read;
@@ -209,7 +209,7 @@ export async function runRlm(question: string, options: RlmRunOptions): Promise<
   await ledger.registerFields();
   const run = await ledger.newRunId();
   const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
-  const state: RlmState = { version: 1, parser_version: 3, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0 };
+  const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0 };
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
   await ledger.materialize(state, state.calls[0]);
   return new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete).run();
@@ -255,7 +255,7 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
         if (child === undefined || await replay(child) !== (step.observation as { result: string }).result) throw new RlmError('replay', 'Recorded child result differs');
       }
       if (action.action !== 'finish' && action.action !== 'spawn') {
-        const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens);
+        const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, state.aggregate_version ?? 1);
         const read = action.action === 'partition'
           ? (() => { const data = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens).map((slice, index) => ({ partition_step: call.steps.indexOf(step), index, estimated_tokens: slice.estimated_tokens })); return { data, estimated_tokens: estimateTokens(data), complete_list: state.certificate }; })()
           : await readAction(context, action);

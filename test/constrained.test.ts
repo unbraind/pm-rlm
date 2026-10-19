@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { pathToFileURL } from 'node:url';
+import { join, resolve, sep } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSWER_SCHEMA, acceptsSchema, compatibleAction } from '../src/action-schema.ts';
 import { Ajv } from 'ajv';
 import { publicSource } from './live.ts';
@@ -144,8 +145,10 @@ test('parser versions preserve strict checkpoints byte for byte on replay and st
 
 /** URL path conversion survives spaces, Unicode and percent-escaped names. */
 test('live source URL converts escaped checkout paths to filesystem paths', () => {
-  assert.equal(publicSource('pm-vcs', pathToFileURL('/workspace/package space % é/worktrees/pm-rlm-v2/test/live-v2.ts').href), '/workspace/package space % é/fleet/pm-vcs/');
-  assert.ok(publicSource('pm-vcs').endsWith('/fleet/pm-vcs/'));
+  const base = pathToFileURL(resolve('workspace/package space % é/worktrees/pm-rlm-v2/test/live-v2.ts'));
+  assert.equal(publicSource('pm-vcs', base.href), fileURLToPath(new URL('../../../fleet/pm-vcs/', base)));
+  assert.ok(publicSource('pm-vcs', base.href).includes('package space % é'));
+  assert.ok(publicSource('pm-vcs').endsWith(join('fleet', 'pm-vcs') + sep));
 });
 
 /** Successful partition references in unversioned checkpoints retain the v1 parser too. */

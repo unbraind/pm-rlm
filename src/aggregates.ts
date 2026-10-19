@@ -52,8 +52,16 @@ function scalar(item: RlmItem, field: string): RlmScalar {
   if (typeof value === 'string' || typeof value === 'boolean') return value;
   throw new RlmError('invalid', 'Grouping requires a scalar field');
 }
+/** Order null, booleans, numbers, then strings; numbers ascend and strings use UTF-16 units. */
+function compareScalars(a: RlmScalar, b: RlmScalar): number {
+  const types = ['object', 'boolean', 'number', 'string'];
+  const order = types.indexOf(typeof a) - types.indexOf(typeof b);
+  if (order !== 0) return order;
+  if (typeof a === 'number') return a - (b as number);
+  return Number(String(a) > String(b)) - Number(String(a) < String(b));
+}
 /** Compute deterministic, scope-local aggregates with no code or query execution. */
-export function aggregateItems(items: readonly RlmItem[], input: RlmAggregate): number | RlmScalar[] | { value: RlmScalar; count: number }[] {
+export function aggregateItems(items: readonly RlmItem[], input: RlmAggregate, version: 1 | 2 = 2): number | RlmScalar[] | { value: RlmScalar; count: number }[] {
   const action = parseAggregate(input);
   const rows = items.filter(item => matches(item, action.filter));
   switch (action.action) {
@@ -67,7 +75,9 @@ export function aggregateItems(items: readonly RlmItem[], input: RlmAggregate): 
         const previous = groups.get(key);
         groups.set(key, { value, count: (previous?.count ?? 0) + 1 });
       }
-      const sorted = [...groups.keys()].sort().map(key => groups.get(key)!);
+      const sorted = version === 1
+        ? [...groups.keys()].sort().map(key => groups.get(key)!)
+        : [...groups.values()].sort((a, b) => compareScalars(a.value, b.value));
       return action.action === 'distinct' ? sorted.map(row => row.value) : sorted;
     }
     case 'argmax': case 'argmin': {

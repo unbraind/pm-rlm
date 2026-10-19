@@ -27,7 +27,8 @@ assert.equal(measurement.model, 'glm-5.3:cloud');
 assert.equal(measurement.context_tokens, 131072);
 assert.equal(measurement.live_invocations, 1);
 const gitEnv = gitEnvironment(process.env);
-const candidates = execFileSync('git', ['log', '--format=%H', '--', ...measurement.paths], { encoding: 'utf8', env: gitEnv }).trim().split('\n');
+const candidates = execFileSync('git', ['log', '--format=%H', '--', ...measurement.paths], { encoding: 'utf8', env: gitEnv }).split('\n').filter(line => line !== '');
+assert.ok(candidates.length > 0, 'No Git history matches the measured source paths');
 const implementationRevision = candidates.find(revision => {
   const committed = createHash('sha256');
   for (const entry of measurement.paths) {

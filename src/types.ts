@@ -104,6 +104,8 @@ export interface RlmCall {
 /** Durable run checkpoint stored through the SDK in the root call's registered field. */
 export interface RlmState {
   version: 1;
+  /** Missing/v1 keeps JSON-key ordering; v2 uses scalar type then value ordering. */
+  aggregate_version?: 1 | 2;
   parser_version?: 1 | 2 | 3;
   run: string;
   question: string;

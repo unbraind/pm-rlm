@@ -80,7 +80,7 @@ test('v2 aggregates refuse executable expressions and invalid field values', asy
   assert.deepEqual(aggregateItems([], { action: 'argmin', filter: {}, numeric_expr: 'priority' }), []);
   assert.equal(aggregateItems([], { action: 'sum', filter: {}, field_expr: 'priority' }), 0);
   assert.equal(aggregateItems([raw({ title: undefined }), raw({ title: null })], { action: 'sum', filter: {}, field_expr: 'len(title)' }), 0);
-  assert.deepEqual(aggregateItems([raw({ extra: true }), raw({ extra: false }), raw({ extra: null }), raw({ extra: undefined })], { action: 'distinct', filter: {}, field: 'extra' }), [false, null, true]);
+  assert.deepEqual(aggregateItems([raw({ extra: true }), raw({ extra: false }), raw({ extra: null }), raw({ extra: undefined })], { action: 'distinct', filter: {}, field: 'extra' }), [null, false, true]);
   assert.deepEqual(aggregateItems(items, { action: 'group_count', filter: {}, field: 'missing' }), [{ value: null, count: 2 }]);
   for (const bad of ['len(title)+1', 'item.priority', 'len(len(title))', 'len(title', '__proto__.x', 'x()', '']) assert.throws(() => parseAggregate({ action: 'sum', field_expr: bad }), { code: 'invalid' });
   for (const bad of [{ action: 'wat' }, { action: 'distinct', field: 'x.y' }, { action: 'count', filter: { wrong: 'x' } }]) assert.throws(() => parseAggregate(bad), { code: 'invalid' });

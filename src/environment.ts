@@ -68,10 +68,12 @@ export class RlmContext {
   private readonly workspace: string;
   private readonly items: readonly RlmItem[];
   private readonly certificate: PmCompleteListCertificate;
+  private readonly aggregateVersion: 1 | 2;
   remaining: number;
   /** Retain a certified snapshot and charge only successful reads. */
-  constructor(workspace: string, items: readonly RlmItem[], certificate: PmCompleteListCertificate, remaining: number) {
+  constructor(workspace: string, items: readonly RlmItem[], certificate: PmCompleteListCertificate, remaining: number, aggregateVersion: 1 | 2 = 2) {
     integer(remaining, 0);
+    this.aggregateVersion = aggregateVersion;
     this.workspace = workspace; this.items = structuredClone(items); this.certificate = structuredClone(certificate); this.remaining = remaining;
   }
   /** Charge the entire delivered representation before revealing it. */
@@ -129,7 +131,7 @@ export class RlmContext {
   }
   /** Execute a typed aggregate over this frozen scope and charge the entire result. */
   aggregate(action: RlmAggregate): RlmRead<ReturnType<typeof aggregateItems>> {
-    return this.deliver(aggregateItems(this.items, action));
+    return this.deliver(aggregateItems(this.items, action, this.aggregateVersion));
   }
   /** Return lossless packed slices; the whole partition response is also charged. */
   partition(filter: RlmFilter, maxTokens: number): RlmRead<RlmSlice[]> {
