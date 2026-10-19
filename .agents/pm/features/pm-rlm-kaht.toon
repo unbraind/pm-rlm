@@ -6,10 +6,58 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:58.445Z"
-updated_at: "2026-10-18T19:33:04.203Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-19T04:52:47.578Z"
 author: codex-agent
+estimated_minutes: 60
 acceptance_criteria: "Run, tree, resume and replay use host TOON and JSON renderers; SDK and command examples and exit codes documented."
 parent: pm-rlm-a1ih
+blocked_by: pm-rlm-kgwh
+dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
+  pm-rlm-kgwh,blocked_by,"2026-10-18T20:00:22.647Z",codex-agent,"cli:update:blocked_by",detected
+comments[8]{created_at,author,text}:
+  "2026-10-18T20:05:23.028Z",codex-agent,"Real host command tests pass for TOON/JSON tree and replay plus run/resume/full-tree dispatch over HTTP. Packed npm/npx and Bun/bunx consumers passed discovery and command-family acceptance. README covers installation, exported APIs, every command, settings, measured eval and exit codes; ARCHITECTURE records ledger and resume invariants."
+  "2026-10-18T23:30:56.180Z",codex-agent,"Review thread WKf: malformed --scope JSON now reports rlm invalid: Invalid --scope JSON with exit 2. Empty scope text retains its existing validation diagnosis, and an unexpected malformed settings file retains the generic command-integrity failure. Focused real-tracker regression covers all three paths."
+  "2026-10-19T03:25:31.480Z",codex-agent,"Command regression covers all numeric flags against blanks, signs, NaN, Infinity, exponent/hex forms, fractions, padding and overflow; model, scope and every positional operand reject blanks before creating tracker items. Zero depth, a nonblank model tag and JSON whitespace remain supported. Documented the exact CLI operand policy in README.md."
+  "2026-10-19T03:31:16.666Z",codex-agent,"Revert evidence: replacing strict numeric parsing with Number(text(...)) fails the operand regression; removing only the nonblank string guard also fails. Removing only the optional repository-root guard fails the script-entry regression. Valid zero depth and scope JSON whitespace remain accepted. All sources restored byte-for-byte."
+  "2026-10-19T03:35:42.926Z",codex-agent,"Final linked-test execution: pm test pm-rlm-kaht --run --only-last --progress passed 1/1 commands with 6/6 focused regressions. Both full release checks passed 108/108 unit tests and all unchanged gates. Operand and quality-root behavior is documented; no command or renderer regressions."
+  "2026-10-19T04:32:35.309Z",codex-agent,"DJ5 and CLI sweep: all runCommand rejection tests assert exact usage exit 2 or budget exit 3. Added exact status 1 assertions to report and prepare-launcher error cases; behavioral proof assertions also require exit 1. DKB: npm and Bun packed consumers each create a genuine SDK-backed run using the installed package and an LM-only double, then execute the installed host rlm tree command and assert the closed call, answer, parent, depth and token values. Help and description checks remain. Two independent consumer tests permit separate dispatch revert proofs."
+  "2026-10-19T04:34:38.678Z",codex-agent,"Revert evidence: changing usage exit 2 to 1 fails the dispatcher regression. Independently disabling tree dispatch in the compiled artifact fails the npm packed consumer, and separately fails the Bun packed consumer. Each case loads the newly built tarball in an independent consumer, not the source entry point. Restore rebuilds passed; normal packed dispatch passed 2/2 consumers."
+  "2026-10-19T04:39:15.868Z",codex-agent,"Generic CLI fallback regression injects an actual checkpoint history write failure after the real HTTP model response, asserts usage exit 2 and the sanitized public message, and proves internal SDK diagnostics cannot escape. Its focused revert fails when the command forwards unexpected Error.message. This preserves generic-error coverage after read failures acquired typed incomplete refusals."
+files[10]{path,scope}:
+  index.ts,project
+  manifest.json,project
+  src/commands.ts,project
+  src/engine.ts,project
+  src/types.ts,project
+  test/commands.test.ts,project
+  test/install.acceptance.ts,project
+  test/prepare-merge-driver.test.ts,project
+  test/round2.test.ts,project
+  test/round4.test.ts,project
+tests[3]:
+  - command: node --test test/commands.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T19:57:50.693Z"
+      source_kind: local_mutation
+      source_ref: feat/rlm
+  - command: node --test test/round4.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T03:26:55.105Z"
+      source_kind: local_mutation
+      source_ref: feat/rlm
+  - command: "npm run test:install"
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T04:34:06.501Z"
+      source_kind: local_mutation
+      source_ref: feat/rlm
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""

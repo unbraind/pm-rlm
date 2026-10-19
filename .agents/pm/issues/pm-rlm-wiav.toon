@@ -1,0 +1,17 @@
+id: pm-rlm-wiav
+title: Update development glob dependency chain for security advisory
+description: "npm ci reports a high-severity development dependency chain: fast-glob, micromatch and braces. Advisory https://github.com/advisories/GHSA-vfj7-8cjw-p6xm. Production audit remains a separate required release gate. Dependency bumps belong to the maintainer or Dependabot, outside review round 1."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-18T21:29:08.016Z"
+updated_at: "2026-10-18T21:34:46.132Z"
+author: codex-agent
+estimated_minutes: 45
+acceptance_criteria: Update the development glob dependency chain without changing gate thresholds; npm audit reports no affected braces chain and npm/Bun release checks remain green.
+parent: pm-rlm-a1ih
+files[2]{path,scope}:
+  package-lock.json,project
+  package.json,project
+body: ""

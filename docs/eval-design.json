@@ -1,0 +1,190 @@
+{
+  "design": "pm-rlm-balanced-v2",
+  "sources": [
+    {
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "items": 145,
+      "bytes": 814268
+    },
+    {
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "items": 12,
+      "bytes": 54941
+    }
+  ],
+  "questions": 24,
+  "histogram": {
+    "0": 1,
+    "1": 1,
+    "4": 2,
+    "32": 1,
+    "68": 1,
+    "167": 1,
+    "208": 1,
+    "277": 1,
+    "1436": 1,
+    "3154": 1,
+    "3355": 1,
+    "12196": 1,
+    "pm-vcs-5m22": 1,
+    "pm-vcs-6qva": 1,
+    "pm-vcs-ag8y": 1,
+    "pm-vcs-1v6x": 1,
+    "pm-vcs-b7cb": 1,
+    "pm-lint-8kis": 2,
+    "pm-lint-trap": 2,
+    "pm-lint-1c6j": 1,
+    "pm-lint-epic": 1
+  },
+  "most_common": 2,
+  "zero": 1,
+  "tasks": [
+    {
+      "repo": "pm-vcs",
+      "question": "How many items have type Feature and status open? Answer only the integer or id.",
+      "answer": "4",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "What is the sum of UTF-8 byte lengths of title across items with status canceled, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "68",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "What is the sum of UTF-8 byte lengths of description across items with status canceled, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "277",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Epic, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "3355",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-vcs-5m22",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "Which of items of type Decision has the largest UTF-8 byte length of title, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-vcs-6qva",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "Which of items of type Feature has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-vcs-ag8y",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "Which of items of type Issue has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-vcs-1v6x",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Task, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "3154",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Issue, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "12196",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "Which of items with status open has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-vcs-b7cb",
+      "scope": {}
+    },
+    {
+      "repo": "pm-vcs",
+      "question": "How many items of type Decision are there? Answer only the integer or id.",
+      "answer": "4",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "How many items with status in_progress are there? Answer only the integer or id.",
+      "answer": "1",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "What is the sum of UTF-8 byte lengths of title across items of type Epic, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "32",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Epic, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "167",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "What is the sum of UTF-8 byte lengths of description across items with status closed, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "1436",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-lint-8kis",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "Which of items of type Feature has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-lint-trap",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "How many items have type Feature and status open? Answer only the integer or id.",
+      "answer": "0",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Task, treating missing values as empty strings? Answer only the integer or id.",
+      "answer": "208",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "Which of items with status closed has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-lint-1c6j",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "Which of all items has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-lint-trap",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of title, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-lint-8kis",
+      "scope": {}
+    },
+    {
+      "repo": "pm-lint",
+      "question": "Which Epic has the most direct closed children, breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "answer": "pm-lint-epic",
+      "scope": {}
+    }
+  ],
+  "model_runs": 0
+}

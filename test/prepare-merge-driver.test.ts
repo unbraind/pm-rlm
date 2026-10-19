@@ -27,7 +27,7 @@ const posixOnly = { skip: process.platform === "win32" };
 /** Every merge driver `.gitattributes` asks Git to use, e.g. `pm-history` from `merge=pm-history`. */
 const declaredDrivers = [
   ...new Set([...readFileSync(join(root, ".gitattributes"), "utf8").matchAll(/\bmerge=([\w-]+)/g)].map((match) => match[1])),
-].sort();
+].filter(name => name !== 'text').sort();
 
 /**
  * Create a consumer checkout: a fresh Git repository carrying this
@@ -73,7 +73,7 @@ function stubPm(name: string, status: number, body = ""): string {
  * @param extraEnv - Lifecycle variables such as `npm_command`.
  */
 function prepare(cwd: string, path: string, extraEnv: NodeJS.ProcessEnv = {}): SpawnSyncReturns<string> {
-  return spawnSync(process.execPath, [launcher], { cwd, encoding: "utf8", env: { ...process.env, PATH: path, ...extraEnv } });
+  return spawnSync(process.execPath, [launcher], { cwd, encoding: "utf8", env: { ...process.env, PATH: path, ...extraEnv, PM_PATH: join(cwd, ".agents", "pm") } });
 }
 
 /** The merge drivers registered in a checkout's LOCAL Git config, by name. */
@@ -90,7 +90,7 @@ function registeredDrivers(cwd: string): string[] {
 test("a full install registers every merge driver .gitattributes declares", posixOnly, () => {
   const directory = checkout("full", "pinned");
   assert.deepEqual(registeredDrivers(directory), []);
-  const result = prepare(directory, hostPath);
+  const result = prepare(directory, hostPath, { PM_PATH: join(root, ".agents", "pm") });
   assert.equal(result.status, 0, result.stderr);
   assert.ok(declaredDrivers.length > 0, ".gitattributes declares no pm merge drivers");
   assert.deepEqual(registeredDrivers(directory), declaredDrivers);
@@ -106,7 +106,7 @@ test("an omit-dev checkout without pm-ops skips with one notice and registers no
 
 test("a pm-ops too old to export the launcher entry fails the install", posixOnly, () => {
   const result = prepare(checkout("stale", "stale"), hostPath);
-  assert.notEqual(result.status, 0);
+  assert.equal(result.status, 1);
   assert.match(result.stderr, /ERR_PACKAGE_PATH_NOT_EXPORTED/);
 });
 
@@ -114,7 +114,7 @@ test("an incomplete pm-ops directory fails instead of skipping merge-driver inst
   const directory = checkout("incomplete", "absent");
   mkdirSync(join(directory, "node_modules", "pm-ops"), { recursive: true });
   const result = prepare(directory, hostPath);
-  assert.notEqual(result.status, 0);
+  assert.equal(result.status, 1);
   assert.match(result.stderr, /MODULE_NOT_FOUND/);
   assert.doesNotMatch(result.stderr, /skipping merge-driver install/);
 });
@@ -134,7 +134,7 @@ test("a malformed lookup path preserves the original installer failure", () => {
   const directory = checkout("malformed-lookup", "absent");
   writeFileSync(join(directory, "node_modules"), "not a directory\n");
   const result = prepare(directory, hostPath);
-  assert.notEqual(result.status, 0);
+  assert.equal(result.status, 1);
   assert.match(result.stderr, /MODULE_NOT_FOUND/);
   assert.doesNotMatch(result.stderr, /ENOTDIR|skipping merge-driver install/);
 });

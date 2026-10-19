@@ -1,9 +1,9 @@
+import { gitEnvironment } from './environment.ts';
 /** Enforce the tracked identity baseline and reject newly added private home paths. */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { gitEnvironment } from '../src/git-environment.ts';
-import { isMainInvocation } from './main-invocation.ts';
+import { commandRoot, isMainInvocation } from './main-invocation.ts';
 
 /** Read policy entries while ignoring comments and blank lines. */
 function policyEntries(root: string, name: string): string[] {
@@ -16,7 +16,10 @@ export function auditIdentities(root: string): string[] {
   if (baseline.length !== 1 || !/^[a-f0-9]{40}$/i.test(baseline[0])) throw new Error('Invalid identity baseline');
   const approved = new Set(policyEntries(root, 'approved-git-identities.txt'));
   if (approved.size === 0) throw new Error('Approved identity list is empty');
-  const git = (args: readonly string[]): string => execFileSync('git', [...args], { cwd: root, env: gitEnvironment(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  const env = gitEnvironment(process.env);
+  env.GIT_CONFIG_GLOBAL = '/dev/null';
+  env.GIT_CONFIG_NOSYSTEM = '1';
+  const git = (args: readonly string[]): string => execFileSync('git', [...args], { cwd: root, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
   git(['merge-base', '--is-ancestor', baseline[0], 'HEAD']);
   const commits = git(['rev-list', `${baseline[0]}..HEAD`]).split('\n').filter(Boolean);
   const violations: string[] = [];
@@ -25,7 +28,7 @@ export function auditIdentities(root: string): string[] {
     if (!approved.has(author)) violations.push(`${commit}: unapproved author identity`);
     if (!approved.has(committer)) violations.push(`${commit}: unapproved committer identity`);
     const patch = git(['show', '--format=', '--diff-merges=first-parent', '--no-ext-diff', '--no-textconv', '--unified=0', commit]);
-    if (patch.split('\n').some(line => line.startsWith('+') && !line.startsWith('+++') && /\/(?:home|Users)\/|\/(?:root)(?:\/|\b)|[A-Za-z]:[\\/]Users[\\/]/.test(line))) {
+    if (patch.split('\n').some(line => line.startsWith('+') && !line.startsWith('+++') && /(?<!\w)(?:[\\/](?:home|Users)[\\/]|[\\/]root(?:[\\/]|\b))/i.test(line))) {
       violations.push(`${commit}: added absolute home path`);
     }
   }
@@ -45,5 +48,6 @@ export function runIdentityGate(root: string, output: (line: string) => void = c
 }
 
 if (isMainInvocation(process.argv, import.meta.url)) {
-  process.exitCode = runIdentityGate(process.argv[2] ?? process.cwd());
+  const root = commandRoot(process.argv[2]);
+  if (root !== undefined) process.exitCode = runIdentityGate(root);
 }

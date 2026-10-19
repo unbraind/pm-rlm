@@ -6,10 +6,38 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:41.735Z"
-updated_at: "2026-10-18T19:32:44.898Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-19T04:52:46.641Z"
 author: codex-agent
+estimated_minutes: 80
 acceptance_criteria: "Each call is a Task with registered fields and parent link, claims and evidence comments; tree matches call graph."
 parent: pm-rlm-a1ih
+blocked_by: pm-rlm-nmny
+dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
+  pm-rlm-nmny,blocked_by,"2026-10-18T20:00:10.619Z",codex-agent,"cli:update:blocked_by",detected
+comments[8]{created_at,author,text}:
+  "2026-10-18T20:05:14.463Z",codex-agent,"Verified real SDK Task call items, parent/depth graph equality, idempotent result comments, closure and claim release through the SIGKILL and replay suites. Standalone library writes use native schema-field options with public SDK registration, not direct item files."
+  "2026-10-18T21:34:24.874Z",codex-agent,"Review round 1 extends terminal ledger evidence: failed child calls persist a typed failure code, append an idempotent RLM refusal comment, update usage, close and release. Resume reconciles terminal result and refusal evidence before returning a completed root. Root interruptions and untyped child interruptions remain resumable; completed roots with legacy unterminated children fail closed."
+  "2026-10-18T23:30:58.684Z",codex-agent,"Review threads WKg and WKi: privacy checks test raw and JSON-escaped workspace, platform-separated ancestor and active credential needles. Loaded checkpoints validate complete settings, scope, snapshot ids, calls, fragment slices, steps, response usage and optional outcomes before casting. Corrupt null/scalar calls, missing steps, malformed slices and unsafe transport settings produce incomplete refusals for resume and replay; no transport inference occurs. Checkpoint settings reuse the same validator as normal reads."
+  "2026-10-18T23:31:50.720Z",codex-agent,"Revert proof: bypassing the decoded.calls validation loop makes the malformed-checkpoint regression fail with a non-incomplete error; removing validateRlmSettings from load makes unsafe checkpoint settings regressions fail. Removing escaped privacy matching makes the quoted/backslash/control-character secret regression fail. All three reverted functions restored byte-for-byte; complete proof runner passed 16/16."
+  "2026-10-19T03:25:34.730Z",codex-agent,"Privacy regression permits public URLs for shallow POSIX and Windows trackers while refusing actual workspace roots, siblings under non-root private ancestors, case/separator variants and UNC paths. Root-workspace refusal remains intentional. Existing exact secret and JSON-escaped checks remain in force."
+  "2026-10-19T03:31:17.591Z",codex-agent,"Revert evidence: unconditionally adding the grandparent needle fails the shallow-root regression; removing only Windows matching fails drive/UNC/casing/escaped-path regression. Existing escaped-secret regression still fails independently when only its escaping guard is removed. All sources restored byte-for-byte."
+  "2026-10-19T04:44:27.529Z",codex-agent,"Final read/write audit reproduced a classification error in the new broad boundary: treating comments(add, ifAbsent) as a read allowed a failed child evidence write to become a parent tool refusal, letting the root finish with the child still open. Narrowed sdkRead to actual reads; evidence comment additions remain fatal mutations. Real SDK regression now aborts the parent, repairs the scratch history fault, resumes with no repeated child inference, closes both rows, and replays the same answer. Comment reads are already inside the certified full-item snapshot. This supersedes the earlier comment-deduplication wording; no history was rewritten."
+  "2026-10-19T04:47:02.471Z",codex-agent,"Read/write classification revert proof passed: restoring sdkRead around comments(add, ifAbsent) makes the failed-child-evidence regression report a successful root and fail its assertion. The fixed code aborts before any parent result/observation is recorded, preserves the completed child result, repairs evidence on resume without another child inference, closes both items and replays the same answer. Original source restored byte-for-byte."
+files[9]{path,scope}:
+  src/errors.ts,project
+  src/ledger.ts,project
+  src/settings.ts,project
+  src/types.ts,project
+  test/failures.test.ts,project
+  test/recovery.test.ts,project
+  test/round2.test.ts,project
+  test/round4.test.ts,project
+  test/round5.test.ts,project
+tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/recovery.test.ts,project,codex-agent,"2026-10-18T19:54:21.298Z",local_mutation,feat/rlm
+  node --test test/round4.test.ts,project,codex-agent,"2026-10-19T03:26:58.265Z",local_mutation,feat/rlm
+  node --test test/round5.test.ts,project,codex-agent,"2026-10-19T04:34:05.632Z",local_mutation,feat/rlm
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
+  README.md,project
 body: ""
