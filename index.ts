@@ -13,7 +13,7 @@ export { HttpModel } from './src/adapters.ts';
 /** Expose settings resolution with flag precedence. */
 export { readRlmSettings, writeRlmSettings } from './src/settings.ts';
 /** Expose public environment, ledger and model contracts. */
-export type { RlmItem, RlmFilter, RlmRead, RlmSlice, RlmFragment, RlmSettings, RlmModel, ModelRequest, ModelResponse, RlmAction, RlmState, RlmCall, RlmStep, RlmResult } from './src/types.ts';
+export type { RlmAggregate, RlmScalar, RlmItem, RlmFilter, RlmRead, RlmSlice, RlmFragment, RlmSettings, RlmModel, ModelRequest, ModelResponse, RlmAction, RlmState, RlmCall, RlmStep, RlmResult } from './src/types.ts';
 /** Expose explicit run and environment creation parameters. */
 export type { RlmRunOptions } from './src/engine.ts';
 /** Expose independent environment options. */

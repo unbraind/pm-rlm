@@ -57,7 +57,7 @@ test('malformed child history produces a recorded incomplete refusal without str
   assert.equal(result.answer, 'root recovered');
   const state = await new RlmLedger(workspace).load(result.run);
   assert.equal(state.calls.length, 2); assert.ok(state.calls.every(call => call.result !== undefined));
-  assert.deepEqual(state.calls[1].steps[0].observation, { refused: 'incomplete' });
+  assert.partialDeepStrictEqual(state.calls[1].steps[0].observation, { refused: 'incomplete' });
   for (const call of state.calls) assert.equal((await client.get(call.id, { depth: 'full' })).item.status, 'closed');
   const count = rootModel.requests.length;
   assert.equal((await resumeRlm(workspace, result.run, rootModel)).answer, result.answer);

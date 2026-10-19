@@ -44,7 +44,7 @@ test('oversized read is refused before charging and root can finish', async t =>
   const model = new ScriptedModel((_request, index) => JSON.stringify(index === 0 ? { action: 'get', id: item.id, fields: ['description'] } : { action: 'finish', answer: 'recovered' }));
   const result = await runRlm('root', { workspace, model, settings: { context_tokens: 4096, output_tokens: 96 } }).catch(error => assert.fail(`Run should recover: ${String(error)}`));
   const state = await new RlmLedger(workspace).load(result.run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
   assert.equal(result.reserved_tokens, state.calls[0].steps.reduce((sum, step) => sum + step.reserved, 0));
   assert.equal((await replayRlm(workspace, result.run)).answer, 'recovered');
 });
@@ -130,7 +130,7 @@ test('partition references fail closed and completed oversized child results rem
   });
   const largeRun = await runRlm('large child', { workspace, model: large, settings: { context_tokens: 4096 } });
   const state = await new RlmLedger(workspace).load(largeRun.run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
   assert.equal(state.calls[1].result?.length, 3000);
   assert.equal((await replayRlm(workspace, largeRun.run)).answer, 'recovered');
 });
@@ -179,7 +179,7 @@ test('partition index refuses the exact remaining run budget before delivery', a
   await assert.rejects(runRlm('partition budget', { workspace, model, settings: { budget_tokens: estimateTokens(prompt) + config.output_tokens * 16 } }), { code: 'budget' });
   const [run] = await rootIds(workspace);
   const state = await new RlmLedger(workspace).load(run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
   assert.equal(state.calls[0].steps.length, 1);
 });
 

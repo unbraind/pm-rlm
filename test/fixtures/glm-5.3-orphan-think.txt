@@ -1,0 +1,5 @@
+The question asks: How many items have type Feature and status open?
+
+I can use the count action with a filter: {"action":"count","filter":{"type":"Feature","status":"open"}}
+
+That's a single aggregate action that should give the exact answer.</think>{"action":"count","filter":{"type":"Feature","status":"open"}}

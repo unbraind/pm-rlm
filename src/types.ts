@@ -60,8 +60,17 @@ export interface RlmModel {
   name: string;
   complete(request: ModelRequest): Promise<ModelResponse>;
 }
+/** Scalar grouping values; absent values are represented as null. */
+export type RlmScalar = string | number | boolean | null;
+/** Deterministic aggregate requests; expression syntax is validated without executing code. */
+export type RlmAggregate =
+  | { action: 'count'; filter: RlmFilter }
+  | { action: 'sum'; filter: RlmFilter; field_expr: string }
+  | { action: 'distinct' | 'group_count'; filter: RlmFilter; field: string }
+  | { action: 'argmax' | 'argmin'; filter: RlmFilter; numeric_expr: string };
 /** Supported bounded JSON actions. */
 export type RlmAction =
+  | RlmAggregate
   | { action: 'list'; filter: RlmFilter }
   | { action: 'search'; query: string; limit: number }
   | { action: 'get'; id: string; fields: string[] }

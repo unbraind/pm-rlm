@@ -1,0 +1,31 @@
+id: pm-rlm-v2parse
+title: Tolerant action envelopes and corrective refusal feedback
+description: "Diagnose retained cloud response shapes, preserve action schema validation, reject ambiguity and test correction feedback."
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-19T05:53:46.263Z"
+updated_at: "2026-10-19T06:06:53.414Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: Real-shape diagnosis; parser and feedback regressions with behavioral revert proofs
+parent: pm-rlm-a1ih
+comments[4]{created_at,author,text}:
+  "2026-10-19T05:54:25.038Z",codex-agent,"Diagnosis before edits: the historical cloud harness deletes scratch ledgers in finally and publishes only response hashes. The 451 glm invalid-action outputs are unavailable, so their shapes cannot honestly be classified. A surviving older local-model ledger contains six exact responses {\"action\":\"finish\",\"answer\":0}; these remain schema refusals. Historical question text conflicted with JSON protocol; merged main already makes questions format-neutral. Plan: wrapper extraction without key coercion, ambiguity refusal, specific correction feedback, recorded-shape regression plus synthetic wrapper edges; retain local-only new-run evidence."
+  "2026-10-19T06:00:45.080Z",codex-agent,"Implementation preserves string answer types and rejects duplicate keys, array envelopes, multiple objects and unterminated reasoning. Braces, escaped quotes and reasoning-like text inside JSON strings remain data. Both eval arms share envelope extraction for fair answer formatting. Initial focused suite passes 4/4. Full coverage initially found one untested absent-field branch; added a real-tracker boundary case. Shared eval helpers remove duplicate orchestration without lowering the zero-duplication threshold."
+  "2026-10-19T06:01:36.846Z",codex-agent,"Behavioral revert proofs: node test/v2-revert.ts passed 8/8. Parser envelope extraction, corrective feedback, count, sum, distinct, group_count, argmax and argmin each caused its targeted regression to fail with exit 1 when only that production behavior was removed; all source bytes restored. npx pm test pm-rlm-v2parse --run --progress passed both linked commands (focused tests 4/4 plus proofs 8/8). The tracker has result tracking disabled, so this comment is the durable result receipt. Full coverage passed 120/120 tests and 100/100/100/100 over 21 source files."
+  "2026-10-19T06:06:53.414Z",codex-agent,"New exact response retained in test/fixtures/glm-5.3-orphan-think.txt: prose, one count JSON example, an unmatched closing think tag, then a second identical count JSON object. It contains no workspace body or answer. The unchanged measured parser refuses this ambiguous envelope; with an explicit opening reasoning delimiter the same content parses. Added that recorded-shape regression without changing production behavior or tuning on answers."
+files[5]{path,scope}:
+  src/engine.ts,project
+  src/protocol.ts,project
+  test/fixtures/glm-5.3-orphan-think.txt,project
+  test/v2-revert.ts,project
+  test/v2.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/v2.test.ts,project,codex-agent,"2026-10-19T06:00:19.320Z",local_mutation,feat/protocol-and-aggregates
+  node test/v2-revert.ts,project,codex-agent,"2026-10-19T06:00:23.981Z",local_mutation,feat/protocol-and-aggregates
+docs[1]{path,scope}:
+  docs/ACTION-DIAGNOSIS.md,project
+body: ""

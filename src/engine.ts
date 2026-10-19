@@ -56,6 +56,7 @@ function resolveSlice(state: RlmState, call: RlmCall, slice: RlmSlice | { partit
 async function readAction(context: RlmContext, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'partition' }>) {
   switch (action.action) {
     case 'list': return context.list(action.filter);
+    default: return context.aggregate(action);
     case 'search': return context.search(action.query, action.limit);
     case 'get': return context.get(action.id, action.fields);
     case 'history': return context.history(action.id, action);
@@ -153,7 +154,7 @@ export class RlmEngine {
           if (action.action !== 'finish') step.observation = await this.observe(action, call);
         } catch (error) {
           if (!(error instanceof RlmError)) throw error;
-          step.observation = { refused: error.code };
+          step.observation = { refused: error.code, reason: error.message };
         }
         if (action?.action === 'finish') {
           Object.assign(call, { result: action.answer });

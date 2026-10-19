@@ -1,0 +1,62 @@
+id: pm-rlm-v2agg
+title: Typed snapshot aggregation and one measured cloud comparison
+description: "Budgeted count, sum, distinct, group_count and extrema; frozen-snapshot replay; one pinned seeded cloud evaluation."
+type: Feature
+pm_format_version: 2
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-19T05:53:47.468Z"
+updated_at: "2026-10-19T06:15:50.372Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+acceptance_criteria: Six aggregate revert proofs; npm and Bun release gates; one honest 24-question comparison
+parent: pm-rlm-a1ih
+comments[6]{created_at,author,text}:
+  "2026-10-19T05:54:26.312Z",codex-agent,"Plan fixed before live inference: six deterministic snapshot aggregates with no evaluation or code execution; len(field) means UTF-8 bytes, numeric fields must be finite, extrema return sorted tied ids, missing text is empty. Reuse existing budget, projection, ledger and replay paths. Pin both public source revisions and verify the same 24 selected questions. One invocation only, no answer tuning; include cheap generic precomputed-tool context arm if it fits."
+  "2026-10-19T06:00:47.940Z",codex-agent,"Optional third arm omitted before inference to conserve owner quota: it requires 24 additional full cloud requests. The new harness verifies public visibility, exact historical revisions, complete corpus counts/bytes and all 24 seeded questions/truths before its exclusive once-only marker. Successful new runs are replayed. New raw response evidence stays in ignored local artifacts."
+  "2026-10-19T06:01:38.699Z",codex-agent,"Revert proof receipt: count, sum, distinct, group_count, argmax and argmin each independently fail the exact scoped observation regression when only that operation is removed. All six passed behavioral revert verification in node test/v2-revert.ts; source bytes restored. Starting the only authorized cloud invocation with the implementation frozen."
+  "2026-10-19T06:02:18.734Z",codex-agent,"Preflight refused before any model request and before creation of the once-only marker: removing the historical answer-format suffix had also changed seeded hash ranking. Preserve that suffix only in the hash input while retaining format-neutral emitted questions. This restores historical task identity rather than selecting a new evaluation set. No cloud quota consumed and no answer-dependent protocol tuning."
+  "2026-10-19T06:09:33.391Z",codex-agent,"Both linked release checks passed under isolated Git identity settings: each ran 120/120 tests, 100 percent in all four coverage dimensions across 21 required sources, 72/72 documented declarations, zero duplication and 2/2 packed consumer tests. Added a recorded-shape test afterward (focused suite now 5/5) and strengthened packed npm/npx and Bun/bunx fixtures to demand a delivered count observation before a prose-wrapped finish. The strengthened packed tests pass 2/2. Final gates will run after the measurement/report and tracker writes are complete."
+  "2026-10-19T06:15:50.358Z",codex-agent,"Current implementation gates pass under isolated HOME and Git identity: npm run release:check and bun run release:check each pass 121/121 tests plus 2/2 packed npm/npx and Bun/bunx consumers. Coverage remains 100/100/100/100 over 21 required source files; docstrings 72/72; duplication zero; production audit passes. Packed fixtures verify a delivered count observation and tolerate a prose-wrapped string finish. Source, protocol and eval implementation remain frozen during the one live run. Release workflows remain disabled for automatic publishing."
+files[8]{path,scope}:
+  index.ts,project
+  src/aggregates.ts,project
+  src/environment.ts,project
+  src/types.ts,project
+  test/eval-questions.ts,project
+  test/install.acceptance.ts,project
+  test/live-v2.ts,project
+  test/report-v2.ts,project
+tests[3]:
+  - command: node --test test/v2.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T06:00:21.520Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: "npm run release:check"
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T06:00:26.088Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+    updated_by: codex-agent
+    updated_at: "2026-10-19T06:10:43.736Z"
+  - command: "bun run release:check"
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T06:00:28.551Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+    updated_by: codex-agent
+    updated_at: "2026-10-19T06:10:44.919Z"
+docs[1]{path,scope}:
+  ARCHITECTURE.md,project
+body: ""

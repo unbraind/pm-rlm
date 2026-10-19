@@ -1,5 +1,6 @@
 import { estimateTokens, integer, record, RlmError, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
+import { parseAggregate } from './aggregates.ts';
 import type { RlmAction, RlmSlice } from './types.ts';
 
 /** Validate model-supplied slices before they enter the durable ledger. */
@@ -17,12 +18,60 @@ export function parseSlice(value: unknown): RlmSlice {
   if (source.estimated_tokens !== estimateTokens(fragments)) throw new RlmError('invalid', 'Slice estimate does not match its contents');
   return { fragments, estimated_tokens: source.estimated_tokens };
 }
+/** Extract one balanced JSON object, tolerating presentation but refusing ambiguous envelopes. */
+export function extractObject(output: string): string {
+  let clean = output.trim();
+  for (;;) {
+    const reasoning = clean.search(/<think>/i);
+    const object = clean.indexOf('{');
+    if (reasoning < 0 || (object >= 0 && object < reasoning)) break;
+    const closing = clean.slice(reasoning + 7).search(/<\/think>/i);
+    if (closing < 0) throw new RlmError('invalid', 'Unterminated reasoning block');
+    clean = clean.slice(0, reasoning) + clean.slice(reasoning + 7 + closing + 8);
+  }
+  const start = clean.indexOf('{');
+  if (start < 0) throw new RlmError('invalid', 'Expected one JSON action object');
+  if (/[[\]}]/.test(clean.slice(0, start))) throw new RlmError('invalid', 'Ambiguous action envelope');
+  clean = clean.slice(start);
+  let depth = 0;
+  let quoted = false;
+  let escaped = false;
+  let stringStart = 0;
+  const keys: Set<string>[] = [];
+  for (let index = 0; index < clean.length; index++) {
+    const char = clean[index];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') {
+        quoted = false;
+        if (clean.slice(index + 1).trimStart().startsWith(':')) {
+          const key: unknown = JSON.parse(clean.slice(stringStart, index + 1));
+          const objectKeys = keys[keys.length - 1];
+          if (objectKeys.has(String(key))) throw new RlmError('invalid', 'Ambiguous duplicate JSON key');
+          objectKeys.add(String(key));
+        }
+      }
+    } else if (char === '"') { quoted = true; stringStart = index; }
+    else if (char === '{') { depth++; keys.push(new Set()); }
+    else if (char === '}') {
+      keys.pop();
+      if (--depth !== 0) continue;
+      const tail = clean.slice(index + 1).replace(/<think>[\s\S]*?<\/think>/gi, '');
+      if (/<\/?think\b/i.test(tail)) throw new RlmError('invalid', 'Unterminated reasoning block');
+      if (/[{}[\]]/.test(tail)) throw new RlmError('invalid', 'Ambiguous action envelope: return exactly one object');
+      return clean.slice(0, index + 1);
+    }
+  }
+  throw new RlmError('invalid', 'Unterminated JSON action object');
+}
 /** Parse the complete bounded protocol; malformed steps remain billable refusals. */
 export function parseAction(output: string): RlmAction {
   let decoded: unknown;
-  try { decoded = JSON.parse(output); } catch { throw new RlmError('invalid', 'Model output is not valid JSON'); }
+  try { decoded = JSON.parse(extractObject(output)); } catch (error) { if (error instanceof RlmError) throw error; throw new RlmError('invalid', 'Model output is not valid JSON'); }
   const value = record(decoded);
   switch (value.action) {
+    case 'count': case 'sum': case 'distinct': case 'group_count': case 'argmax': case 'argmin': return parseAggregate(value);
     case 'list': return { action: 'list', filter: parseFilter(value.filter ?? {}) };
     case 'search': return { action: 'search', query: text(value.query), limit: integer(value.limit, 1) };
     case 'get': {
@@ -47,5 +96,11 @@ Actions:
 {"action":"peek","id":"item-id","field":"description","start":0,"end":200}
 {"action":"partition","filter":{},"maxTokens":4096}
 {"action":"spawn","subgoal":"Count matching items in this slice","slice":{"partition_step":0,"index":0}}
+{"action":"count","filter":{"type":"Issue"}}
+{"action":"sum","filter":{},"field_expr":"len(title)"}
+{"action":"distinct","filter":{},"field":"status"}
+{"action":"group_count","filter":{"status":"closed"},"field":"parent"}
+{"action":"argmax","filter":{},"numeric_expr":"len(description)"}
+{"action":"argmin","filter":{},"numeric_expr":"priority"}
 {"action":"finish","answer":"your exact answer"}
-Filters support type,status,parent,tag,text,ids. Omit predicates to match all. list returns all matches or refuses if too large. partition returns compact slice references (partition_step,index,estimated_tokens); spawn passes that reference to receive its lossless JSON fragments. partition_step is the zero-based transcript index of the partition action. Raw fragment slices are also accepted. spawn can only use fragments from this call's environment. Recurse over slices for aggregation. Finish with only the requested number or ids; do not invent data. A refused step spends budget.`;
+Filters support type,status,parent,tag,text,ids. Omit predicates to match all. list returns all matches or refuses if too large. partition returns compact slice references (partition_step,index,estimated_tokens); spawn passes that reference to receive its lossless JSON fragments. partition_step is the zero-based transcript index of the partition action. Raw fragment slices are also accepted. spawn can only use fragments from this call's environment. Use aggregates for exact arithmetic over the whole scoped snapshot. sum field_expr and extrema numeric_expr accept only a numeric field name or len(field). len counts UTF-8 bytes of a string; missing/null text is empty. Numeric fields must be finite numbers; missing numeric fields refuse. distinct returns sorted unique scalar values; group_count returns sorted {value,count} rows (missing values become null). argmax/argmin return all tied ids in lexical order (empty input returns []). For a question requesting one id with lexical tie breaking, select the first id. Aggregates are observations with data and estimated_tokens, budgeted like reads. A refusal includes a reason: correct the action, keeping the same schema; answer must be a JSON string. Finish with only the requested number or ids; do not invent data. A refused step spends budget.`;

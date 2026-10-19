@@ -26,7 +26,7 @@ test('empty response interruption resumes while non-string checkpoint responses 
   const root = (await client.listAllComplete()).items.find(item => typeof item.rlm_state === 'string')!;
   const ledger = new RlmLedger(workspace);
   const state = await ledger.load(root.id).catch(error => assert.fail(`Interrupted engine checkpoint must load: ${String(error)}`));
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'invalid' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'invalid' });
   const finish = new ScriptedModel(() => '{"action":"finish","answer":"recovered"}');
   assert.equal((await resumeRlm(workspace, root.id, finish)).answer, 'recovered');
   assert.equal(finish.requests.length, 1);

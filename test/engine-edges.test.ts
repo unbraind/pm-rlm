@@ -22,7 +22,7 @@ test('model loop executes all read actions, records billable JSON refusals, and 
   const result = await runRlm('Exercise every read', { workspace, model, settings: { context_tokens: 50000, budget_tokens: 500000 } });
   const ledger = new RlmLedger(workspace);
   const state = await ledger.load(result.run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'invalid' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'invalid' });
   assert.ok(state.reserved_tokens > state.calls[0].steps[0].reserved * 2);
   assert.equal((await replayRlm(workspace, result.run)).answer, 'reads complete');
   await assert.rejects(resumeRlm(workspace, result.run, { ...model, name: 'wrong', complete: request => model.complete(request) }), { code: 'invalid' });

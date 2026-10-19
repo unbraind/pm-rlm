@@ -1,6 +1,7 @@
 import { certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries } from '@unbrained/pm-cli/sdk';
+import { aggregateItems } from './aggregates.ts';
 import { estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
-import type { RlmFilter, RlmItem, RlmRead, RlmSlice } from './types.ts';
+import type { RlmAggregate, RlmFilter, RlmItem, RlmRead, RlmSlice } from './types.ts';
 import type { PmCompleteListCertificate } from '@unbrained/pm-cli/sdk';
 
 /** Validate supported predicates; silently ignored filters would widen private scope. */
@@ -125,6 +126,10 @@ export class RlmContext {
     if (!Object.hasOwn(item, field)) throw new RlmError('invalid', 'Unknown item field');
     const value = item[field];
     return this.deliver((typeof value === 'string' ? value : JSON.stringify(value)).slice(start, end));
+  }
+  /** Execute a typed aggregate over this frozen scope and charge the entire result. */
+  aggregate(action: RlmAggregate): RlmRead<ReturnType<typeof aggregateItems>> {
+    return this.deliver(aggregateItems(this.items, action));
   }
   /** Return lossless packed slices; the whole partition response is also charged. */
   partition(filter: RlmFilter, maxTokens: number): RlmRead<RlmSlice[]> {
