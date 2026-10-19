@@ -24,7 +24,7 @@ for (const failure of ['model', 'budget'] as const) {
     const result = await runRlm('root', { workspace, model });
     assert.equal(result.answer, 'recovered');
     const state = await new RlmLedger(workspace).load(result.run);
-    assert.deepEqual(state.calls[1].failure, { code: failure });
+    assert.partialDeepStrictEqual(state.calls[1].failure, { code: failure });
     assert.equal(model.requests.filter(request => input(request).depth === 1).length, 1);
     assert.equal((await replayRlm(workspace, result.run)).answer, 'recovered');
     const requests = model.requests.length;
@@ -98,7 +98,7 @@ test('child context refusal after creation records a terminal outcome (#4)', asy
   const result = await runRlm('root', { workspace, model, settings: { context_tokens: 4096, output_tokens: 96 } });
   const state = await new RlmLedger(workspace).load(result.run);
   assert.equal(state.calls.length, 2);
-  assert.deepEqual(state.calls[1].failure, { code: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[1].failure, { code: 'budget' });
   assert.equal(state.calls[1].steps.length, 0);
   assert.equal((await replayRlm(workspace, result.run)).answer, result.answer);
   assert.equal((await resumeRlm(workspace, result.run, model)).answer, result.answer);
@@ -153,7 +153,7 @@ test('child interruption remains resumable and terminal refusal tampering fails 
   const result = await runRlm('typed', { workspace, model: typed });
   const ledger = new RlmLedger(workspace); const state = await ledger.load(result.run);
   const unfinished = structuredClone(state); delete unfinished.calls[1].failure; await ledger.save(unfinished);
-  await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'incomplete' });
+  await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'replay' });
   state.calls[1].failure = { code: 'budget' }; await ledger.save(state);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
 });

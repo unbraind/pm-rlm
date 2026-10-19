@@ -41,6 +41,18 @@ function validateSlice(state: RlmState, parent: RlmCall, slice: RlmSlice): void 
     if (!covered && !inherited) throw new RlmError('scope', 'Sub-call slice exceeds its parent scope');
   }
 }
+/** Apply spawn admission checks in live order before finding or allocating a child. */
+function prepareSpawn(state: RlmState, parent: RlmCall | undefined, subgoal: string, slice: RlmSlice): RlmCall | undefined {
+  text(subgoal); parseSlice(slice);
+  if (parent === undefined) throw new RlmError('scope', 'Calling call was not found');
+  validateSlice(state, parent, slice);
+  const call = state.calls.find(call => call.parent === parent.id && call.digest === promptDigest(subgoal, slice, state.settings));
+  if (call === undefined) {
+    if (parent.depth + 1 > state.settings.max_depth) throw new RlmError('depth', 'Maximum recursion depth reached');
+    if (state.calls.length >= state.settings.max_calls) throw new RlmError('calls', 'Maximum call count reached');
+  }
+  return call;
+}
 /** Resolve a compact partition reference deterministically against the frozen authorized snapshot. */
 function resolveSlice(state: RlmState, call: RlmCall, slice: RlmSlice | { partition_step: number; index: number }): RlmSlice {
   if ('fragments' in slice) return slice;
@@ -87,17 +99,11 @@ export class RlmEngine {
   snapshot(): RlmState { return structuredClone(this.state); }
   /** Reserve a logical child before materialization; digest reuse survives process failure. */
   async spawn(parentId: string, subgoal: string, slice: RlmSlice): Promise<string> {
-    text(subgoal); parseSlice(slice);
     const state = this.state;
     const parent = state.calls.find(call => call.id === parentId);
-    if (parent === undefined) throw new RlmError('scope', 'Calling call was not found');
-    validateSlice(state, parent, slice);
-    const digest = promptDigest(subgoal, slice, state.settings);
-    let call = state.calls.find(call => call.parent === parent.id && call.digest === digest);
+    let call = prepareSpawn(state, parent, subgoal, slice);
     if (call === undefined) {
-      if (parent.depth + 1 > state.settings.max_depth) throw new RlmError('depth', 'Maximum recursion depth reached');
-      if (state.calls.length >= state.settings.max_calls) throw new RlmError('calls', 'Maximum call count reached');
-      call = { id: `${state.run}-c${state.calls.length}`, parent: parent.id, depth: parent.depth + 1, subgoal, slice, digest, steps: [] };
+      call = { id: `${state.run}-c${state.calls.length}`, parent: parent!.id, depth: parent!.depth + 1, subgoal, slice, digest: promptDigest(subgoal, slice, state.settings), steps: [] };
       state.calls.push(call);
       await this.ledger.save(state);
     }
@@ -105,9 +111,12 @@ export class RlmEngine {
     catch (error) {
       if (!(error instanceof RlmError)) throw error;
       if (call.result === undefined) {
-        call.failure = { code: error.code };
+        call.failure = { code: error.code, reason: error.message };
         await this.ledger.save(state);
         await this.ledger.complete(state, call);
+      } else {
+        call.completion_refusal = { code: error.code, reason: error.message };
+        await this.ledger.save(state);
       }
       throw error;
     }
@@ -117,10 +126,10 @@ export class RlmEngine {
     return `${PROTOCOL}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
   }
   /** Execute one action, refusing oversized observations before charging or retaining data. */
-  private async observe(action: Exclude<RlmAction, { action: 'finish' }>, call: RlmCall, state = this.state): Promise<unknown> {
+  private async observe(action: Exclude<RlmAction, { action: 'finish' }>, call: RlmCall, state = this.state, spawn = (subgoal: string, slice: RlmSlice) => this.spawn(call.id, subgoal, slice)): Promise<unknown> {
     let observation: unknown;
     let charge = 0;
-    if (action.action === 'spawn') observation = { result: await this.spawn(call.id, action.subgoal, resolveSlice(state, call, action.slice)) };
+    if (action.action === 'spawn') observation = { result: await spawn(action.subgoal, resolveSlice(state, call, action.slice)) };
     else if (action.action === 'partition') {
       const slices = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens);
       const data = slices.map((slice, index) => ({ partition_step: call.steps.length - 1, index, estimated_tokens: slice.estimated_tokens }));
@@ -155,20 +164,35 @@ export class RlmEngine {
         try { action = parseAction(step.response.text, state.parser_version ?? 1); } catch { continue; }
         if (action.action === 'finish') continue;
         const prefix = { ...call, steps: call.steps.slice(0, index + 1) };
+        let spawnRefusal: RlmError | undefined;
+        let validatingChild = false;
         if (action.action === 'spawn') {
-          let slice: RlmSlice;
-          try { slice = resolveSlice(state, prefix, action.slice); }
-          catch { continue; }
-          const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, slice, state.settings));
-          if (child !== undefined) await visit(child);
-          continue;
+          try {
+            await this.observe(action, prefix, state, async (subgoal, slice) => {
+              const admitted = prepareSpawn({ ...state, calls: state.calls.filter(entry => visited.has(entry.id)) }, prefix, subgoal, slice);
+              const child = admitted ?? state.calls.find(child => child.parent === call.id && child.digest === promptDigest(subgoal, slice, state.settings));
+              if (child === undefined) throw new RlmError('incomplete', 'Recorded spawn has no child');
+              const reused = visited.has(child.id);
+              validatingChild = true;
+              await visit(child);
+              validatingChild = false;
+              const failure = child.failure ?? (reused ? undefined : child.completion_refusal);
+              if (failure !== undefined) throw new RlmError(failure.code, failure.reason ?? 'Recorded child refusal');
+              return child.result ?? '';
+            });
+          } catch (error) {
+            if (validatingChild) throw error;
+            spawnRefusal = error as RlmError;
+          }
         }
         const observation = step.observation;
         if (typeof observation !== 'object' || observation === null) continue;
         if ('refused' in observation) {
-          let refusal: RlmError | undefined;
-          try { await this.observe(action, prefix, state); }
-          catch (error) { refusal = error as RlmError; }
+          let refusal = spawnRefusal;
+          if (action.action !== 'spawn') {
+            try { await this.observe(action, prefix, state); }
+            catch (error) { refusal = error as RlmError; }
+          }
           const legacyCodeOnly = (state.parser_version ?? 1) === 1 && !('reason' in observation);
           if (refusal === undefined || observation.refused !== refusal.code || (!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message))) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
         } else if ('estimated_tokens' in observation && typeof observation.estimated_tokens === 'number') {
@@ -182,7 +206,7 @@ export class RlmEngine {
   private async execute(call: RlmCall): Promise<string> {
     const state = this.state;
     await this.ledger.materialize(state, call);
-    if (call.failure !== undefined) { await this.ledger.complete(state, call); throw new RlmError(call.failure.code, 'Recorded child refusal'); }
+    if (call.failure !== undefined) { await this.ledger.complete(state, call); throw new RlmError(call.failure.code, call.failure.reason ?? 'Recorded child refusal'); }
     if (call.result !== undefined) { await this.ledger.complete(state, call); return call.result; }
     let index = 0;
     for (;;) {

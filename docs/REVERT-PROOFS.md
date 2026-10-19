@@ -43,3 +43,15 @@ missing or explicit v1 parser versions, original unsettled reservations and a
 budget refusal. Replay preserves checkpoint and history bytes; resume settles
 exactly once and retries only a missing finish. Altered codes or present reasons
 remain invalid, and v2/v3 still require reasons.
+
+Round eight adds seven independent reversions to the round-six script (13/13
+in that script). The spawn matrix covers unavailable references, non-partition
+references, absent partition indexes, inherited-scope refusals, depth, call count,
+post-child observation budget, child model/context failures and completion-hook
+failures. Both replay and resume reject altered codes, altered reasons and
+missing modern reasons on completed and unfinished checkpoints before inference
+or ledger-history writes. Separate reversions disable code/message comparison
+and child failure-message persistence. Three report reversions cover the saved
+evaluation-invocation wording, measured-commit wording and its formatter output.
+The formatter regression uses a real measured Git commit followed by source
+drift, without model requests. The full six-script inventory now has 94 proofs.

@@ -99,7 +99,9 @@ export interface RlmCall {
   digest: string;
   steps: RlmStep[];
   result?: string;
-  failure?: { code: RlmErrorCode };
+  failure?: { code: RlmErrorCode; reason?: string };
+  /** Typed completion-hook refusal after a durable result; later result reuse does not repeat the hook. */
+  completion_refusal?: { code: RlmErrorCode; reason: string };
 }
 /** Durable run checkpoint stored through the SDK in the root call's registered field. */
 export interface RlmState {

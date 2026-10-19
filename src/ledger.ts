@@ -84,6 +84,12 @@ export class RlmLedger {
         if (call.parent !== undefined) text(call.parent);
         if (call.result !== undefined && typeof call.result !== 'string') throw new Error('Invalid result');
         if (call.failure !== undefined && !['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay'].includes(text(record(call.failure).code))) throw new Error('Invalid refusal');
+        if (call.failure !== undefined && record(call.failure).reason !== undefined) text(record(call.failure).reason);
+        if (call.completion_refusal !== undefined) {
+          const refusal = record(call.completion_refusal);
+          if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay'].includes(text(refusal.code))) throw new Error('Invalid completion refusal');
+          text(refusal.reason);
+        }
         if (!Array.isArray(call.steps)) throw new Error('Invalid steps');
         for (const entry of call.steps) {
           const step = record(entry);
