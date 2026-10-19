@@ -130,11 +130,13 @@ The seeded v2 design computes truth exactly through the SDK before inference. It
 | Numeric range | 0–12196 |
 | Most-common answer frequency and constant baseline | 2/24 (8.33%) |
 | Zero frequency and constant baseline | 1/24 (4.17%) |
-| Model measurements on v2 | One cloud invocation; table below |
+| Model measurements on v2 | Historical cloud invocation invalidated by conflicting format instructions; remeasurement pending |
 
 Histogram: `4`, `pm-lint-8kis`, `pm-lint-trap` occur twice each; `0`, `1`, `32`, `68`, `167`, `208`, `277`, `1436`, `3154`, `3355`, `12196`, `pm-vcs-5m22`, `pm-vcs-6qva`, `pm-vcs-ag8y`, `pm-vcs-1v6x`, `pm-vcs-b7cb`, `pm-lint-1c6j`, `pm-lint-epic` occur once each. See [the design audit](docs/EVAL-DESIGN.md) and [exact questions and histogram](docs/eval-design.json). Run `node test/eval-design.ts` to audit public copies without inference. `PM_RLM_LIVE_MODEL` is passed unchanged to Ollama.
 
 <!-- eval-table:start -->
+**Invalidated by an instruction conflict.** The recorded questions requested a bare integer or id while both arms required JSON, so correct bare answers could be scored wrong; these numbers are retained for history and require a new measurement before interpretation.
+
 Measured once with `glm-5.3:cloud` at a shared 131072 context allocation after two-phase settlement.
 
 | Arm | Exact correct | Reported-or-estimated model tokens / question | Measured seconds / question | Observed model requests / question | Observed child reach |

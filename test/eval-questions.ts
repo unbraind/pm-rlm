@@ -12,7 +12,7 @@ export function questions(items: RlmItem[]): EvalQuestion[] {
   const candidates: EvalQuestion[] = [];
   const ordered = [...items].sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   /** Add an exact task with the entire copied tracker as its environment. */
-  const add = (question: string, answer: string | number): void => { candidates.push({ question: question + ' Answer only the integer or id.', answer: String(answer), scope: {} }); };
+  const add = (question: string, answer: string | number): void => { candidates.push({ question, answer: String(answer), scope: {} }); };
   const groups = [{ label: 'all items', rows: ordered }];
   for (const type of [...new Set(ordered.map(item => item.type))].sort()) groups.push({ label: `items of type ${type}`, rows: ordered.filter(item => item.type === type) });
   for (const status of [...new Set(ordered.map(item => item.status))].sort()) groups.push({ label: `items with status ${status}`, rows: ordered.filter(item => item.status === status) });

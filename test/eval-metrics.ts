@@ -10,3 +10,6 @@ export const METRIC_PROVENANCE = {
   corpus: 'Exact item counts and computed UTF-8 serialized byte lengths.',
   limits: 'Configured context/output/token budgets, depth/call ceilings and temperature, not measured consumption.',
 };
+
+/** Invalidation notice retained with the historical cloud measurement and its reports. */
+export const CLOUD_EVAL_INVALIDATION = "**Invalidated by an instruction conflict.** The recorded questions requested a bare integer or id while both arms required JSON, so correct bare answers could be scored wrong; these numbers are retained for history and require a new measurement before interpretation.";

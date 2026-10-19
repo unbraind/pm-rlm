@@ -89,7 +89,12 @@ test('eval report replaces only a unique marked block and is idempotent', async 
   assert.equal(await readFile(join(root, 'README.md'), 'utf8'), updated);
   const results = await readFile(join(root, 'eval-results.json'), 'utf8');
   const cloud = await readFile(join(root, 'docs/EVAL-CLOUD.md'), 'utf8');
-  for (const output of [updated, cloud]) assert.ok(output.includes('| Reported-or-estimated model tokens / question |'));
+  for (const output of [updated, cloud]) {
+    assert.ok(output.includes('| Reported-or-estimated model tokens / question |'));
+    assert.match(output, /Invalidated by an instruction conflict/);
+    assert.match(output, /bare integer or id while both arms required JSON/);
+  }
+  assert.equal((JSON.parse(results) as { validation: { status: string } }).validation.status, 'invalidated');
   assert.match((JSON.parse(results) as { measurement: string }).measurement, /reported-or-estimated/);
   const metadata = JSON.parse(results) as { metric_provenance: { model_tokens: string; timing: string; pending_tokens: string } };
   assert.match(metadata.metric_provenance.model_tokens, /Provider-reported.*estimates/);

@@ -122,6 +122,7 @@ export class RlmEngine {
       observation = read;
     }
     if (estimateTokens(this.prompt(call, observation)) + state.settings.output_tokens > state.settings.context_tokens) throw new RlmError('budget', 'Observation does not fit the next model prompt');
+    assertLedgerPrivacy(observation, this.ledger.workspace, state.settings.key_env);
     state.reserved_tokens += charge;
     return observation;
   }

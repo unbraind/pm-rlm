@@ -1,5 +1,7 @@
 # Seeded evaluation design v2
 
+The retained design audit describes the historical questions, whose response-format suffix conflicted with both arm protocols and invalidated the cloud measurement. The generator now emits format-neutral questions; the corrected design awaits independent remeasurement.
+
 This is a truth-only design audit. No model endpoint was contacted. The original unbalanced model measurements are preserved in the repository history. The subsequent cloud comparison uses this seeded design and is documented separately in [EVAL-CLOUD.md](EVAL-CLOUD.md).
 
 Seed: `pm-rlm-balanced-v2`. Selection is independent of model outputs: generate exact counts, UTF-8 field-length sums and id-valued argmax tasks from certified complete public tracker copies; hash-sort candidates with the seed; require numeric ranges 1–9, 10–99, 100–999 and 1000+, then id answers and remaining diverse candidates. Ties use lexicographic id order. Each source supplies twelve tasks and allows at most two occurrences of an answer, guaranteeing a combined frequency ceiling of 4/24. Insufficiently diverse corpora refuse generation.

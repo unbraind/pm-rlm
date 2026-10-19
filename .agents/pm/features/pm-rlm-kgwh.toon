@@ -6,7 +6,7 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:46.952Z"
-updated_at: "2026-10-19T02:35:00.963Z"
+updated_at: "2026-10-19T05:40:53.906Z"
 author: codex-agent
 estimated_minutes: 140
 acceptance_criteria: Reservations are idempotent; limits refuse before execution; killed recursion resumes without repeating completed calls; replay answer is byte identical.
@@ -14,7 +14,7 @@ parent: pm-rlm-a1ih
 blocked_by: pm-rlm-6a8t
 dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
   pm-rlm-6a8t,blocked_by,"2026-10-18T20:00:17.582Z",codex-agent,"cli:update:blocked_by",detected
-comments[8]{created_at,author,text}:
+comments[10]{created_at,author,text}:
   "2026-10-18T19:38:33.186Z",codex-agent,"Run state is a single SDK checkpoint: reservations precede inference; model outputs precede observations; child digests and deterministic ids survive interruption. Runtime process leases prevent concurrent executors. Completed run resume and replay pass without new model calls. Process-kill and behavioral reversion proofs follow."
   "2026-10-18T19:44:05.585Z",codex-agent,"SIGKILL proof passed: interruption after child result checkpoint and before parent observation; resume made zero repeated completed-child model calls, reproduced answer 7+11 byte-for-byte, and matched uninterrupted reserved tokens. Three call items exactly matched parent/depth graph and all call results had closed ledger evidence."
   "2026-10-18T19:51:58.129Z",codex-agent,"Behavioral revert proofs: node test/revert.ts passed 3/3. Removing only the reservation budget guard made the exact-boundary regression fail (exit 1). Replacing only completed-digest lookup with no reuse made the real SIGKILL resume regression fail (exit 1). Removing only the partition fit check made slice-budget reconstruction regression fail (exit 1). Original source SHA-256 bytes were restored after each mutation; tests import authored TypeScript directly."
@@ -23,19 +23,23 @@ comments[8]{created_at,author,text}:
   "2026-10-18T21:44:10.878Z",codex-agent,"Full verification passed 84/84 tests with 100% statement/branch/function/line coverage over 19 authored files. Added a further real-SDK compatibility regression: existing full-slice partition receipts replay exactly after compact references; changed legacy data still refuses. The focused compatibility test passed 1/1 and all six behavioral revert proofs passed again with restored source hashes. Full npm/Bun release checks follow with the expanded 85-test suite."
   "2026-10-19T00:48:48.935Z",codex-agent,"Two-phase design: the step holds a worst-case reservation until validated usage arrives. settleStep subtracts only the unused allowance, records actual step charge, response and settled marker before one atomic SDK checkpoint. Legacy recorded outputs without markers are settled together before resumed execution. Pending steps retain their existing worst case and settled responses are never charged twice. A twenty-step real-tracker regression charges 880 tokens under a 16000 budget; a real pre-response SIGKILL resumes to the same answer and charge as uninterrupted execution. Tree now exposes reserved_tokens versus used_tokens per call. Context, depth, call and delivered-read limits remain enforced."
   "2026-10-19T00:55:29.007Z",codex-agent,"Behavioral settlement proofs passed: removing only the unused-reservation subtraction makes both the twenty-step actual-usage test and the real pre-response SIGKILL recovery test fail with assertion errors. The interrupted checkpoint retains one worst-case reservation and no response; resumed execution finishes with 880 charged tokens, matching uninterrupted execution, after 21 physical requests including the unfinished retry versus 20 logical completed steps. Post-response completed-digest SIGKILL coverage remains passing. This is logical ledger accounting, not an exactly-once provider-billing guarantee."
-files[9]{path,scope}:
+  "2026-10-19T05:34:10.125Z",codex-agent,"Added an observation-level privacy guard inside the recoverable tool boundary, before delivered-read charging and persistence. Real SDK history retains a prior private description while the current snapshot is public. Root and child regressions now finish after recording only an invalid refusal; checkpoints and call histories contain no private value, and resume/replay return the same answer with no additional inference."
+  "2026-10-19T05:36:39.250Z",codex-agent,"Behavioral revert proof: removing only assertLedgerPrivacy from observe makes both real-history root and child regressions fail with assertion exit 1. Restoring the guard passes 3/3 tests through the linked pm test command, including terminal ledger evidence, no delivered-read charge, identical resume/replay answers and no repeated inference. Full node test/revert.ts: 51/51 assertions, exact source bytes restored after every mutation."
+files[10]{path,scope}:
   src/engine.ts,project
   src/ledger.ts,project
   test/crash-worker.ts,project
   test/recovery.test.ts,project
   test/revert.ts,project
   test/review.test.ts,project
+  test/round6.test.ts,project
   test/settlement-model.ts,project
   test/settlement-worker.ts,project
   test/settlement.test.ts,project
-tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/recovery.test.ts,project,codex-agent,"2026-10-18T19:55:50.309Z",local_mutation,feat/rlm
   node --test test/settlement.test.ts test/round3.test.ts,project,codex-agent,"2026-10-19T00:48:04.164Z",local_mutation,feat/rlm
+  node --test test/round6.test.ts,project,codex-agent,"2026-10-19T05:34:15.073Z",local_mutation,feat/rlm
 docs[2]{path,scope}:
   ARCHITECTURE.md,project
   README.md,project
