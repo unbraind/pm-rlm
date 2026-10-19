@@ -4,7 +4,7 @@ const proofs = [
   { name: 'same seeded question selection', file: 'test/eval-questions.ts', before: "EVAL_SEED + task.question + ' Answer only the integer or id.'", after: 'EVAL_SEED + task.question', pattern: '^seeded eval', test: 'test/round2.test.ts' },
   { name: 'fair stuffing envelope extraction', file: 'test/live.ts', before: 'JSON.parse(extractObject(output))', after: 'JSON.parse(output)', pattern: '^v2 parser' },
   { name: 'parser envelope extraction', file: 'src/protocol.ts', before: 'version === 1 ? output : extractObject(output)', after: 'output', pattern: '^v2 parser' },
-  { name: 'corrective refusal feedback', file: 'src/engine.ts', before: ', reason: error.message', after: '', pattern: '^v2 ledger' },
+  { name: 'corrective refusal feedback', file: 'src/engine.ts', before: 'step.observation = { refused: error.code, reason: error.message };', after: 'step.observation = { refused: error.code };', pattern: '^v2 ledger' },
   { name: 'count', file: 'src/aggregates.ts', before: "case 'count': return rows.length;", after: "case 'count': return 0;", pattern: '^v2 aggregates compute' },
   { name: 'sum', file: 'src/aggregates.ts', before: "case 'sum': return rows.reduce((sum, item) => finite(sum + numeric(item, action.field_expr)), 0);", after: "case 'sum': return 0;", pattern: '^v2 aggregates compute' },
   { name: 'distinct', file: 'src/aggregates.ts', before: "sorted.map(row => row.value) : sorted", after: '[] : sorted', pattern: '^v2 aggregates compute' },

@@ -120,7 +120,7 @@ test('parser versions preserve strict checkpoints byte for byte on replay and st
     legacy.calls[0].steps.unshift({ prompt: 'legacy prompt', reserved: 0, settled: true, response: { text: fenced, tokens_in: 0, tokens_out: 0 }, observation: { refused: 'invalid' } });
     await ledger.save(legacy);
     const before = (await client.get(result.run, { depth: 'full' })).item.rlm_state;
-    assert.deepEqual(await replayRlm(workspace, result.run), result);
+    await assert.doesNotReject(async () => { assert.deepEqual(await replayRlm(workspace, result.run), result); });
     assert.equal((await client.get(result.run, { depth: 'full' })).item.rlm_state, before);
     delete legacy.calls[0].result;
     legacy.calls[0].steps.pop();
@@ -131,7 +131,7 @@ test('parser versions preserve strict checkpoints byte for byte on replay and st
       assert.match(request.prompt, /Model output is not valid JSON/);
       return '{"action":"finish","answer":"legacy exact\\n"}';
     });
-    assert.equal((await resumeRlm(workspace, result.run, resumed)).answer, result.answer);
+    await assert.doesNotReject(async () => { assert.equal((await resumeRlm(workspace, result.run, resumed)).answer, result.answer); });
     assert.equal((await ledger.load(result.run)).calls[0].steps[1].observation !== undefined, true);
   }
   const invalid = { ...state, parser_version: '3' };

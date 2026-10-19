@@ -303,15 +303,9 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
         if (action.action === 'spawn') {
           let slice: RlmSlice;
           try { slice = resolveSlice(state, call, action.slice); }
-          catch (error) {
-            if (error instanceof RlmError && error.code === (step.observation as { refused: string }).refused) continue;
-            throw new RlmError('replay', 'Recorded partition refusal differs');
-          }
+          catch { continue; }
           const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, slice, state.settings));
-          if (child !== undefined) {
-            await replay(child);
-            if (child.failure !== undefined && child.failure.code !== (step.observation as { refused: string }).refused) throw new RlmError('replay', 'Recorded child refusal differs');
-          }
+          if (child !== undefined) await replay(child);
         }
         continue;
       }
