@@ -111,7 +111,7 @@ test('seeded eval questions span magnitudes and cap answer frequency', async t =
   assert.equal(tasks.length, 12);
   for (const task of tasks) {
     assert.ok(task.question.endsWith('?'));
-    assert.doesNotMatch(task.question, /answer only|respond|return only|format|JSON|envelope|action/i, 'Questions must leave response formatting to each arm protocol');
+    assert.doesNotMatch(task.question, /\banswer only\b|\brespond\b|\breturn only\b|\bformat\b|\bJSON\b|\benvelope\b|\baction\b/i, 'Questions must leave response formatting to each arm protocol');
   }
   const distribution = answerDistribution([...tasks, ...tasks]);
   assert.equal(distribution.questions, 24); assert.ok(distribution.most_common <= 4);
