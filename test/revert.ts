@@ -1,4 +1,6 @@
 /** Behavioral revert proofs: each removed invariant must make its regression fail. */
+import { assertRegression, replaceFixed } from './revert-source.ts';
+import { testEnvironment } from '../scripts/environment.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -62,21 +64,17 @@ const mutations = [
 ];
 /** Rebuild only proofs whose consumers load the compiled tarball, restoring that build too. */
 function buildPackage(): void {
-  const child = spawnSync('npm', ['run', 'build'], { encoding: 'utf8', timeout: 120000 });
+  const child = spawnSync('npm', ['run', 'build'], { env: testEnvironment(process.env), encoding: 'utf8', timeout: 120000 });
   assert.equal(child.status, 0, child.stdout + child.stderr);
 }
 for (const mutation of mutations) {
   const original = readFileSync(mutation.file, 'utf8');
-  assert.equal(original.split(mutation.before).length, 2, 'Mutation must identify exactly one invariant');
   const hash = createHash('sha256').update(original).digest('hex');
   try {
-    writeFileSync(mutation.file, original.replace(mutation.before, mutation.after));
+    writeFileSync(mutation.file, replaceFixed(original, mutation.before, mutation.after, mutation.name));
     if ('build' in mutation && mutation.build) buildPackage();
-    const child = spawnSync(process.execPath, ['--test', '--test-name-pattern', mutation.pattern, mutation.test], { encoding: 'utf8', timeout: 300000 });
-    assert.equal(child.error, undefined);
-    assert.equal(child.status, 1, `${mutation.name} regression must fail with its assertion exit code`);
-    assert.match(child.stdout + child.stderr, /AssertionError|ERR_ASSERTION/);
-    console.log(`${mutation.name}: regression failed with invariant removed (exit ${child.status})`);
+    assertRegression(mutation.test, mutation.pattern, 300000);
+    console.log(`${mutation.name}: regression failed with invariant removed (exit 1)`);
   } finally {
     writeFileSync(mutation.file, original);
     assert.equal(createHash('sha256').update(readFileSync(mutation.file)).digest('hex'), hash);

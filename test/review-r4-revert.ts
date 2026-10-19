@@ -1,14 +1,13 @@
 /** Revert one behavior at a time, demand its assertion failure, and restore exact source bytes. */
-import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { execFileSync, spawnSync } from 'node:child_process';
+import { proveRevert } from './revert-source.ts';
 
 const portableFile = 'test/constrained.test.ts';
-const callback = /test\('live source URL converts escaped checkout paths to filesystem paths', \(\) => \{[\s\S]*?\n\}\);/;
-const oldPortable = execFileSync('git', ['show', `21a7ab0:${portableFile}`], { encoding: 'utf8' }).match(callback)?.[0];
-assert.ok(oldPortable);
-const currentPortable = readFileSync(portableFile, 'utf8').match(callback)?.[0];
-assert.ok(currentPortable);
+const currentPortable = `  const base = pathToFileURL(resolve('workspace/package space % é/worktrees/pm-rlm-v2/test/live-v2.ts'));
+  assert.equal(publicSource('pm-vcs', base.href), fileURLToPath(new URL('../../../fleet/pm-vcs/', base)));
+  assert.ok(publicSource('pm-vcs', base.href).includes('package space % é'));
+  assert.ok(publicSource('pm-vcs').endsWith(join('fleet', 'pm-vcs') + sep));`;
+const oldPortable = `  assert.equal(publicSource('pm-vcs', pathToFileURL('/workspace/package space % é/worktrees/pm-rlm-v2/test/live-v2.ts').href), '/workspace/package space % é/fleet/pm-vcs/');
+  assert.ok(publicSource('pm-vcs').endsWith('/fleet/pm-vcs/'));`;
 const proofs = [
   { name: 'numeric type/value ordering', file: 'src/aggregates.ts', before: '[...groups.values()].sort((a, b) => compareScalars(a.value, b.value))', after: '[...groups.keys()].sort().map(key => groups.get(key)!)', pattern: '^review r4 scalar' },
   { name: 'new checkpoint version', file: 'src/engine.ts', before: 'aggregate_version: 2, ', after: '', pattern: '^review r4 checkpoint' },
@@ -18,18 +17,5 @@ const proofs = [
   { name: 'portable assertions', file: portableFile, before: currentPortable, after: oldPortable, pattern: '^review r4 portable' },
   { name: 'empty history filtering', file: 'test/report-v2.ts', before: ".split('\\n').filter(line => line !== '')", after: ".trim().split('\\n')", pattern: '^review r4 report' },
 ];
-for (const proof of proofs) {
-  const original = readFileSync(proof.file, 'utf8');
-  assert.equal(original.split(proof.before).length, 2, proof.name);
-  try {
-    writeFileSync(proof.file, original.replace(proof.before, proof.after));
-    const result = spawnSync(process.execPath, ['--test', '--test-name-pattern', proof.pattern, 'test/review-r4.test.ts'], { encoding: 'utf8', timeout: 180000 });
-    assert.equal(result.status, 1, result.stdout + result.stderr);
-    assert.match(result.stdout + result.stderr, /ERR_ASSERTION/, result.stdout + result.stderr);
-    console.log(`${proof.name}: targeted regression fails with exit 1 (assertion failure)`);
-  } finally {
-    writeFileSync(proof.file, original);
-    assert.equal(readFileSync(proof.file, 'utf8'), original);
-  }
-}
+for (const proof of proofs) proveRevert(proof, 'test/review-r4.test.ts', 180000);
 console.log(`${proofs.length}/${proofs.length} round-four behavioral revert proofs; source restored byte-for-byte`);

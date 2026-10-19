@@ -1,7 +1,7 @@
 /** Independently remove each round-three correction and require its regression to fail. */
+import { assertRegression, replaceFixed } from './revert-source.ts';
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
 
 const proofs = [
   { name: 'wire keyword removal', file: 'src/action-schema.ts', before: '  return wire;', after: '  return schema;', pattern: '^review round 3 wire' },
@@ -12,14 +12,11 @@ const proofs = [
 ];
 for (const proof of proofs) {
   const original = readFileSync(proof.file, 'utf8');
-  assert.ok(original.includes(proof.before), proof.name);
   try {
-    let reverted = original.replace(proof.before, proof.after);
-    if (proof.name === 'adapter wire schema selection') reverted = reverted.replace('COMPATIBLE_ACTION_WIRE_SCHEMA, COMPATIBLE_ANSWER_WIRE_SCHEMA, compatibleAction', 'COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSWER_SCHEMA, compatibleAction');
+    let reverted = replaceFixed(original, proof.before, proof.after, proof.name);
+    if (proof.name === 'adapter wire schema selection') reverted = replaceFixed(reverted, 'COMPATIBLE_ACTION_WIRE_SCHEMA, COMPATIBLE_ANSWER_WIRE_SCHEMA, compatibleAction', 'COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSWER_SCHEMA, compatibleAction', 'adapter schema imports');
     writeFileSync(proof.file, reverted);
-    const result = spawnSync(process.execPath, ['--test', '--test-name-pattern', proof.pattern, 'test/review-r3.test.ts'], { encoding: 'utf8', timeout: 120000 });
-    assert.equal(result.status, 1, result.stdout + result.stderr);
-    assert.match(result.stdout + result.stderr, /ERR_ASSERTION/);
+    assertRegression('test/review-r3.test.ts', proof.pattern);
     console.log(`${proof.name}: targeted regression fails with exit 1`);
   } finally {
     writeFileSync(proof.file, original);
