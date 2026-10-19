@@ -6,21 +6,22 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T02:14:44.023Z"
-updated_at: "2026-10-19T06:06:55.604Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-19T07:32:41.928Z"
 author: codex-agent
 estimated_minutes: 90
 acceptance_criteria: Reproduce and classify strict JSON failures with independent synthetic prompts; distinguish provider transport and formatting failures; establish valid action and answer envelopes before another comparative eval; use no additional model quota without owner authorization.
 parent: pm-rlm-a1ih
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-19T05:34:09.355Z",codex-agent,"Round 6 identified an evaluation instruction conflict: shared question text demanded a bare integer or id while each arm required JSON. The historical cloud scores are invalidated and retained unchanged, including all 24 original rows and source fingerprints. Corrected questions are format-neutral; arm protocols continue to own their JSON formats. Independent follow-up remeasurement is required; no live model calls were made this round."
   "2026-10-19T06:06:55.604Z",codex-agent,"The new authorized v2 run has exposed an exact transport/model shape: reasoning appears in the response text with no opening think delimiter, repeated JSON examples and a closing think tag before another action object. An exact text fixture and negative regression are now retained. Historical cloud strings remain unavailable, so this is new evidence rather than a reconstruction of the old 451 failures. Investigation of a transport-level reasoning boundary remains open; no additional live calls are authorized beyond the single running comparison."
+  "2026-10-19T07:28:29.499Z",codex-agent,"Final v2 diagnosis: historical 451 raw strings remain unavailable. New retained responses show unmatched reasoning ends with prose or repeated JSON examples, truncation, and malformed envelopes. Complete new shape counts: closing-tag excess 340, unclosed explicit reasoning 1, other prose/malformed JSON 413. Specific parser reasons: unterminated reasoning 294, ambiguous trailing objects 292, unterminated object 61, no object 26, ambiguous envelope 76, invalid JSON 4, unknown action 1. Exact positive and negative fixtures are committed; inference code remained frozen. Continued provider/model protocol compliance is an open risk despite 13 delivered aggregates and one exact result. No extra live calls were made."
 files[3]{path,scope}:
   src/adapters.ts,project
   src/protocol.ts,project
   test/live.ts,project
-docs[2]{path,scope}:
+docs[4]{path,scope}:
+  docs/ACTION-DIAGNOSIS.md,project
   docs/EVAL-CLOUD.md,project
+  docs/EVAL-V2.md,project
   README.md,project
 body: ""

@@ -170,3 +170,18 @@ Coverage includes every authored source, script, entry point and ESLint configur
 Exit codes: `0` success; `2` invalid command, scope, model, integrity, replay or executor-conflict failure; `3` exhausted token, depth or call budget. Tool-level refusals can be recovered within a run; an exhausted outer budget ends the command. `test:live` counts refused answers rather than presenting them as successes.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the ledger schema and resume invariants. The design follows the environment-and-recursion approach of [Recursive Language Models](https://arxiv.org/abs/2512.24601) by Alex L. Zhang, Tim Kraska and Omar Khattab (2025); the tracker ledger, reservations and recovery protocol are this package's implementation.
+
+## v2 measurement
+
+<!-- eval-v2:start -->
+RLM v2 was not better than stuffing on this single fixed set.
+
+| Arm | Correct | Tokens / question | Seconds / question | Requests / question |
+| --- | ---: | ---: | ---: | ---: |
+| RLM v2 | 1/24 | 231491.58 | 204.60 | 32.00 |
+| Complete-item stuffing | 1/24 | 23623.29 | 6.70 | 1.00 |
+
+Child reach: 0/24. Delivered reads: 0; delivered aggregates: 13. Delivered responses requiring envelope extraction: 10. Successful read-only replays: 1. Tool refusals: `{"invalid":754}`. Outer failures: RLM `{"budget":23}`; stuffing `{}`.
+
+Most-common constant guess: 2/24; constant zero: 1/24. Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests. See [the v2 report](docs/EVAL-V2.md).
+<!-- eval-v2:end -->

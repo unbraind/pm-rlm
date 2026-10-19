@@ -1,5 +1,7 @@
 # Cloud evaluation after two-phase settlement
 
+Latest measurement: [the v2 cloud comparison](EVAL-V2.md) uses the original 24 tasks with format-neutral prompts, tolerant parsing and typed aggregates. The historical results below remain invalidated.
+
 **Invalidated by an instruction conflict.** The recorded questions requested a bare integer or id while both arms required JSON, so correct bare answers could be scored wrong; these numbers are retained for history and require a new measurement before interpretation.
 
 Model: `glm-5.3:cloud`; completed at 2026-10-19T02:11:40.652Z. Seed: `pm-rlm-balanced-v2`. Exactly one authorized live invocation.

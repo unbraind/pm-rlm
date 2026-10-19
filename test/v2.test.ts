@@ -23,6 +23,13 @@ test('v2 parser accepts presentation wrappers and refuses schema drift or ambigu
   for (const output of ['{"action":"finish","answer":0}', '{"tool":"count"}', '{"action":"count"} {"action":"count"}', '[{"action":"count"}]', '{"action":"count"', '<think>unfinished {"action":"count"}', 'no action', '{bad}', '{"action":"count","action":"sum"}', '{"action":"count"}<think>unfinished', '}{"action":"count"}', '{"action":"finish","answer":"unfinished']) assert.throws(() => parseAction(output), { code: 'invalid' });
 });
 
+/** A real delivered response requires envelope extraction while retaining the exact aggregate schema. */
+test('v2 parser recorded prose action reaches the typed environment', () => {
+  const output = readFileSync(new URL('./fixtures/glm-5.3-prose-action.txt', import.meta.url), 'utf8');
+  assert.throws(() => JSON.parse(output), SyntaxError);
+  assert.doesNotThrow(() => assert.deepEqual(parseAction(output), { action: 'argmax', filter: { type: 'Decision' }, numeric_expr: 'len(title)' }));
+});
+
 /** Exact first live response: missing opening reasoning delimiter leaves two candidate actions. */
 test('v2 recorded cloud reasoning shape remains a refusal without an explicit boundary', () => {
   const output = readFileSync(new URL('./fixtures/glm-5.3-orphan-think.txt', import.meta.url), 'utf8');
