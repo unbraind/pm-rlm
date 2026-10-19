@@ -102,6 +102,16 @@ test('checkpoint validation returns incomplete for malformed calls and unsafe se
 });
 
 /** Seeded truth-only selection is stable under item reordering and defeats constant guessing. */
+/** Response-format directives that eval questions must not carry; whole words only. */
+const FORMAT_DIRECTIVE = /\banswer only\b|\brespond\b|\breturn only\b|\bformat\b|\bJSON\b|\benvelope\b|\baction\b/i;
+
+test('the format-directive check matches whole directive words, not longer words that contain them', () => {
+  assert.doesNotMatch('How much information is recorded for each transaction or reaction?', FORMAT_DIRECTIVE);
+  assert.doesNotMatch('Which items were reformatted during the migration?', FORMAT_DIRECTIVE);
+  assert.match('Answer only the integer.', FORMAT_DIRECTIVE);
+  assert.match('Reply with a JSON envelope.', FORMAT_DIRECTIVE);
+});
+
 test('seeded eval questions span magnitudes and cap answer frequency', async t => {
   const { workspace, client } = await tracker(t);
   for (let index = 0; index < 8; index++) await client.create({ id: `item-${index}`, title: 'Question '.repeat(index + 1), type: index % 2 ? 'Issue' : 'Task', description: 'x'.repeat(1700 + index * 150), acceptanceCriteria: 'Check '.repeat(index + 1) });
@@ -113,7 +123,7 @@ test('seeded eval questions span magnitudes and cap answer frequency', async t =
   assert.equal(tasks.at(-1)!.question, 'How many items with status open are there?');
   for (const task of tasks) {
     assert.ok(task.question.endsWith('?'));
-    assert.doesNotMatch(task.question, /answer only|respond|return only|format|JSON|envelope|action/i, 'Questions must leave response formatting to each arm protocol');
+    assert.doesNotMatch(task.question, FORMAT_DIRECTIVE, 'Questions must leave response formatting to each arm protocol');
   }
   const distribution = answerDistribution([...tasks, ...tasks]);
   assert.equal(distribution.questions, 24); assert.ok(distribution.most_common <= 4);
