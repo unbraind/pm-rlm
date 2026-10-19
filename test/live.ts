@@ -42,13 +42,17 @@ export async function liveSettings(workspace: string): Promise<RlmSettings> {
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new RlmError('invalid', 'Live evaluation requires a loopback Ollama endpoint');
   return readRlmSettings(workspace, { model: process.env.PM_RLM_LIVE_MODEL ?? 'gemma4-local:e2b-q3km', adapter: 'ollama', endpoint, key_env: 'PM_RLM_LIVE_UNUSED_KEY', context_tokens: 131072, output_tokens: 512, budget_tokens: 300000, max_depth: 2, max_calls: 8, timeout_ms: 60000 });
 }
+/** Resolve sibling public sources with URL decoding, including escaped checkout names. */
+export function publicSource(repo: string, base = import.meta.url): string {
+  return fileURLToPath(new URL(`../../../fleet/${repo}/`, base));
+}
 /** Copy only committed tracker data from a revision independently verified as public. */
 export async function copyPublicTracker(repo: string, base: string): Promise<{ workspace: string; revision: string }> {
   const visibility = JSON.parse(execFileSync('gh', ['repo', 'view', `unbraind/${repo}`, '--json', 'visibility'], { encoding: 'utf8' })) as { visibility: string };
   if (visibility.visibility !== 'PUBLIC') throw new RlmError('invalid', 'Eval source must be verified public');
   const revision = execFileSync('gh', ['api', `repos/unbraind/${repo}/commits/HEAD`, '--jq', '.sha'], { encoding: 'utf8' }).trim();
   if (!/^[a-f0-9]{40}$/.test(revision)) throw new RlmError('invalid', 'Public revision is invalid');
-  const source = fileURLToPath(new URL(`../../../fleet/${repo}/`, import.meta.url));
+  const source = publicSource(repo);
   return copyVerifiedRevision(source, revision, base);
 }
 /** Archive the verified revision without incorporating local, untracked or symlinked records. */
@@ -97,7 +101,7 @@ export async function measureStuffing(question: string, items: RlmItem[], config
   const start = performance.now();
   let baseline = { text: '', tokens_in: 0, tokens_out: 0 };
   let error = '';
-  try { baseline = await model.complete({ prompt: stuffing(question, items, config), max_output_tokens: config.output_tokens, context_tokens: config.context_tokens }); }
+  try { baseline = await model.complete({ prompt: stuffing(question, items, config), response_kind: 'answer', max_output_tokens: config.output_tokens, context_tokens: config.context_tokens }); }
   catch { error = 'model'; }
   return { correct: stuffingAnswer(baseline.text).trim() === expected, answer_sha256: digest(baseline.text), tokens: baseline.tokens_in + baseline.tokens_out, calls: 1, ms: Math.round(performance.now() - start), error };
 }

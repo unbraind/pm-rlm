@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { httpFixture } from './http.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSWER_SCHEMA } from '../src/action-schema.ts';
 import { HttpModel } from '../src/adapters.ts';
 import { readRlmSettings, writeRlmSettings } from '../src/settings.ts';
 import { parseAction, parseSlice } from '../src/protocol.ts';
@@ -27,6 +28,7 @@ test('HTTP adapters use real endpoints, transient env credentials and provider u
   const local = new HttpModel(config);
   assert.deepEqual(await local.complete(request), { text: '{"action":"finish","answer":"ok"}', tokens_in: 10, tokens_out: 5 });
   assert.equal(authorization, undefined); assert.equal(received.stream, false); assert.equal(local.name, config.model);
+  assert.deepEqual(received.format, ACTION_SCHEMA);
   payload = { response: 'output' };
   assert.deepEqual(await local.complete(request), { text: 'output', tokens_in: 6, tokens_out: 6 });
   const compatible = new HttpModel({ ...config, adapter: 'openai', endpoint: config.endpoint + '/' });
@@ -39,6 +41,18 @@ test('HTTP adapters use real endpoints, transient env credentials and provider u
   assert.deepEqual(await compatible.complete(request), { text: 'ok', tokens_in: 11, tokens_out: 2 });
   assert.equal(authorization, `Bearer ${privateKey}`);
   assert.equal(received.max_tokens, 64);
+  assert.deepEqual(received.response_format, { type: 'json_schema', json_schema: { name: 'action', strict: true, schema: COMPATIBLE_ACTION_SCHEMA } });
+  payload = { choices: [{ message: { content: '{"response":{"action":"count","filter":null}}' } }] };
+  assert.equal((await compatible.complete(request)).text, '{"action":"count"}');
+  await compatible.complete({ ...request, response_kind: 'answer' });
+  assert.deepEqual(received.response_format, { type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: COMPATIBLE_ANSWER_SCHEMA } });
+  await compatible.complete({ ...request, parser_version: 1 });
+  assert.equal(received.response_format, undefined);
+  payload = { response: 'answer' };
+  await local.complete({ ...request, response_kind: 'answer' });
+  assert.deepEqual(received.format, ANSWER_SCHEMA);
+  await local.complete({ ...request, parser_version: 2 });
+  assert.equal(received.format, 'json');
   payload = { choices: [{ message: { content: 'fallback' } }] };
   assert.equal((await compatible.complete(request)).tokens_out, 8);
   for (const bad of [{}, { choices: [] }, { choices: [null] }, { choices: [{ message: { content: '' } }] }, { choices: [{ message: { content: 'x'.repeat(1100) } }] }, { choices: [{ message: { content: 'x' } }], usage: { prompt_tokens: -1 } }]) {

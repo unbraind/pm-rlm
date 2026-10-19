@@ -71,6 +71,7 @@ export class RlmLedger {
     try {
       const decoded = record(JSON.parse(root.rlm_state));
       if (decoded.version !== 1 || decoded.run !== run || !Array.isArray(decoded.calls) || decoded.calls.length === 0) throw new Error('Invalid checkpoint');
+      if (decoded.parser_version !== undefined && ![1, 2, 3].includes(decoded.parser_version as number)) throw new Error('Invalid parser version');
       validateRlmSettings(decoded.settings);
       text(decoded.question); parseFilter(decoded.scope); record(decoded.certificate);
       integer(decoded.reserved_tokens, 0);

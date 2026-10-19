@@ -1,5 +1,6 @@
 import { estimateTokens, integer, record, RlmError, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
+import { schemaAction } from './action-schema.ts';
 import { parseAggregate } from './aggregates.ts';
 import type { RlmAction, RlmSlice } from './types.ts';
 
@@ -66,12 +67,13 @@ export function extractObject(output: string): string {
   throw new RlmError('invalid', 'Unterminated JSON action object');
 }
 /** Parse the complete bounded protocol; malformed steps remain billable refusals. */
-export function parseAction(output: string): RlmAction {
+export function parseAction(output: string, version: 1 | 2 | 3 = 3): RlmAction {
   let decoded: unknown;
-  try { decoded = JSON.parse(extractObject(output)); } catch (error) { if (error instanceof RlmError) throw error; throw new RlmError('invalid', 'Model output is not valid JSON'); }
+  try { decoded = JSON.parse(version === 1 ? output : extractObject(output)); } catch (error) { if (error instanceof RlmError) throw error; throw new RlmError('invalid', 'Model output is not valid JSON'); }
+  if (version === 3) return schemaAction(decoded);
   const value = record(decoded);
   switch (value.action) {
-    case 'count': case 'sum': case 'distinct': case 'group_count': case 'argmax': case 'argmin': return parseAggregate(value);
+    case 'count': case 'sum': case 'distinct': case 'group_count': case 'argmax': case 'argmin': if (version === 1) throw new RlmError('invalid', 'Unknown model action'); return parseAggregate(value);
     case 'list': return { action: 'list', filter: parseFilter(value.filter ?? {}) };
     case 'search': return { action: 'search', query: text(value.query), limit: integer(value.limit, 1) };
     case 'get': {

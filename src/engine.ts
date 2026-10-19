@@ -46,7 +46,7 @@ function resolveSlice(state: RlmState, call: RlmCall, slice: RlmSlice | { partit
   if ('fragments' in slice) return slice;
   const step = call.steps[slice.partition_step];
   if (step?.response === undefined || step.observation === undefined || typeof step.observation !== 'object' || step.observation === null || 'refused' in step.observation) throw new RlmError('scope', 'Partition reference is unavailable');
-  const action = parseAction(step.response.text);
+  const action = parseAction(step.response.text, state.parser_version ?? 1);
   if (action.action !== 'partition') throw new RlmError('scope', 'Reference must select a partition step');
   const result = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens)[slice.index];
   if (result === undefined) throw new RlmError('scope', 'Partition slice index is unavailable');
@@ -141,7 +141,7 @@ export class RlmEngine {
         await this.ledger.save(state);
       }
       if (step.response === undefined) {
-        const response = await this.model.complete({ prompt: step.prompt, max_output_tokens: state.settings.output_tokens, context_tokens: state.settings.context_tokens });
+        const response = await this.model.complete({ prompt: step.prompt, max_output_tokens: state.settings.output_tokens, context_tokens: state.settings.context_tokens, parser_version: state.parser_version ?? 1 });
         if (typeof response.text !== 'string' || estimateTokens(response.text) > state.settings.output_tokens * 16 || !Number.isSafeInteger(response.tokens_in) || !Number.isSafeInteger(response.tokens_out) || response.tokens_in < 0 || response.tokens_out < 0) throw new RlmError('model', 'Invalid model response');
         assertLedgerPrivacy(response, this.ledger.workspace, state.settings.key_env);
         settleStep(state, step, response);
@@ -150,7 +150,7 @@ export class RlmEngine {
       if (step.observation === undefined) {
         let action: RlmAction | undefined;
         try {
-          action = parseAction(step.response!.text);
+          action = parseAction(step.response!.text, state.parser_version ?? 1);
           if (action.action !== 'finish') step.observation = await this.observe(action, call);
         } catch (error) {
           if (!(error instanceof RlmError)) throw error;
@@ -196,7 +196,7 @@ export async function runRlm(question: string, options: RlmRunOptions): Promise<
   await ledger.registerFields();
   const run = await ledger.newRunId();
   const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
-  const state: RlmState = { version: 1, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0 };
+  const state: RlmState = { version: 1, parser_version: 3, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0 };
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
   await ledger.materialize(state, state.calls[0]);
   return new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete).run();
@@ -220,7 +220,7 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
       const refused = step.observation !== undefined && typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation;
       if (refused) {
         let action: RlmAction;
-        try { action = parseAction(step.response.text); } catch { continue; }
+        try { action = parseAction(step.response.text, state.parser_version ?? 1); } catch { continue; }
         if (action.action === 'spawn') {
           let slice: RlmSlice;
           try { slice = resolveSlice(state, call, action.slice); }
@@ -236,7 +236,7 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
         }
         continue;
       }
-      const action = parseAction(step.response.text);
+      const action = parseAction(step.response.text, state.parser_version ?? 1);
       if (action.action === 'spawn') {
         if (typeof step.observation !== 'object' || step.observation === null || typeof (step.observation as { result?: unknown }).result !== 'string') throw new RlmError('replay', 'Recorded spawn step has no completed observation');
         const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, resolveSlice(state, call, action.slice), state.settings));

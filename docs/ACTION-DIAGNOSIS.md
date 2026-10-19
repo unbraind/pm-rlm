@@ -23,3 +23,9 @@ A second exact fixture, `test/fixtures/glm-5.3-prose-action.txt`, preserves a de
 ## Complete v2 counts
 
 The new run recorded 754 invalid actions: 340 responses with more closing than opening reasoning tags, 1 with an unclosed explicit reasoning block, and 413 other prose or malformed JSON responses. These are shape categories, not inferred historical causes. The exact refusal histogram is in [the v2 report](EVAL-V2.md). Of 13 delivered aggregate responses, 10 required envelope extraction. No reads or child calls were delivered; one completed result passed replay. Accuracy tied stuffing at 1/24 and remained below the 2/24 most-common constant baseline.
+
+## Review round: constrained requests and compatibility
+
+The completed v2 run delivered 13 aggregates but still recorded 754 invalid actions and no delivered reads. The next implementation sends the generated action schema to both HTTP adapter families; stuffing receives its own answer schema. Exact action validation remains after transport, with tolerant extraction for endpoints ignoring the format. Native Cloud support is an external limitation: the official Ollama documentation currently states that structured outputs are unsupported on Cloud. The additional authorized measurement will report actual failures or deliveries without substitution or repeated inference.
+
+A separate replay defect affected strict checkpoints: a fenced `spawn` recorded as `invalid` could become a parsed spawn under the tolerant parser, then fail as `scope` while resolving an absent partition. Checkpoints now bind parser semantics explicitly, with a missing version meaning v1. The regression preserves exact checkpoint bytes on read-only replay and tests strict parsing again on resume. New-run partition and child-refusal checks remain active.

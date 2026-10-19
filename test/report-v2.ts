@@ -19,7 +19,9 @@ interface V2Measurement { paths: string[]; implementation_source_sha256: string;
 function add(target: Record<string, number>, source: Record<string, number>): void {
   for (const key of Object.keys(source)) target[key] = (target[key] ?? 0) + source[key];
 }
-const measurement = JSON.parse(await readFile('eval-results-v2.local.json', 'utf8')) as V2Measurement;
+const label = process.argv.includes('--constrained') ? 'constrained' : 'v2';
+const title = label === 'v2' ? 'RLM v2' : 'RLM constrained request';
+const measurement = JSON.parse(await readFile(`eval-results-${label}.local.json`, 'utf8')) as V2Measurement;
 assert.equal(measurement.rows.length, 24);
 assert.equal(measurement.model, 'glm-5.3:cloud');
 assert.equal(measurement.context_tokens, 131072);
@@ -53,16 +55,16 @@ for (const { rlm } of measurement.rows) {
   tools.observation_tokens += rlm.read_tokens; tools.pending_tokens += rlm.pending; tools.replay_verified += Number(rlm.replay === 'verified');
   add(tools.refusals, rlm.refusals); add(tools.reasons, rlm.reasons);
 }
-const raw = JSON.parse(await readFile('eval-v2-raw.local.json', 'utf8')) as { invalid: { text: string; reason: string }[]; responses: { text: string; observation?: unknown }[] }[];
-const fixturePath = 'test/fixtures/glm-5.3-orphan-think.txt';
-const capturedShape = await readFile(fixturePath, 'utf8');
-assert.equal(raw[0].invalid[0].text, capturedShape, 'Fixture must be an exact recorded response');
-const fixtureDigest = createHash('sha256').update(capturedShape).digest('hex');
-const acceptedFixturePath = 'test/fixtures/glm-5.3-prose-action.txt';
-const acceptedShape = await readFile(acceptedFixturePath, 'utf8');
+const raw = JSON.parse(await readFile(`eval-${label}-raw.local.json`, 'utf8')) as { invalid: { text: string; reason: string }[]; responses: { text: string; observation?: unknown }[] }[];
+const fixtures: Record<string, { path: string; sha256: string }> = {};
 const deliveredResponses = raw.flatMap(entry => entry.responses).filter(entry => entry.observation !== null && typeof entry.observation === 'object' && 'estimated_tokens' in entry.observation);
-assert.ok(deliveredResponses.some(entry => entry.text === acceptedShape));
-const acceptedFixtureDigest = createHash('sha256').update(acceptedShape).digest('hex');
+if (label === 'v2') {
+  for (const [name, path] of [['recorded_shape_fixture', 'test/fixtures/glm-5.3-orphan-think.txt'], ['accepted_shape_fixture', 'test/fixtures/glm-5.3-prose-action.txt']]) {
+    const captured = await readFile(path, 'utf8');
+    assert.ok(name === 'recorded_shape_fixture' ? raw[0].invalid[0].text === captured : deliveredResponses.some(entry => entry.text === captured));
+    fixtures[name] = { path, sha256: createHash('sha256').update(captured).digest('hex') };
+  }
+}
 let wrappedDeliveries = 0;
 for (const entry of deliveredResponses) { try { JSON.parse(entry.text); } catch { wrappedDeliveries++; } }
 const shapes: Record<string, number> = {};
@@ -76,22 +78,23 @@ for (const entry of raw) for (const invalid of entry.invalid) {
 }
 assert.equal(Object.values(shapes).reduce((total, count) => total + count, 0), tools.refusals.invalid ?? 0);
 const baselines = answerDistribution(measurement.rows.map(row => ({ question: row.question, answer: row.expected, scope: {} })));
-const published = { ...measurement, implementation_revision: implementationRevision, recorded_shape_fixture: { path: fixturePath, sha256: fixtureDigest }, accepted_shape_fixture: { path: acceptedFixturePath, sha256: acceptedFixtureDigest }, wrapped_deliveries: wrappedDeliveries, validation: { status: 'complete', task_identity: 'Same historical revisions and 24 exact tasks; format-neutral questions with historical seed hash inputs.' }, metric_provenance: METRIC_PROVENANCE, summary, tools, invalid_action_shapes: shapes, baselines };
-await writeFile('eval-results-v2.json', JSON.stringify(published, null, 2) + '\n');
-const table = ['| Arm | Correct | Tokens / question | Seconds / question | Requests / question |', '| --- | ---: | ---: | ---: | ---: |', ...summary.map(row => `| ${row.arm === 'rlm' ? 'RLM v2' : 'Complete-item stuffing'} | ${row.correct}/24 | ${row.tokens_per_question.toFixed(2)} | ${row.seconds_per_question.toFixed(2)} | ${row.requests_per_question.toFixed(2)} |`)].join('\n');
-const resultText = summary[0].correct > summary[1].correct ? 'RLM v2 scored higher on this single fixed set.' : 'RLM v2 was not better than stuffing on this single fixed set.';
+const published = { ...measurement, implementation_revision: implementationRevision, ...fixtures, wrapped_deliveries: wrappedDeliveries, validation: { status: 'complete', task_identity: 'Same historical revisions and 24 exact tasks; format-neutral questions with historical seed hash inputs.' }, metric_provenance: METRIC_PROVENANCE, summary, tools, invalid_action_shapes: shapes, baselines };
+await writeFile(`eval-results-${label}.json`, JSON.stringify(published, null, 2) + '\n');
+const table = ['| Arm | Correct | Tokens / question | Seconds / question | Requests / question |', '| --- | ---: | ---: | ---: | ---: |', ...summary.map(row => `| ${row.arm === 'rlm' ? title : 'Complete-item stuffing'} | ${row.correct}/24 | ${row.tokens_per_question.toFixed(2)} | ${row.seconds_per_question.toFixed(2)} | ${row.requests_per_question.toFixed(2)} |`)].join('\n');
+const resultText = `${title} ${summary[0].correct > summary[1].correct ? 'scored higher' : 'was not better than stuffing'} on this single fixed set.`;
 const evidence = `Child reach: ${tools.child_reach}/24. Delivered reads: ${tools.delivered_reads}; delivered aggregates: ${tools.delivered_aggregates}. Delivered responses requiring envelope extraction: ${wrappedDeliveries}. Successful read-only replays: ${tools.replay_verified}. Tool refusals: \`${JSON.stringify(tools.refusals)}\`. Outer failures: RLM \`${JSON.stringify(summary[0].failures)}\`; stuffing \`${JSON.stringify(summary[1].failures)}\`.`;
 const constants = `Most-common constant guess: ${baselines.most_common}/24; constant zero: ${baselines.zero}/24.`;
-const method = `One authorized model invocation, sequential stuffing-first arms, no retries of the evaluation and no answer-based tuning. Both arms share tolerant envelope extraction and retain their string answer schemas. Configured limits: ${measurement.context_tokens} context, ${measurement.output_tokens} output, ${measurement.budget_tokens} RLM budget, depth ${measurement.max_depth}, calls ${measurement.max_calls}, temperature ${measurement.temperature}. Questions are format-neutral. The historical suffix remains only in the hash input, preserving the original seeded task selection. Both source revisions, full corpus item/byte counts and all truths were verified before the first request. A preflight initially refused changed task selection before any inference; the exclusive marker was absent until the successful preflight. ${measurement.third_arm}`;
+const method = `One authorized evaluation invocation, sequential stuffing-first arms, no retries of the evaluation and no answer-based tuning. Both arms share tolerant envelope extraction and retain their string answer schemas. ${label === 'constrained' ? 'This constrained round sends the generated action schema as Ollama format and the separate answer schema for stuffing. ' : ''} Configured limits: ${measurement.context_tokens} context, ${measurement.output_tokens} output, ${measurement.budget_tokens} RLM budget, depth ${measurement.max_depth}, calls ${measurement.max_calls}, temperature ${measurement.temperature}. Questions are format-neutral. The historical suffix remains only in the hash input, preserving the original seeded task selection. Both source revisions, full corpus item/byte counts and all truths were verified before the first request. ${measurement.third_arm}`;
 const limitations = `Tokens are provider-reported or conservative byte estimates, not measured-only usage. Pending reservations (${tools.pending_tokens} tokens total) are separate from settled usage; observation charges total ${tools.observation_tokens} byte-estimated tokens. Lost transport counters cannot be recovered. Incorrect stuffing answers are not separately classified as format versus content failures. Seconds include wall time and host load; the RLM arm includes SDK bookkeeping and replay verification for successful runs. Complete-item stuffing selects only whole items that fit the same conservative byte-based context ceiling. No confidence interval, recursive-quality claim or general model ranking follows from one fixed set. This run cannot isolate parser effects from aggregation effects.`;
-let document = `# v2 cloud measurement\n\n${resultText}\n\nModel: \`${measurement.model}\`; seed: \`${measurement.design}\`; completed: ${measurement.measured_at_utc}.\n\n${table}\n\n${evidence}\n\n${constants}\n\n${method}\n\n${limitations}\n\n## Invalid-action evidence\n\nThe historical 451 strings were deleted, so their shapes remain unknown. New exact responses are retained locally in an ignored artifact. New shape counts: \`${JSON.stringify(shapes)}\`. Exact refusal reasons: \`${JSON.stringify(tools.reasons)}\`. See [the diagnosis](ACTION-DIAGNOSIS.md) for recorded versus synthetic cases.\n\n## Reproducibility\n\nMeasured source commit: \`${implementationRevision}\`. Measured implementation SHA-256: \`${measurement.implementation_source_sha256}\`. The artifact records every hashed source path; the formatter verifies they remain unchanged. [Per-question results](../eval-results-v2.json) retain exact tasks, truths, source revisions, digests and counters. The original invalidated results remain in [eval-results.json](../eval-results.json).\n\n`;
+let document = `# ${label} cloud measurement\n\n${resultText}\n\nModel: \`${measurement.model}\`; seed: \`${measurement.design}\`; completed: ${measurement.measured_at_utc}.\n\n${table}\n\n${evidence}\n\n${constants}\n\n${method}\n\n${limitations}\n\n## Invalid-action evidence\n\nThe historical 451 strings were deleted, so their shapes remain unknown. New exact responses are retained locally in an ignored artifact. New shape counts: \`${JSON.stringify(shapes)}\`. Exact refusal reasons: \`${JSON.stringify(tools.reasons)}\`. See [the diagnosis](ACTION-DIAGNOSIS.md) for recorded versus synthetic cases.\n\n## Reproducibility\n\nMeasured source commit: \`${implementationRevision}\`. Measured implementation SHA-256: \`${measurement.implementation_source_sha256}\`. The artifact records every hashed source path; the formatter verifies they remain unchanged. [Per-question results](../eval-results-${label}.json) retain exact tasks, truths, source revisions, digests and counters. The original invalidated results remain in [eval-results.json](../eval-results.json).\n\n`;
 for (const repo of [...new Set(measurement.rows.map(row => row.repo))]) {
   const entry = measurement.rows.find(row => row.repo === repo)!;
   document += `- \`${repo}\` at \`${entry.revision}\`: ${entry.corpus_items} items, ${entry.corpus_bytes} JSON bytes.\n`;
 }
-await writeFile('docs/EVAL-V2.md', document);
+if (label === 'constrained') document += '\nOllama Cloud currently documents structured outputs as unsupported ([official documentation](https://docs.ollama.com/capabilities/structured-outputs)). Sending the schema does not prove enforcement; zero invalid actions caused by transport refusal would not establish working tools or constrained generation. Model errors are sanitized, so the precise provider rejection cause and lost usage cannot be inferred from them. The OpenAI-compatible path is unit-tested with real local HTTP endpoints, not live-measured here. Earlier v2 results remain in [EVAL-V2.md](EVAL-V2.md).\n';
+await writeFile(`docs/EVAL-${label === 'v2' ? 'V2' : 'CONSTRAINED'}.md`, document);
 const readme = await readFile('README.md', 'utf8');
-const block = `<!-- eval-v2:start -->\n${resultText}\n\n${table}\n\n${evidence}\n\n${constants} ${measurement.third_arm} See [the v2 report](docs/EVAL-V2.md).\n<!-- eval-v2:end -->`;
-const previous = /<!-- eval-v2:start -->[\s\S]*?<!-- eval-v2:end -->/;
-await writeFile('README.md', previous.test(readme) ? readme.replace(previous, block) : readme + '\n## v2 measurement\n\n' + block + '\n');
+const block = `<!-- eval-${label}:start -->\n${resultText}\n\n${table}\n\n${evidence}\n\n${constants} ${measurement.third_arm} See [the ${label} report](docs/EVAL-${label === 'v2' ? 'V2' : 'CONSTRAINED'}.md).\n<!-- eval-${label}:end -->`;
+const previous = new RegExp(`<!-- eval-${label}:start -->[\\s\\S]*?<!-- eval-${label}:end -->`);
+await writeFile('README.md', previous.test(readme) ? readme.replace(previous, block) : readme + `\n## ${label} measurement\n\n` + block + '\n');
 console.log(JSON.stringify({ summary, tools, shapes, baselines }, null, 2));

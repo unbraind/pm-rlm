@@ -6,11 +6,13 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:46.263Z"
-updated_at: "2026-10-19T07:32:39.143Z"
+updated_at: "2026-10-19T10:29:19.233Z"
+assignee: codex-agent
+claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: Real-shape diagnosis; parser and feedback regressions with behavioral revert proofs
 parent: pm-rlm-a1ih
-comments[7]{created_at,author,text}:
+comments[11]{created_at,author,text}:
   "2026-10-19T05:54:25.038Z",codex-agent,"Diagnosis before edits: the historical cloud harness deletes scratch ledgers in finally and publishes only response hashes. The 451 glm invalid-action outputs are unavailable, so their shapes cannot honestly be classified. A surviving older local-model ledger contains six exact responses {\"action\":\"finish\",\"answer\":0}; these remain schema refusals. Historical question text conflicted with JSON protocol; merged main already makes questions format-neutral. Plan: wrapper extraction without key coercion, ambiguity refusal, specific correction feedback, recorded-shape regression plus synthetic wrapper edges; retain local-only new-run evidence."
   "2026-10-19T06:00:45.080Z",codex-agent,"Implementation preserves string answer types and rejects duplicate keys, array envelopes, multiple objects and unterminated reasoning. Braces, escaped quotes and reasoning-like text inside JSON strings remain data. Both eval arms share envelope extraction for fair answer formatting. Initial focused suite passes 4/4. Full coverage initially found one untested absent-field branch; added a real-tracker boundary case. Shared eval helpers remove duplicate orchestration without lowering the zero-duplication threshold."
   "2026-10-19T06:01:36.846Z",codex-agent,"Behavioral revert proofs: node test/v2-revert.ts passed 8/8. Parser envelope extraction, corrective feedback, count, sum, distinct, group_count, argmax and argmin each caused its targeted regression to fail with exit 1 when only that production behavior was removed; all source bytes restored. npx pm test pm-rlm-v2parse --run --progress passed both linked commands (focused tests 4/4 plus proofs 8/8). The tracker has result tracking disabled, so this comment is the durable result receipt. Full coverage passed 120/120 tests and 100/100/100/100 over 21 source files."
@@ -18,16 +20,70 @@ comments[7]{created_at,author,text}:
   "2026-10-19T07:17:06.501Z",codex-agent,"Added an exact accepted cloud response fixture: test/fixtures/glm-5.3-prose-action.txt contains prose, a closing reasoning tag in the prefix, then one unique argmax object. Strict JSON.parse refuses it; the measured extractor delivers it without changing its operands. The new positive real-shape regression complements the ambiguous two-object refusal fixture. Production code and prompts remain unchanged; these are response-shape tests, not answer tuning."
   "2026-10-19T07:28:26.501Z",codex-agent,"Final regression receipt: npx pm test pm-rlm-v2parse --run --progress --timeout 900 passed both linked commands: 6/6 focused tests and 10/10 behavioral revert proofs. Each invariant independently fails its regression when removed: parser extraction, fair stuffing extraction, corrective refusal feedback, historical seeded selection, count, sum, distinct, group_count, argmax and argmin. All modified source bytes were restored. Both exact accepted and refused cloud fixtures were verified against retained responses. Ten of thirteen delivered aggregates required envelope extraction."
   "2026-10-19T07:32:37.955Z",codex-agent,"Final verification complete: 6/6 focused regressions, 10/10 independent behavioral revert proofs, and both full release checks at 122/122 plus 2/2 packed consumers each. Two exact new cloud fixtures distinguish a uniquely extractable action from ambiguous repeated objects. The historical cloud strings are unavailable; that evidence gap remains explicit. Claims are being released with items left in progress for orchestrator review."
-files[6]{path,scope}:
+  "2026-10-19T10:14:44.613Z",codex-agent,"Review round 1: merged main with normal merge drivers. Address parser-version compatibility for replay and resume, URL decoding in the live harness, and a shared validator/schema source for constrained Ollama and OpenAI-compatible output. Preserve the prior evaluation; one newly authorized constrained run uses the same frozen 24 tasks, without answer tuning. Review threads will not be replied to or resolved."
+  "2026-10-19T10:19:04.351Z",codex-agent,"Compatibility design: missing parser_version means strict v1; explicit v2 preserves tolerant pre-schema parsing; new checkpoints use v3, whose discriminated union is also the runtime transport validator. Replay, cached responses, fresh resume responses and partition references select the recorded parser. Scope, child-refusal and slice semantic checks remain. Ollama receives format schema; OpenAI-compatible requests use strict json_schema with a generated object wrapper and required nullable optional fields, decoded to canonical actions. Stuffing receives its separate answer schema. Official Ollama docs currently say Cloud structured outputs are unsupported; the single authorized run will measure the requested wire behavior honestly, without retry or model substitution."
+  "2026-10-19T10:23:13.591Z",codex-agent,"Revert proofs passed: node test/v2-revert.ts 10/10, including tolerant parser and each of count, sum, distinct, group_count, argmax and argmin. node test/constrained-revert.ts 6/6: checkpoint parser selection, strict v1 parsing, URL decoding, Ollama schema, OpenAI-compatible schema, shared validator. Each regression fails independently with only its behavior removed, then all source bytes are restored. Ajv independently verifies current schema/validator parity across all action alternatives and mutated operands. Initial full coverage attempt identified a missing declaration docstring and two legacy branches; addressed before freezing inference."
+  "2026-10-19T10:29:19.233Z",codex-agent,"Current code verification: focused linked suite 14/14; Bun release:check passed 128/128 tests and 2/2 actual packed npm/npx and Bun/bunx consumers, coverage 100/100/100/100 over 22 sources, 82/82 docstrings, zero duplication, production audit and attestation checks. npm ran all 128 tests with full coverage but stopped at stale generated changelog order after tracker updates. Regenerated the changelog; rerun npm gate next. Measured code will now be committed and frozen for the single newly authorized cloud invocation. Linked result persistence is disabled by project policy; this comment retains the receipt."
+files[13]{path,scope}:
+  src/action-schema.ts,project
+  src/adapters.ts,project
   src/engine.ts,project
+  src/ledger.ts,project
   src/protocol.ts,project
+  test/constrained-revert.ts,project
+  test/constrained.test.ts,project
   test/fixtures/glm-5.3-orphan-think.txt,project
   test/fixtures/glm-5.3-prose-action.txt,project
+  test/live-v2.ts,project
+  test/live.ts,project
   test/v2-revert.ts,project
   test/v2.test.ts,project
-tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
-  node --test test/v2.test.ts,project,codex-agent,"2026-10-19T06:00:19.320Z",local_mutation,feat/protocol-and-aggregates
-  node test/v2-revert.ts,project,codex-agent,"2026-10-19T06:00:23.981Z",local_mutation,feat/protocol-and-aggregates
-docs[1]{path,scope}:
+tests[6]:
+  - command: node --test test/v2.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T06:00:19.320Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: node test/v2-revert.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T06:00:23.981Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: node --test test/constrained.test.ts test/adapters.test.ts test/v2.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T10:19:11.394Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: node test/constrained-revert.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T10:21:38.481Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: "npm run release:check"
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T10:23:23.682Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: "bun run release:check"
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T10:23:25.202Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+docs[2]{path,scope}:
+  ARCHITECTURE.md,project
   docs/ACTION-DIAGNOSIS.md,project
 body: ""

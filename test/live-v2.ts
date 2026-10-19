@@ -11,7 +11,7 @@ import { replayRlm } from '../src/engine.ts';
 import { readCorpus } from '../src/environment.ts';
 import { RlmLedger } from '../src/ledger.ts';
 import { parseAction } from '../src/protocol.ts';
-import { copyVerifiedRevision, liveSettings, measureStuffing, attemptRun } from './live.ts';
+import { copyVerifiedRevision, publicSource, liveSettings, measureStuffing, attemptRun } from './live.ts';
 import { questions, EVAL_SEED } from './eval-questions.ts';
 import type { RlmState } from '../src/types.ts';
 
@@ -42,6 +42,7 @@ function observations(state: RlmState) {
 }
 
 assert.equal(process.env.PM_RLM_LIVE_MODEL, 'glm-5.3:cloud');
+const label = process.argv.includes('--constrained') ? 'constrained' : 'v2';
 const historical = JSON.parse(await readFile('eval-results.json', 'utf8')) as { rows: HistoricalRow[] };
 const paths = [...(await readdir('src')).filter(path => path.endsWith('.ts')).map(path => `src/${path}`), 'test/live-v2.ts', 'test/live.ts', 'test/eval-questions.ts'].sort();
 const hash = createHash('sha256');
@@ -61,7 +62,7 @@ try {
     assert.equal(revision, old[0].revision);
     const base = join(root, repo);
     await mkdir(base);
-    const source = new URL(`../../../fleet/${repo}/`, import.meta.url).pathname;
+    const source = publicSource(repo, import.meta.url);
     const { workspace } = await copyVerifiedRevision(source, revision, base);
     const corpus = await readCorpus(workspace);
     assert.equal(corpus.items.length, old[0].corpus_items);
@@ -71,7 +72,7 @@ try {
     prepared.push({ repo, revision, workspace, corpus, tasks, config: await liveSettings(workspace) });
   }
   // Exclusive marker prevents accidental remeasurement, including after a partial provider failure.
-  await writeFile('live-v2.started.local', JSON.stringify(marker, null, 2) + '\n', { flag: 'wx' });
+  await writeFile(`live-${label}.started.local`, JSON.stringify(marker, null, 2) + '\n', { flag: 'wx' });
   for (const { repo, revision, workspace, corpus, tasks, config } of prepared) {
     const model = new HttpModel(config);
     for (const [index, task] of tasks.entries()) {
@@ -90,8 +91,8 @@ try {
       }
       const row = { question: task.question, expected: task.answer, index, repo, revision, corpus_bytes: Buffer.byteLength(JSON.stringify(corpus.items)), corpus_items: corpus.items.length, rlm: { correct: answer.trim() === task.answer, answer_sha256: digest(answer), ...counters, ms: Math.round(performance.now() - start), error }, stuffing: baseline };
       rows.push(row);
-      await writeFile('eval-v2-raw.local.json', JSON.stringify(raw, null, 2) + '\n', { mode: 0o600 });
-      await writeFile('eval-results-v2.local.json', JSON.stringify({ ...marker, design: EVAL_SEED, model: config.model, measured_at_utc: new Date().toISOString(), context_tokens: config.context_tokens, output_tokens: config.output_tokens, budget_tokens: config.budget_tokens, max_depth: config.max_depth, max_calls: config.max_calls, temperature: 0, live_invocations: 1, third_arm: 'Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests.', rows }, null, 2) + '\n');
+      await writeFile(`eval-${label}-raw.local.json`, JSON.stringify(raw, null, 2) + '\n', { mode: 0o600 });
+      await writeFile(`eval-results-${label}.local.json`, JSON.stringify({ ...marker, design: EVAL_SEED, model: config.model, measured_at_utc: new Date().toISOString(), context_tokens: config.context_tokens, output_tokens: config.output_tokens, budget_tokens: config.budget_tokens, max_depth: config.max_depth, max_calls: config.max_calls, temperature: 0, live_invocations: 1, third_arm: 'Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests.', rows }, null, 2) + '\n');
       console.log(JSON.stringify(row));
     }
   }

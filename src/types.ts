@@ -48,6 +48,8 @@ export interface ModelRequest {
   prompt: string;
   max_output_tokens: number;
   context_tokens: number;
+  response_kind?: 'action' | 'answer';
+  parser_version?: 1 | 2 | 3;
 }
 /** Model response counters use provider reports when available and conservative estimates otherwise. */
 export interface ModelResponse {
@@ -102,6 +104,7 @@ export interface RlmCall {
 /** Durable run checkpoint stored through the SDK in the root call's registered field. */
 export interface RlmState {
   version: 1;
+  parser_version?: 1 | 2 | 3;
   run: string;
   question: string;
   settings: RlmSettings;

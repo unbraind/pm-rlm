@@ -103,12 +103,12 @@ test('v2 ledger delivers aggregates and refusal reasons through replay and resum
   ];
   const model = new ScriptedModel((request, index) => {
     if (index === 0) return '{"tool":"count"}';
-    assert.match(request.prompt, /Unknown model action/);
+    assert.match(request.prompt, /Action does not match the action JSON Schema/);
     return index <= actions.length ? JSON.stringify(actions[index - 1]) : '```json\n{"action":"finish","answer":"done"}\n```';
   });
   const result = await runRlm('Aggregate', { workspace, model, scope: { ids: [item.id] }, settings: { context_tokens: 131072, budget_tokens: 500000 } });
   const state = await new RlmLedger(workspace).load(result.run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'invalid', reason: 'Unknown model action' });
+  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'invalid', reason: 'Action does not match the action JSON Schema' });
   assert.ok(state.calls[0].steps[0].reserved > 0);
   assert.equal(state.calls[0].steps.filter(step => typeof step.observation === 'object' && step.observation !== null && 'estimated_tokens' in step.observation).length, 6);
   await client.update(item.id, { title: 'Changed after snapshot' });
