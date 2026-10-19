@@ -7,13 +7,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:47.468Z"
-updated_at: "2026-10-19T17:10:24.836Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-19T17:20:57.861Z"
 author: codex-agent
 acceptance_criteria: Six aggregate revert proofs; npm and Bun release gates; one honest 24-question comparison
 parent: pm-rlm-a1ih
-comments[23]{created_at,author,text}:
+comments[24]{created_at,author,text}:
   "2026-10-19T05:54:26.312Z",codex-agent,"Plan fixed before live inference: six deterministic snapshot aggregates with no evaluation or code execution; len(field) means UTF-8 bytes, numeric fields must be finite, extrema return sorted tied ids, missing text is empty. Reuse existing budget, projection, ledger and replay paths. Pin both public source revisions and verify the same 24 selected questions. One invocation only, no answer tuning; include cheap generic precomputed-tool context arm if it fits."
   "2026-10-19T06:00:47.940Z",codex-agent,"Optional third arm omitted before inference to conserve owner quota: it requires 24 additional full cloud requests. The new harness verifies public visibility, exact historical revisions, complete corpus counts/bytes and all 24 seeded questions/truths before its exclusive once-only marker. Successful new runs are replayed. New raw response evidence stays in ignored local artifacts."
   "2026-10-19T06:01:38.699Z",codex-agent,"Revert proof receipt: count, sum, distinct, group_count, argmax and argmin each independently fail the exact scoped observation regression when only that operation is removed. All six passed behavioral revert verification in node test/v2-revert.ts; source bytes restored. Starting the only authorized cloud invocation with the implementation frozen."
@@ -37,6 +35,7 @@ comments[23]{created_at,author,text}:
   "2026-10-19T17:07:30.157Z",codex-agent,"Round 5: audited test and scripts for Git show, revision lookups and fixed revisions. Only review-r4-revert.ts reads a branch-local commit; other revision usage is synthetic Git fixture setup or evaluation provenance. Replace the old callback lookup with exact current-source substitutions, guard every transform and run all five committed revert scripts sequentially in a verified depth-one clone of HEAD. Preserve all source bytes and unchanged gate thresholds."
   "2026-10-19T17:08:58.663Z",codex-agent,"Implementation uses one exact-snippet transform with explicit occurrence counts, including all five parser-version sites and the adapter import. Every proof clears inherited Node test context so nested assertions execute. The shallow regression clones HEAD over file transport with depth 1, verifies matching HEAD and one available commit, checks current proof bytes, runs all five scripts sequentially with locked dependencies, and checks tracked source restoration. An initial code-plus-tracker commit is needed before this exact-HEAD test can execute."
   "2026-10-19T17:10:24.815Z",codex-agent,"Regression evidence before the implementation commit: the original round-four script fails with invalid object name in a real depth-one clone of the previous HEAD. Removing only the new exact-match assertion makes the guard regression fail with exit 1 and ERR_ASSERTION; original bytes restored. Typecheck and lint pass. Duplication is 0 percent at the unchanged threshold after extracting the common assertion runner and source-restoring harness. Proof instructions are in docs/REVERT-PROOFS.md."
+  "2026-10-19T17:20:55.847Z",codex-agent,"Round 5 release receipts on source commit 6523deb: pinned pm ran npm run release:check and bun run release:check successfully with isolated HOME and Git settings. Each passed 144/144 suite tests plus 2/2 actual packed npm and Bun consumers. Each gate ran all five proof scripts in a verified depth-one clone of matching HEAD: constrained 8/8, original 51/51, round-three 5/5, round-four 7/7 and v2 10/10, totaling 81/81 independent behavioral reversions with exact tracked-source restoration. Coverage remains 100/100/100/100 over 23 required sources; 87 documented declarations and zero duplication. Identity, production audit, package, changelog and publish-attestation gates pass. No production code or dependency pins changed. Existing development advisory remains pm-rlm-wiav; no new pm CLI/SDK defect found. History remains append-only. Final receipt-only metadata and a fresh-clone health check follow; release the claim and leave this item in progress for orchestrator verification."
 files[21]{path,scope}:
   eval-results-constrained.json,project
   index.ts,project
