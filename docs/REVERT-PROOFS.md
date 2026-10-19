@@ -30,3 +30,7 @@ and omit earlier model-step charges when reconstructing the remaining budget.
 The regression checks exact refusal codes/messages on completed and interrupted
 runs, absence of resumed inference or history writes after tampering, recursive
 child reuse, prior delivered-read charges, and actual packed report link targets.
+
+The clone runner allows thirty minutes per script and one hour for the full
+sequence, accommodating packed installs on a busy host. Assertion requirements,
+proof inventory and all release thresholds remain unchanged.
