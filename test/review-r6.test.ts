@@ -18,7 +18,7 @@ test('review r6 packed measurement report links resolve recursively', async t =>
   const packed = spawnSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', scratch], { encoding: 'utf8', env: npmEnvironment(process.env) });
   assert.equal(packed.status, 0, packed.stdout + packed.stderr);
   const inventory = new Set((JSON.parse(packed.stdout) as { files: { path: string }[] }[])[0].files.map(file => file.path));
-  const pending = ['docs/EVAL-V2.md', 'docs/EVAL-CONSTRAINED.md'];
+  const pending = ['README.md'];
   const seen = new Set<string>();
   for (const path of pending) {
     assert.ok(inventory.has(path), `Installed report target missing: ${path}`);

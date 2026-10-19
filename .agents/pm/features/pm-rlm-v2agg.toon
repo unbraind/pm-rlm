@@ -7,13 +7,13 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:47.468Z"
-updated_at: "2026-10-19T19:57:09.085Z"
+updated_at: "2026-10-19T20:06:43.902Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: Six aggregate revert proofs; npm and Bun release gates; one honest 24-question comparison
 parent: pm-rlm-a1ih
-comments[27]{created_at,author,text}:
+comments[28]{created_at,author,text}:
   "2026-10-19T05:54:26.312Z",codex-agent,"Plan fixed before live inference: six deterministic snapshot aggregates with no evaluation or code execution; len(field) means UTF-8 bytes, numeric fields must be finite, extrema return sorted tied ids, missing text is empty. Reuse existing budget, projection, ledger and replay paths. Pin both public source revisions and verify the same 24 selected questions. One invocation only, no answer tuning; include cheap generic precomputed-tool context arm if it fits."
   "2026-10-19T06:00:47.940Z",codex-agent,"Optional third arm omitted before inference to conserve owner quota: it requires 24 additional full cloud requests. The new harness verifies public visibility, exact historical revisions, complete corpus counts/bytes and all 24 seeded questions/truths before its exclusive once-only marker. Successful new runs are replayed. New raw response evidence stays in ignored local artifacts."
   "2026-10-19T06:01:38.699Z",codex-agent,"Revert proof receipt: count, sum, distinct, group_count, argmax and argmin each independently fail the exact scoped observation regression when only that operation is removed. All six passed behavioral revert verification in node test/v2-revert.ts; source bytes restored. Starting the only authorized cloud invocation with the implementation frozen."
@@ -41,6 +41,7 @@ comments[27]{created_at,author,text}:
   "2026-10-19T19:27:05.533Z",codex-agent,"Review round 6: fetched all review threads and every comment (no pagination omissions); two unresolved threads remain: PRRT_kwDOVOym886uDtwB (installed README report targets) and PRRT_kwDOVOym886uDtwK (execution refusal integrity). Latest CodeRabbit review has no outside-diff findings. Merged current origin/main before fixes. Plan: package the two reports and their per-question JSON, recompute non-spawn execution refusals using the existing observation path and chronological budget, preserve parser-v1 code-only compatibility and spawn handling, and prove each correction behaviorally before both unchanged release gates."
   "2026-10-19T19:33:26.475Z",codex-agent,"Behavioral revert proofs: node test/review-r6-revert.ts passed 4/4 independent reversions. Removing only the packed report artifacts fails the actual tarball-link regression; removing only replay validation fails tampered-aggregate assertions; removing only resume validation fails before-inference integrity assertions; removing only chronological model charges fails the valid recursive-budget replay regression. Each mutation produces exit 1 with an assertion failure, then restores exact current source bytes. Existing parser-refusal comparison paths remain unchanged. The package now includes both reports, their per-question JSON and the shared diagnosis linked by those reports."
   "2026-10-19T19:57:05.385Z",codex-agent,"Full-gate infrastructure retry: the depth-one original proof script exceeded its existing 600-second process deadline during a real cold-cache packed npm consumer installation on the busy host. The duplicate gate was stopped. Increase only the clone-runner deadlines to 1800 seconds per script and 3600 seconds overall; retain every proof, assertion and coverage/duplication threshold. Retry on the installed Node 26 runtime with isolated HOME/Git settings and warm package/compile caches. The initial attempt is not a passing gate receipt."
+  "2026-10-19T20:06:43.849Z",codex-agent,"Package completeness follow-through for PRRT_kwDOVOym886uDtwB: walking README reveals the same pre-existing omission for docs/EVAL-DESIGN.md, docs/eval-design.json and docs/EVAL-CLOUD.md. Include those public artifacts as well, and start the real-tarball regression at README so every local Markdown/report link is followed recursively. This covers the complete installed documentation graph rather than only the two new links. Restart both full gates on the expanded package correction. Runtime retry uses only the warm npm cache; compile caching is explicitly disabled for precise V8 coverage."
 files[24]{path,scope}:
   eval-results-constrained.json,project
   index.ts,project

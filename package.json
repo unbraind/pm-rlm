@@ -25,7 +25,10 @@
     "eval-results-constrained.json",
     "docs/EVAL-V2.md",
     "docs/EVAL-CONSTRAINED.md",
-    "docs/ACTION-DIAGNOSIS.md"
+    "docs/ACTION-DIAGNOSIS.md",
+    "docs/EVAL-DESIGN.md",
+    "docs/eval-design.json",
+    "docs/EVAL-CLOUD.md"
   ],
   "scripts": {
     "build": "tsc",
