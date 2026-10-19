@@ -1,3 +1,4 @@
+import { extractObject } from './action-envelope.ts';
 import { RlmError } from './errors.ts';
 import type { RlmAction, RlmFilter } from './types.ts';
 
@@ -85,6 +86,7 @@ function optionalNulls(schema: ActionSchema, value: unknown): unknown {
 /** Decode strict transport wrapping only when it validates; ignored-format responses keep the fallback. */
 export function compatibleAction(output: string): string {
   try {
+    extractObject(output);
     const value: unknown = JSON.parse(output);
     if (!acceptsSchema(COMPATIBLE_ACTION_SCHEMA, value)) return output;
     return JSON.stringify(optionalNulls(ACTION_SCHEMA, (value as { response: unknown }).response));

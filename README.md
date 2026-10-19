@@ -130,7 +130,7 @@ The seeded v2 design computes truth exactly through the SDK before inference. It
 | Numeric range | 0–12196 |
 | Most-common answer frequency and constant baseline | 2/24 (8.33%) |
 | Zero frequency and constant baseline | 1/24 (4.17%) |
-| Model measurements on v2 | Historical cloud invocation invalidated by conflicting format instructions; remeasurement pending |
+| Model measurements on v2 | Completed 24-question [v2 measurement](#v2-measurement): RLM 1/24, stuffing 1/24 |
 
 Histogram: `4`, `pm-lint-8kis`, `pm-lint-trap` occur twice each; `0`, `1`, `32`, `68`, `167`, `208`, `277`, `1436`, `3154`, `3355`, `12196`, `pm-vcs-5m22`, `pm-vcs-6qva`, `pm-vcs-ag8y`, `pm-vcs-1v6x`, `pm-vcs-b7cb`, `pm-lint-1c6j`, `pm-lint-epic` occur once each. See [the design audit](docs/EVAL-DESIGN.md) and [exact questions and histogram](docs/eval-design.json). Run `node test/eval-design.ts` to audit public copies without inference. `PM_RLM_LIVE_MODEL` is passed unchanged to Ollama.
 

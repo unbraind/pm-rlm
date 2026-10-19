@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSWER_SCHEMA, acceptsSchema, compatibleAction } from '../src/action-schema.ts';
 import { Ajv } from 'ajv';
 import { publicSource } from './live.ts';
-import { estimateTokens } from '../src/errors.ts';
+import { estimateTokens, RlmError } from '../src/errors.ts';
 import type { ActionSchema } from '../src/action-schema.ts';
 import { parseAction, PROTOCOL } from '../src/protocol.ts';
 import { runRlm, replayRlm, resumeRlm } from '../src/engine.ts';
@@ -67,6 +67,40 @@ test('constrained compatible action wrapping strips only optional nulls and keep
   assert.equal(compatibleAction('{"response":{"action":"finish","answer":"x"}}'), '{"action":"finish","answer":"x"}');
   assert.equal(compatibleAction('{"response":{"action":"get","id":"a","fields":["title"]}}'), '{"action":"get","id":"a","fields":["title"]}');
   for (const output of ['```json\n{"action":"count"}\n```', '{"action":"count"}', '{"response":{"action":"count","filter":{"unknown":null}}}', 'null']) assert.equal(compatibleAction(output), output);
+});
+
+/** Raw duplicate keys must survive transport normalization for the canonical refusal. */
+test('constrained wrapped duplicate keys refuse at every nesting level', () => {
+  for (const output of [
+    '{"response":{"action":"finish","answer":"a"},"response":{"action":"finish","answer":"b"}}',
+    '{"response":{"action":"finish","answer":"a","answer":"b"}}',
+    '{"response":{"action":"count","filter":{"type":null,"status":"open","status":"closed","parent":null,"tag":null,"text":null,"ids":null}}}',
+    '{"response":{"action":"spawn","subgoal":"q","slice":{"fragments":[{"id":"a","id":"b","start":0,"end":1,"text":"x"}],"estimated_tokens":1}}}',
+    '{"response":{"action":"finish","answer":"a","\\u0061nswer":"b"}}',
+  ]) {
+    assert.equal(compatibleAction(output), output);
+    assert.throws(() => parseAction(compatibleAction(output)), new RlmError('invalid', 'Ambiguous duplicate JSON key'));
+  }
+  const valid = '{"response":{"action":"finish","answer":"a"}}';
+  assert.deepEqual(parseAction(compatibleAction(valid)), { action: 'finish', answer: 'a' });
+  const siblings = '{"response":{"action":"spawn","subgoal":"q","slice":{"fragments":[{"id":"a","start":0,"end":1,"text":"x"},{"id":"b","start":0,"end":1,"text":"y"}],"estimated_tokens":1}}}';
+  assert.equal(parseAction(compatibleAction(siblings)).action, 'spawn');
+});
+
+/** Keep malformed wrapped responses billable and deliver the established correction reason. */
+test('constrained wrapped duplicate refusal reaches the next prompt and replays', async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel((request, index) => {
+    if (index === 0) return compatibleAction('{"response":{"action":"finish","answer":"a","answer":"b"}}');
+    assert.match(request.prompt, /Ambiguous duplicate JSON key/);
+    return compatibleAction('{"response":{"action":"finish","answer":"corrected"}}');
+  });
+  const result = await runRlm('Wrapped correction', { workspace, model });
+  assert.equal(result.answer, 'corrected');
+  const state = await new RlmLedger(workspace).load(result.run);
+  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'invalid', reason: 'Ambiguous duplicate JSON key' });
+  assert.ok(state.calls[0].steps[0].reserved > 0);
+  assert.deepEqual(await replayRlm(workspace, result.run), result);
 });
 
 /** An unchanged strict checkpoint with a fenced refused spawn must replay without any writes. */

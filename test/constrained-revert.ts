@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 const proofs = [
+  { name: 'raw compatible duplicate-key check', file: 'src/action-schema.ts', before: '    extractObject(output);\n', after: '', pattern: '^constrained wrapped duplicate', test: 'test/constrained.test.ts' },
   { name: 'checkpoint parser selection', file: 'src/engine.ts', before: 'state.parser_version ?? 1', after: '3', all: true, pattern: '^parser versions', test: 'test/constrained.test.ts' },
   { name: 'strict legacy parser', file: 'src/protocol.ts', before: 'version === 1 ? output : extractObject(output)', after: 'extractObject(output)', pattern: '^parser versions', test: 'test/constrained.test.ts' },
   { name: 'URL-decoded source paths', file: 'test/live.ts', before: 'fileURLToPath(new URL(`../../../fleet/${repo}/`, base))', after: 'new URL(`../../../fleet/${repo}/`, base).pathname', pattern: '^live source URL', test: 'test/constrained.test.ts' },

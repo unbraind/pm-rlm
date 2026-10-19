@@ -6,11 +6,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:46.263Z"
-updated_at: "2026-10-19T11:34:35.806Z"
+updated_at: "2026-10-19T13:15:31.685Z"
 author: codex-agent
 acceptance_criteria: Real-shape diagnosis; parser and feedback regressions with behavioral revert proofs
 parent: pm-rlm-a1ih
-comments[14]{created_at,author,text}:
+comments[18]{created_at,author,text}:
   "2026-10-19T05:54:25.038Z",codex-agent,"Diagnosis before edits: the historical cloud harness deletes scratch ledgers in finally and publishes only response hashes. The 451 glm invalid-action outputs are unavailable, so their shapes cannot honestly be classified. A surviving older local-model ledger contains six exact responses {\"action\":\"finish\",\"answer\":0}; these remain schema refusals. Historical question text conflicted with JSON protocol; merged main already makes questions format-neutral. Plan: wrapper extraction without key coercion, ambiguity refusal, specific correction feedback, recorded-shape regression plus synthetic wrapper edges; retain local-only new-run evidence."
   "2026-10-19T06:00:45.080Z",codex-agent,"Implementation preserves string answer types and rejects duplicate keys, array envelopes, multiple objects and unterminated reasoning. Braces, escaped quotes and reasoning-like text inside JSON strings remain data. Both eval arms share envelope extraction for fair answer formatting. Initial focused suite passes 4/4. Full coverage initially found one untested absent-field branch; added a real-tracker boundary case. Shared eval helpers remove duplicate orchestration without lowering the zero-duplication threshold."
   "2026-10-19T06:01:36.846Z",codex-agent,"Behavioral revert proofs: node test/v2-revert.ts passed 8/8. Parser envelope extraction, corrective feedback, count, sum, distinct, group_count, argmax and argmin each caused its targeted regression to fail with exit 1 when only that production behavior was removed; all source bytes restored. npx pm test pm-rlm-v2parse --run --progress passed both linked commands (focused tests 4/4 plus proofs 8/8). The tracker has result tracking disabled, so this comment is the durable result receipt. Full coverage passed 120/120 tests and 100/100/100/100 over 21 source files."
@@ -25,7 +25,12 @@ comments[14]{created_at,author,text}:
   "2026-10-19T10:32:52.224Z",codex-agent,"Both full linked release gates now pass on measured source commit 495a156: npm run release:check rerun passed 128/128 tests plus 2/2 packed consumers; Bun likewise 128/128 plus 2/2. Coverage 100/100/100/100 across 22 sources; 82/82 docstrings; zero duplication; production audit, pack allowlist, changelog and attestation checks pass. Fresh no-local clone strict tracker health passes with isolated HOME and no warnings. Normal environment health still reports the external global pm-github host .19 versus pinned .18 skew; package pin and global extension remain unchanged. No SDK defect reproduced. Single constrained live invocation is running against the unchanged committed source."
   "2026-10-19T11:29:07.171Z",codex-agent,"Final compatibility audit corrected strict OpenAI union nodes to omit a redundant object type, so every typed object has closed properties and all fields required. Independent recursive provider-contract regression passes and fails when only this conversion is reverted. Review revert proofs now 7/7 (17/17 including the original 10), with source restored. Native action and answer schema SHA-256 values are unchanged against the fresh measured clone: b5d25da2e58658a436e101bcf6bf9e5fb4177405d61f7898c0cdee5b3e3e0c5a and 8aa6b8e71d80a6b3ca100683098234c23e868630d5c69ef66163e67d8ecb9a7d. No second live invocation; measured revision remains 495a156 and the corrected OpenAI path is unit-tested only."
   "2026-10-19T11:34:33.249Z",codex-agent,"Final full-gate rerun after the strict OpenAI correction passed through linked pm tests: npm run release:check and bun run release:check each pass 128/128 tests and 2/2 actual packed npm/npx and Bun/bunx consumers. Coverage 100/100/100/100 over 22 required sources; 82/82 documented declarations; zero duplication; production audit, pack allowlist, changelog and publish-attestation checks pass. Focused final HTTP/schema suite 8/8 and review revert proofs 7/7, plus original 10/10 proofs. Native schemas match measured commit 495a156 byte-for-byte. PM result recording is disabled by project policy, so comments retain receipts. No SDK bug reproduced; external global extension host skew stays outside the package. PR evidence: https://github.com/unbraind/pm-rlm/pull/8 . Claims are released for orchestrator verification; items stay in progress."
-files[13]{path,scope}:
+  "2026-10-19T12:56:14.874Z",codex-agent,"Review round 2 at eb45b7c: verified wrapper JSON.parse silently accepts duplicate response or nested action keys before canonical validation. Reuse the existing raw-object ambiguity detector before normalization, retaining the original output on refusal so parseAction produces the same invalid code and correction reason. Add wrapper, response, nested argument, escaped-key and valid-output regressions plus independent behavioral revert proof. Replace the stale README pending measurement row with the completed v2 result. No review-thread replies or resolutions."
+  "2026-10-19T12:58:07.842Z",codex-agent,"Review round 2 revert proof: node test/constrained-revert.ts passed 8/8. Removing only extractObject(output) from compatibleAction makes the new duplicate-key regression fail with exit 1 (assertion failure); raw wrapper, response, nested filter and array-member duplicates are no longer refused, and corrective feedback fails. All source bytes restored. Focused HTTP/schema suite passes 10/10, including valid wrapped actions, escaped duplicate keys, sibling object keys, typed invalid refusal, charged recovery and deterministic replay. Shared extractor moved unchanged to src/action-envelope.ts to avoid a schema/protocol dependency cycle; protocol preserves its existing export. README now links the completed 24-question v2 result. Thresholds and dependency pins unchanged."
+  "2026-10-19T13:12:34.061Z",codex-agent,"Review round 2 npm result: isolated-HOME, empty-global-Git npm run release:check passed all gates, 130/130 tests with zero fail/skip/cancel/todo and 2/2 packed npm/npx and Bun/bunx consumers. Coverage 100/100/100/100 across 23 required sources; 82 documented declarations; zero duplication; production audit clean. Pinned pm focused test execution passed 4/4; tracking_disabled is project policy, so this comment retains results. Known development dependency advisory is already tracked by pm-rlm-wiav; no dependency changes. Bun release:check is running against the unchanged code."
+  "2026-10-19T13:15:28.567Z",codex-agent,"Review round 2 final local gates: npm run release:check and bun run release:check each passed 130/130 tests and 2/2 packed npm/npx and Bun/bunx consumers, with zero fail/skip/cancel/todo. Both used isolated HOME and empty global Git settings. Coverage remains 100/100/100/100 across all 23 required sources; 82 documented declarations; 0% duplication; production audit, package allowlist, generated changelog and publish attestation all pass. Review revert proofs passed 8/8; focused HTTP/schema tests passed 10/10; pinned pm linked constrained tests passed 4/4. No new pm defect reproduced. The known development advisory remains in pm-rlm-wiav. Releasing the claim with this item in progress for orchestrator review. PR evidence: https://github.com/unbraind/pm-rlm/pull/8 . Review threads remain untouched; no merge or release."
+files[14]{path,scope}:
+  src/action-envelope.ts,project
   src/action-schema.ts,project
   src/adapters.ts,project
   src/engine.ts,project
@@ -39,7 +44,7 @@ files[13]{path,scope}:
   test/live.ts,project
   test/v2-revert.ts,project
   test/v2.test.ts,project
-tests[6]:
+tests[7]:
   - command: node --test test/v2.test.ts
     scope: project
     provenance:
@@ -84,7 +89,15 @@ tests[6]:
       created_at: "2026-10-19T10:23:25.202Z"
       source_kind: local_mutation
       source_ref: feat/protocol-and-aggregates
-docs[2]{path,scope}:
+  - command: node --test --test-name-pattern=^constrained test/constrained.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T12:57:15.755Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+docs[3]{path,scope}:
   ARCHITECTURE.md,project
   docs/ACTION-DIAGNOSIS.md,project
+  README.md,project
 body: ""

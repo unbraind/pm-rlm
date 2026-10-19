@@ -4,8 +4,8 @@
 
 ### Added
 
-- Typed snapshot aggregation and one measured cloud comparison ([pm-rlm-v2agg](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-v2agg.toon))
 - Tolerant action envelopes and corrective refusal feedback ([pm-rlm-v2parse](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-v2parse.toon))
+- Typed snapshot aggregation and one measured cloud comparison ([pm-rlm-v2agg](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-v2agg.toon))
 - Measured public tracker aggregation evaluation ([pm-rlm-umh4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-umh4.toon))
 - Atomic budgets, crash resume and deterministic replay ([pm-rlm-kgwh](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-kgwh.toon))
 - Native pm commands and SDK documentation ([pm-rlm-kaht](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-kaht.toon))
