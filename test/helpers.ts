@@ -1,3 +1,4 @@
+import { testEnvironment } from '../scripts/environment.ts';
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
@@ -36,7 +37,7 @@ export class ScriptedModel implements RlmModel {
 
 /** Fork a real recovery worker with coverage inheritance and explicit tracker arguments. */
 export function crashProcess(script: string, workspace: string, mode: string, log: string, run = '') {
-  return fork(join(import.meta.dirname, script), [workspace, mode, log, run], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: { ...process.env, NODE_TEST_CONTEXT: '' } });
+  return fork(join(import.meta.dirname, script), [workspace, mode, log, run], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: testEnvironment(process.env) });
 }
 /** Kill precisely after the worker announces a durable checkpoint, then verify signal termination. */
 export async function killAtCheckpoint(t: TestContext, child: ChildProcess): Promise<{ run: string }> {

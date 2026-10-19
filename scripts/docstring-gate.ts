@@ -14,11 +14,9 @@
  * ```
  */
 
-import { resolve } from "node:path";
-
 import { analyzeDocstringCoverage } from "pm-ops/docstrings";
 
-import { isMainInvocation } from "./main-invocation.ts";
+import { commandRoot, isMainInvocation } from "./main-invocation.ts";
 
 /** Process and stream boundaries accepted by the docstring gate. */
 export interface DocstringGateOptions {
@@ -59,5 +57,6 @@ export function runDocstringGate(options: DocstringGateOptions = {}): void {
 }
 
 if (isMainInvocation(process.argv, import.meta.url)) {
-  runDocstringGate({ root: process.argv[2] === undefined ? undefined : resolve(process.argv[2]) });
+  const root = commandRoot(process.argv[2]);
+  if (root !== undefined) runDocstringGate({ root });
 }

@@ -1,3 +1,4 @@
+import { gitEnvironment } from '../scripts/environment.ts';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdir, writeFile, symlink } from 'node:fs/promises';
@@ -11,7 +12,7 @@ import { readCorpus } from '../src/environment.ts';
 test('eval copies only the verified revision using real Git and SDK data', async t => {
   const { root, workspace, client } = await tracker(t);
   await client.create({ id: 'public-item', title: 'Public revision', type: 'Task' });
-  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const env = gitEnvironment(process.env);
   /** Execute Git only in this isolated test repository with a synthetic public identity. */
   const git = (...args: string[]): string => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=noreply@github.com', ...args], { cwd: root, env, encoding: 'utf8' }).trim();
   git('init', '-b', 'main'); git('add', '.agents/pm'); git('commit', '-m', 'Public fixture');

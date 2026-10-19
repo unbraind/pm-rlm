@@ -37,6 +37,8 @@ The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are
 
 Every command uses the host's TOON renderer by default and supports `--json`. `--model` overrides the saved default on `run`. Scope is a JSON object supporting exact `type`, `status`, `parent`, `tag` and `ids` predicates plus a case-insensitive `text` substring over the complete item. Predicates intersect; omitted predicates match all. Ledger call and generated question items are excluded from source context.
 
+CLI numeric operands use unsigned decimal digits and must fit the settings bounds; signs, exponent/hex forms, fractions, surrounding whitespace and unsafe integers are input errors. All string operands must contain non-whitespace text. Nonblank questions, model names and scope JSON are preserved verbatim; JSON may contain its normal surrounding whitespace.
+
 The exported environment works independently of the built-in loop:
 
 ```ts
@@ -159,7 +161,7 @@ npm run release:check
 bun run release:check
 ```
 
-Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove two-phase settlement, pre-response crash accounting, empty-response recovery, redirect rejection, rejected-body cancellation, typed replay observations, Git replacement isolation, checkpoint validation, transport byte and HTTPS guards, scope diagnostics, escaped privacy checks, verified archive checks and seeded answer caps, alongside the calibration, terminal child refusal, observation, scoped privacy, reservation, digest reuse and partition checks. Each regression must fail before exact source bytes are restored.
+Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove environment casing guards, CLI numeric/string/root validation, root-ancestor and Windows privacy matching, identity path matching and marker-based report replacement, as well as two-phase settlement, pre-response crash accounting, empty-response recovery, redirect rejection, rejected-body cancellation, typed replay observations, Git replacement isolation, checkpoint validation, transport byte and HTTPS guards, scope diagnostics, escaped privacy checks, verified archive checks and seeded answer caps, alongside the calibration, terminal child refusal, observation, scoped privacy, reservation, digest reuse and partition checks. Each regression must fail before exact source bytes are restored.
 
 Exit codes: `0` success; `2` invalid command, scope, model, integrity, replay or executor-conflict failure; `3` exhausted token, depth or call budget. Tool-level refusals can be recovered within a run; an exhausted outer budget ends the command. `test:live` counts refused answers rather than presenting them as successes.
 

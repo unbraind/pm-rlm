@@ -3,27 +3,40 @@ import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi } from '@unbrained/pm-cli/sdk/authoring';
 import { parseFilter } from './environment.ts';
 import { resumeRlm, replayRlm, runRlm, treeRlm } from './engine.ts';
-import { RlmError, text } from './errors.ts';
+import { integer, RlmError, text } from './errors.ts';
 import { RLM_FIELDS } from './ledger.ts';
 import type { RlmSettings } from './types.ts';
+
+/** Validate a CLI string without changing the supplied question, model or JSON. */
+function operand(value: unknown): string {
+  const result = text(value);
+  if (result.trim().length === 0) throw new RlmError('invalid', 'Expected nonblank operand');
+  return result;
+}
+/** Accept decimal integers only, before the settings validator applies tighter limits. */
+function numericOperand(value: unknown): number {
+  const result = operand(value);
+  if (!/^\d+$/.test(result)) throw new RlmError('invalid', 'Expected an unsigned decimal integer');
+  return integer(Number(result), 0);
+}
 
 /** Dispatch commands through the same SDK engine used by embedded clients. */
 export async function runCommand(command: string, ctx: CommandHandlerContext): Promise<Record<string, unknown>> {
   try {
-    const argument = text(ctx.args[0]);
+    const argument = operand(ctx.args[0]);
     if (command === 'tree') return await treeRlm(ctx.pm_root, argument, ctx.options.full === true);
     if (command === 'resume') return { ...await resumeRlm(ctx.pm_root, argument, undefined, ctx.global.author) };
     if (command === 'replay') return { ...await replayRlm(ctx.pm_root, argument) };
     if (command !== 'run') throw new RlmError('invalid', 'Unknown rlm command');
     const settings: Partial<RlmSettings> = {};
     for (const [option, setting] of [['maxDepth', 'max_depth'], ['maxCalls', 'max_calls'], ['budgetTokens', 'budget_tokens']] as const) {
-      if (ctx.options[option] !== undefined) settings[setting] = Number(text(ctx.options[option]));
+      if (ctx.options[option] !== undefined) settings[setting] = numericOperand(ctx.options[option]);
     }
-    if (ctx.options.model !== undefined) settings.model = text(ctx.options.model);
+    if (ctx.options.model !== undefined) settings.model = operand(ctx.options.model);
     let scope = {};
     if (ctx.options.scope !== undefined) {
       let decoded: unknown;
-      try { decoded = JSON.parse(text(ctx.options.scope)); }
+      try { decoded = JSON.parse(operand(ctx.options.scope)); }
       catch (error) { if (error instanceof SyntaxError) throw new RlmError('invalid', 'Invalid --scope JSON'); throw error; }
       scope = parseFilter(decoded);
     }

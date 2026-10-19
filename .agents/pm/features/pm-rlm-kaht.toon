@@ -6,7 +6,7 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:58.445Z"
-updated_at: "2026-10-18T23:38:59.739Z"
+updated_at: "2026-10-19T03:35:45.031Z"
 author: codex-agent
 estimated_minutes: 60
 acceptance_criteria: "Run, tree, resume and replay use host TOON and JSON renderers; SDK and command examples and exit codes documented."
@@ -14,18 +14,23 @@ parent: pm-rlm-a1ih
 blocked_by: pm-rlm-kgwh
 dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
   pm-rlm-kgwh,blocked_by,"2026-10-18T20:00:22.647Z",codex-agent,"cli:update:blocked_by",detected
-comments[2]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-18T20:05:23.028Z",codex-agent,"Real host command tests pass for TOON/JSON tree and replay plus run/resume/full-tree dispatch over HTTP. Packed npm/npx and Bun/bunx consumers passed discovery and command-family acceptance. README covers installation, exported APIs, every command, settings, measured eval and exit codes; ARCHITECTURE records ledger and resume invariants."
   "2026-10-18T23:30:56.180Z",codex-agent,"Review thread WKf: malformed --scope JSON now reports rlm invalid: Invalid --scope JSON with exit 2. Empty scope text retains its existing validation diagnosis, and an unexpected malformed settings file retains the generic command-integrity failure. Focused real-tracker regression covers all three paths."
-files[6]{path,scope}:
+  "2026-10-19T03:25:31.480Z",codex-agent,"Command regression covers all numeric flags against blanks, signs, NaN, Infinity, exponent/hex forms, fractions, padding and overflow; model, scope and every positional operand reject blanks before creating tracker items. Zero depth, a nonblank model tag and JSON whitespace remain supported. Documented the exact CLI operand policy in README.md."
+  "2026-10-19T03:31:16.666Z",codex-agent,"Revert evidence: replacing strict numeric parsing with Number(text(...)) fails the operand regression; removing only the nonblank string guard also fails. Removing only the optional repository-root guard fails the script-entry regression. Valid zero depth and scope JSON whitespace remain accepted. All sources restored byte-for-byte."
+  "2026-10-19T03:35:42.926Z",codex-agent,"Final linked-test execution: pm test pm-rlm-kaht --run --only-last --progress passed 1/1 commands with 6/6 focused regressions. Both full release checks passed 108/108 unit tests and all unchanged gates. Operand and quality-root behavior is documented; no command or renderer regressions."
+files[7]{path,scope}:
   index.ts,project
   manifest.json,project
   src/commands.ts,project
   test/commands.test.ts,project
   test/install.acceptance.ts,project
   test/round2.test.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  test/round4.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/commands.test.ts,project,codex-agent,"2026-10-18T19:57:50.693Z",local_mutation,feat/rlm
+  node --test test/round4.test.ts,project,codex-agent,"2026-10-19T03:26:55.105Z",local_mutation,feat/rlm
 docs[2]{path,scope}:
   ARCHITECTURE.md,project
   README.md,project

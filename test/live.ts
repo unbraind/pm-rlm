@@ -1,3 +1,4 @@
+import { gitEnvironment } from '../scripts/environment.ts';
 /** Live evaluation: copied public trackers, exact SDK truth, same local model in both arms. */
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
@@ -50,7 +51,7 @@ export async function copyPublicTracker(repo: string, base: string): Promise<{ w
 }
 /** Archive the verified revision without incorporating local, untracked or symlinked records. */
 export async function copyVerifiedRevision(source: string, revision: string, base: string): Promise<{ workspace: string; revision: string }> {
-  const env = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))), GIT_NO_REPLACE_OBJECTS: '1' };
+  const env = { ...gitEnvironment(process.env), GIT_NO_REPLACE_OBJECTS: '1' };
   const tree = execFileSync('git', ['ls-tree', '-r', revision, '--', '.agents/pm'], { cwd: source, env, encoding: 'utf8' });
   if (tree.length === 0 || tree.split('\n').some(line => line.startsWith('120000') || line.startsWith('160000'))) throw new RlmError('invalid', 'Public tracker must contain regular tracked files');
   const archive = execFileSync('git', ['archive', revision, '.agents/pm'], { cwd: source, env, maxBuffer: 64 * 1024 * 1024 });

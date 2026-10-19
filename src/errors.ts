@@ -1,4 +1,4 @@
-import { dirname, resolve, sep } from 'node:path';
+import path, { win32 } from 'node:path';
 /** Stable refusal codes usable by embedded loops and host commands. */
 export type RlmErrorCode = 'budget' | 'depth' | 'calls' | 'scope' | 'invalid' | 'incomplete' | 'model' | 'busy' | 'replay';
 /** Expected failure without raw transport errors, local paths or credentials. */
@@ -32,13 +32,24 @@ export function text(value: unknown): string {
   return value;
 }
 
+/** Compare Windows path spellings after JSON escaping, separator and case normalization. */
+function windowsPathText(value: string): string {
+  return value.toLowerCase().replaceAll('\\\\', '/').replaceAll('\\', '/');
+}
+
 /** Reject local path and configured credential disclosure before writing new ledger material. */
 export function assertLedgerPrivacy(value: unknown, workspace: string, keyEnv: string): void {
-  workspace = resolve(workspace);
+  const paths = /^[A-Za-z]:[\\/]|^[\\/]{2}[^\\/]/.test(workspace) ? win32 : path;
+  workspace = paths.resolve(workspace);
   const serialized = JSON.stringify(value);
   const secret = process.env[keyEnv];
-  const grandparent = dirname(dirname(workspace));
-  const needles = [workspace, grandparent.endsWith(sep) ? grandparent : grandparent + sep];
+  const grandparent = paths.dirname(paths.dirname(workspace));
+  const needles = [workspace];
+  if (paths.dirname(grandparent) !== grandparent) needles.push(grandparent + paths.sep);
+  if (paths === win32) {
+    const windowsText = windowsPathText(serialized);
+    if (needles.some(needle => windowsText.includes(windowsPathText(needle)) || windowsText.includes(windowsPathText(JSON.stringify(needle).slice(1, -1))))) throw new RlmError('invalid', 'Ledger content contains local paths or configured credentials');
+  }
   if (secret !== undefined && secret.length > 0) needles.push(secret);
   if (needles.some(needle => serialized.includes(needle) || serialized.includes(JSON.stringify(needle).slice(1, -1)))) throw new RlmError('invalid', 'Ledger content contains local paths or configured credentials');
 }

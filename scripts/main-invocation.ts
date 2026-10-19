@@ -7,6 +7,7 @@
  * between per-script copies.
  */
 
+import { resolve } from "node:path";
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -37,4 +38,14 @@ export function isMainInvocation(argv: readonly string[], moduleUrl: string): bo
   const entry = argv[1];
   if (entry === undefined) return false;
   return realpathSync(entry) === realpathSync(fileURLToPath(moduleUrl));
+}
+
+/** Resolve an optional CLI root, refusing blanks without exposing the supplied operand. */
+export function commandRoot(argument: string | undefined): string | undefined {
+  if (argument !== undefined && argument.trim().length === 0) {
+    console.error('Expected a nonblank repository root operand');
+    process.exitCode = 1;
+    return undefined;
+  }
+  return resolve(argument ?? process.cwd());
 }

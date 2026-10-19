@@ -6,11 +6,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:30:47.797Z"
-updated_at: "2026-10-19T02:34:53.916Z"
+updated_at: "2026-10-19T03:35:44.010Z"
 author: codex-agent
 estimated_minutes: 480
 acceptance_criteria: Typed complete reads; durable atomic budgets; crash resume and replay; honest public tracker evaluation; npm and Bun release gates pass at 100 percent coverage.
-comments[15]{created_at,author,text}:
+comments[21]{created_at,author,text}:
   "2026-10-18T19:32:35.295Z",codex-agent,"Companion specification: pm-cli-website-y3xy. Read-only reference; implementation and all evidence belong to this package. Plan: certified environment, SDK ledger, atomic reservations and digest resume, bounded adapters and commands, measured local eval, full fleet gates. No agents, publication or remote writes."
   "2026-10-18T19:51:35.483Z",codex-agent,"Behavioral revert proofs: node test/revert.ts passed 3/3. Removing only the reservation budget guard made the exact-boundary regression fail (exit 1). Replacing only completed-digest lookup with no reuse made the real SIGKILL resume regression fail (exit 1). Removing only the partition fit check made slice-budget reconstruction regression fail (exit 1). Original source SHA-256 bytes were restored after each mutation; tests import authored TypeScript directly."
   "2026-10-18T20:05:10.957Z",codex-agent,"Implementation preflight passed: frozen-source coverage is 100 percent statements/branches/functions/lines across all 19 authored source and tooling files; 71 unit tests passed with zero failures, skips, cancellation or TODO. Packed npm/npx and Bun/bunx acceptance passed 1/1. Docstrings: 57/57 declarations; jscpd zero clones at unchanged zero threshold; eslint clean. Three behavioral revert proofs passed. Strict tracker health and separate validation pass with zero warnings. Final committed-head npm and Bun release gates follow. Known SDK integration gaps: --field needs active registration despite persisted schema; pm-changelog needs canonical full output controls; package describe uses the full package name. Snapshot storage scale follow-up: pm-rlm-3isb."
@@ -26,16 +26,55 @@ comments[15]{created_at,author,text}:
   "2026-10-19T00:55:37.994Z",codex-agent,"Pre-eval verification: 98/98 tests passed with 100% statements/lines (1584/1584), branches (716/716) and functions (79/79) across all 19 authored files. TypeScript, ESLint, docstrings and zero-duplication checks pass. All 24 behavioral revert proofs pass, including settlement, pending SIGKILL, completed/interrupted issue 5, redirects, rejected-body cancellation, missing spawn observations and Git replacement isolation, plus prior engine/partition guards. Ollama metadata reports glm-5.3:cloud context length 1048576. The single authorized eval will use 131072 context for both arms, 512 output allocation, existing 300000 budget, depth 2 and eight ledger calls. Prompts and seeded questions are unchanged."
   "2026-10-19T02:16:29.764Z",codex-agent,"The single cloud eval is complete and all 24 row charges reconcile exactly as recorded usage plus pending reservation plus delivered-read charge. Both arms scored 0/24. RLM mean recorded tokens 146296.92, wall seconds 183.78, requests 19.17; stuffing mean tokens 18471.58, wall seconds 5.37. Child reach 0/24. RLM refusals budget 15 and model/transport 9; stuffing model/transport refusals 8; RLM invalid-action refusals 451. Mean RLM charged/used/pending/read tokens 151634.96/146296.92/5338.04/0.00. Most-common and zero constant baselines remain 2/24 and 1/24. Protocol compliance follow-up pm-rlm-58i4 is open, scoped to independent synthetic holdouts and separate quota authorization. No more live model calls will be made. This is a measured null result, not evidence of recursive aggregation quality. The two-phase and recovery software invariants are separately verified by real SDK tests and behavioral reversions."
   "2026-10-19T02:34:48.750Z",codex-agent,"Round 3 final release checks passed in separate empty HOME directories with global/system Git configuration disabled: npm run release:check 12/12 gates and bun run release:check 12/12 gates. Each passed 98/98 tests, zero skips/cancellations/todos, and 1/1 packed npm/npx plus Bun/bunx install/discovery/render acceptance. Both coverage reports met unchanged 100% statement/branch/function/line thresholds over 19 authored files; final Bun report covered 1584/1584 statements and lines, 717/717 branches and 79/79 functions. Docstrings 60/60; zero clones across 46 TypeScript files; identity zero violations; production audit zero; 47 allowlisted packed files. All 24 behavioral revert proofs passed. All 99 staged files passed the local-path scan and all 11 existing history prefixes were preserved. Measured implementation fingerprint still matches the single completed cloud invocation. Seven work items touched, including issue 5 and deferred protocol-compliance follow-up; work items stay unclosed. Next: local commit, push, exact-head clone validation and CI; no more model calls."
-files[6]{path,scope}:
+  "2026-10-19T03:21:11.466Z",codex-agent,"Round 4: verified the existing head and four unresolved findings. Reusing command, ledger and evaluation features for a package-wide sweep of environment filters, CLI operands, portable privacy needles and marker-based document replacement. No new live inference will run; the measured round-3 artifact remains unchanged."
+  "2026-10-19T03:25:28.837Z",codex-agent,"Round-4 sweep changes: shared case-insensitive Git filtering now covers identity auditing, verified eval copying and its fixture; coverage removes mixed-case runner variables; audit and packed consumers remove every casing of npm script policy and userconfig before setting one isolated config. All command positional/string operands reject blanks; all three numeric flags require unsigned decimal safe integers and existing settings bounds. Privacy handles shallow roots, Windows drive/UNC casing, separators and trailing separators; identity checks also cover mixed-case backslash home paths. The offline report uses unique ordered markers, validates before writes, and removes obsolete prose-based migration edits. Saved live measurements are unchanged."
+  "2026-10-19T03:28:05.386Z",codex-agent,"Additional whole-package operand sweep: the coverage, docstring and identity script CLIs now share a nonblank optional repository-root validator, preventing empty paths from silently selecting the current checkout. Regression executes all three entry points with empty and whitespace-only operands. The first coverage run identified an unreachable separator branch, now removed; the mixed-case coverage regression permits c8 to re-establish its own uppercase instrumentation variable while proving inherited variants are absent."
+  "2026-10-19T03:30:19.183Z",codex-agent,The environment sweep also found the recovery worker blanking only the canonical test-context key. It now removes every spelling while preserving coverage inheritance; coverage uses the same helper. Real Git policy fixtures and packed consumers now discard inherited Git overrides too. Windows privacy additionally covers forward-slash UNC roots and JSON-escaped path names. A proof run exposed that reverting the quality-root guard could invoke the full coverage gate recursively; the regression now checks the identity entry first to fail immediately under that revert.
+  "2026-10-19T03:31:15.781Z",codex-agent,"Behavioral revert evidence: node test/revert.ts passed 35/35 mutations, including eleven new round-4 proofs and all twenty-four prior proofs. Each focused regression failed with only its invariant removed, and the harness verified exact SHA-256 restoration of every mutated source. New proofs cover Git/npm/coverage/recovery environment casing, numeric/string/root CLI operands, root and Windows privacy, identity path matching and marker replacement."
+  "2026-10-19T03:35:41.495Z",codex-agent,"Round-4 validation: npm run release:check and bun run release:check each passed 12/12 gates under separate empty HOME directories with global/system Git configuration isolated. Each passed 108/108 unit tests and 1/1 packed npm/npx plus Bun/bunx acceptance; no skipped, canceled or todo tests. Coverage is 100% statements/branches/functions/lines across all 20 source files. Docstrings 64/64, jscpd zero clones across 48 TS files, production audit zero, package allowlist 47/47. Revert proofs 35/35. Four existing items hold round-4 evidence; no live inference ran. CI and a fresh-clone tracker check follow the single push; their exact-head results will be recorded in the PR and final handoff."
+files[12]{path,scope}:
   index.ts,project
   LICENSE,project
   manifest.json,project
   package.json,project
+  scripts/coverage-gate.ts,project
+  scripts/docstring-gate.ts,project
+  scripts/environment.ts,project
   scripts/identity-gate.ts,project
+  scripts/main-invocation.ts,project
+  test/helpers.ts,project
+  test/round4.test.ts,project
   test/tooling.test.ts,project
-tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
-  "npm run release:check",project,codex-agent,"2026-10-18T20:10:34.416Z",local_mutation,feat/rlm
-  "bun run release:check",project,codex-agent,"2026-10-18T20:10:42.022Z",local_mutation,feat/rlm
+tests[4]:
+  - command: "npm run release:check"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T20:10:34.416Z"
+      source_kind: local_mutation
+      source_ref: feat/rlm
+  - command: "bun run release:check"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-18T20:10:42.022Z"
+      source_kind: local_mutation
+      source_ref: feat/rlm
+  - command: node --test test/round4.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T03:26:51.105Z"
+      source_kind: local_mutation
+      source_ref: feat/rlm
+  - command: node test/revert.ts
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T03:30:22.944Z"
+      source_kind: local_mutation
+      source_ref: feat/rlm
 docs[3]{path,scope}:
   ARCHITECTURE.md,project
   CHANGELOG.md,project

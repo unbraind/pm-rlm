@@ -30,12 +30,13 @@
  * ```
  */
 
+import { testEnvironment } from './environment.ts';
 import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, relative, resolve, sep } from "node:path";
 
-import { isMainInvocation } from "./main-invocation.ts";
+import { commandRoot, isMainInvocation } from "./main-invocation.ts";
 
 /** Coverage dimensions enforced independently, matching the c8 summary keys. */
 const DIMENSIONS = ["statements", "branches", "functions", "lines"] as const;
@@ -244,9 +245,8 @@ function resolveC8Launcher(): string {
  */
 function runC8(root: string, config: CoverageGateConfig, inventory: SourceInventory, options: CoverageGateOptions): number {
   const runner = options.runner ?? { executable: process.execPath, script: resolveC8Launcher() };
-  const env = { ...process.env, TZ: "UTC" } as NodeJS.ProcessEnv;
-  delete env.NODE_V8_COVERAGE;
-  delete env.NODE_TEST_CONTEXT;
+  const env = { ...testEnvironment(process.env), TZ: "UTC" } as NodeJS.ProcessEnv;
+  for (const key of Object.keys(env)) if (/^NODE_V8_COVERAGE$/i.test(key)) delete env[key];
   const excludes = [...C8_EXCLUDES, ...(config.skipDirs ?? []).map(name => `**/${name}/**`)];
   const result = spawnSync(
     runner.executable,
@@ -340,5 +340,6 @@ export function runCoverageGate(root: string, options: CoverageGateOptions = {})
 }
 
 if (isMainInvocation(process.argv, import.meta.url)) {
-  process.exitCode = runCoverageGate(process.argv[2] ?? process.cwd());
+  const root = commandRoot(process.argv[2]);
+  if (root !== undefined) process.exitCode = runCoverageGate(root);
 }

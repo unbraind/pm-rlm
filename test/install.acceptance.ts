@@ -1,3 +1,4 @@
+import { gitEnvironment, npmEnvironment } from '../scripts/environment.ts';
 /** Packed npm/npx and Bun/bunx consumers exercise the real pm host. */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -19,8 +20,7 @@ test('packed npm/npx and Bun/bunx install, discover and render the rlm command f
   const scratch = mkdtempSync(join(tmpdir(), 'rlm-consumer-'));
   t.after(() => rmSync(scratch, { recursive: true, force: true }));
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
-  const env = { ...process.env, HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer', npm_config_userconfig: '/dev/null' };
-  for (const key of Object.keys(env)) if (key.toLowerCase() === 'npm_config_allow_scripts') delete (env as NodeJS.ProcessEnv)[key];
+  const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
   const allowed = /^(dist\/|manifest\.json$|eval-results\.json$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|CHANGELOG\.md$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
