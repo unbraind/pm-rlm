@@ -7,6 +7,7 @@ import { dirname, join, posix } from 'node:path';
 import { test } from 'node:test';
 import { npmEnvironment } from '../scripts/environment.ts';
 import { replayRlm, resumeRlm, runRlm } from '../src/engine.ts';
+import { estimateTokens } from '../src/errors.ts';
 import { RlmLedger } from '../src/ledger.ts';
 import { PROTOCOL } from '../src/protocol.ts';
 import { ScriptedModel, tracker } from './helpers.ts';
@@ -94,4 +95,71 @@ test('review r6 execution refusal budgets follow recursive order and transcript 
   await ledger.save(forged);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
   await assert.rejects(resumeRlm(workspace, result.run, model), { code: 'replay' });
+});
+
+/** Legacy responses release reservations before refusal checks; only v1 may omit a reason. */
+for (const operation of ['replay', 'resume'] as const) test(`review r7 ${operation} preserves legacy execution refusals and unsettled usage`, async t => {
+  const { workspace, client } = await tracker(t);
+  const item = (await client.create({ title: 'Legacy budget fixture', description: 'x'.repeat(29000) })).item;
+  const actions = [
+    ...Array.from({ length: 3 }, () => ({ action: 'get', id: item.id, fields: ['title'] })),
+    { action: 'get', id: item.id, fields: ['description'] },
+    { action: 'finish', answer: 'legacy recovered' },
+  ];
+  const model = new ScriptedModel((_request, index) => JSON.stringify(actions[index]));
+  const result = await runRlm('Legacy budget refusal', { workspace, model, settings: { budget_tokens: 30000 } });
+  const ledger = new RlmLedger(workspace);
+  const original = await ledger.load(result.run);
+  assert.deepEqual(original.calls[0].steps[3].observation, { refused: 'budget', reason: 'Read exceeds remaining token budget' });
+  for (const version of [undefined, 1] as const) for (const codeOnly of [false, true]) {
+    const legacy = structuredClone(original);
+    if (version === undefined) delete legacy.parser_version; else legacy.parser_version = version;
+    for (const step of legacy.calls[0].steps) {
+      const reservation = estimateTokens(step.prompt) + legacy.settings.output_tokens * 16;
+      legacy.reserved_tokens += reservation - step.reserved;
+      step.reserved = reservation;
+      delete step.settled;
+    }
+    assert.ok(legacy.calls[0].steps.slice(0, 4).reduce((sum, step) => sum + step.reserved, 0) > legacy.settings.budget_tokens, 'Old reservations would exhaust the budget before the recorded refusal');
+    if (codeOnly) delete (legacy.calls[0].steps[3].observation as { reason?: string }).reason;
+    await ledger.save(legacy);
+    const before = await readFile(getHistoryPath(workspace, result.run));
+    const noInference = new ScriptedModel(() => assert.fail('Completed legacy steps must not repeat inference'));
+    await assert.doesNotReject(async () => {
+      const recovered = operation === 'replay' ? await replayRlm(workspace, result.run) : await resumeRlm(workspace, result.run, noInference);
+      assert.deepEqual(recovered, { ...result, reserved_tokens: operation === 'replay' ? legacy.reserved_tokens : result.reserved_tokens });
+    });
+    assert.equal(noInference.requests.length, 0);
+    if (operation === 'replay') {
+      assert.deepEqual(await readFile(getHistoryPath(workspace, result.run)), before);
+      assert.deepEqual(await ledger.load(result.run), legacy);
+    } else {
+      const settled = await ledger.load(result.run);
+      assert.equal(settled.reserved_tokens, original.reserved_tokens);
+      assert.ok(settled.calls[0].steps.every(step => step.settled === true && step.reserved === step.response!.tokens_in + step.response!.tokens_out));
+      const unfinished = structuredClone(legacy);
+      delete unfinished.calls[0].result;
+      unfinished.reserved_tokens -= unfinished.calls[0].steps.pop()!.reserved;
+      await ledger.save(unfinished);
+      const continuation = new ScriptedModel(() => JSON.stringify(actions[4]));
+      await assert.doesNotReject(async () => { assert.equal((await resumeRlm(workspace, result.run, continuation)).answer, result.answer); });
+      assert.equal(continuation.requests.length, 1, 'Only the missing finish inference is retried');
+      assert.equal((await replayRlm(workspace, result.run)).answer, result.answer);
+    }
+  }
+  for (const version of [undefined, 1, 2, 3] as const) for (const change of ['code', 'reason', 'missing'] as const) {
+    if (change === 'missing' && (version === undefined || version === 1)) continue;
+    const forged = structuredClone(original);
+    if (version === undefined) delete forged.parser_version; else forged.parser_version = version;
+    const observation = forged.calls[0].steps[3].observation as { refused: string; reason?: string };
+    if (change === 'code') { observation.refused = 'scope'; delete observation.reason; }
+    if (change === 'reason') observation.reason = 'Forged legacy correction';
+    if (change === 'missing') delete observation.reason;
+    await ledger.save(forged);
+    const before = await readFile(getHistoryPath(workspace, result.run));
+    const noInference = new ScriptedModel(() => assert.fail('Forged refusals must fail before inference'));
+    await assert.rejects(operation === 'replay' ? replayRlm(workspace, result.run) : resumeRlm(workspace, result.run, noInference), { code: 'replay', message: `Recorded execution refusal differs at step ${result.run}:3` });
+    assert.equal(noInference.requests.length, 0);
+    assert.deepEqual(await readFile(getHistoryPath(workspace, result.run)), before);
+  }
 });

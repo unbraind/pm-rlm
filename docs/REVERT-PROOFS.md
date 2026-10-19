@@ -34,3 +34,12 @@ child reuse, prior delivered-read charges, and actual packed report link targets
 The clone runner allows thirty minutes per script and one hour for the full
 sequence, accommodating packed installs on a busy host. Assertion requirements,
 proof inventory and all release thresholds remain unchanged.
+
+Round seven extends the round-six script with two independent reversions in
+`validateRecorded()`: count original reservations instead of reported usage for
+unsettled responses, and require a reason on legacy code-only refusals. Both
+replay and resume regressions use real trackers with v1-compatible read actions,
+missing or explicit v1 parser versions, original unsettled reservations and a
+budget refusal. Replay preserves checkpoint and history bytes; resume settles
+exactly once and retries only a missing finish. Altered codes or present reasons
+remain invalid, and v2/v3 still require reasons.

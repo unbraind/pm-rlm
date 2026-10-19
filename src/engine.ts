@@ -147,7 +147,9 @@ export class RlmEngine {
       if (visited.has(call.id)) return;
       visited.add(call.id);
       for (const [index, step] of call.steps.entries()) {
-        state.reserved_tokens += step.reserved;
+        state.reserved_tokens += step.response !== undefined && step.settled !== true
+          ? step.response.tokens_in + step.response.tokens_out
+          : step.reserved;
         if (step.response === undefined) continue;
         let action: RlmAction;
         try { action = parseAction(step.response.text, state.parser_version ?? 1); } catch { continue; }
@@ -167,7 +169,8 @@ export class RlmEngine {
           let refusal: RlmError | undefined;
           try { await this.observe(action, prefix, state); }
           catch (error) { refusal = error as RlmError; }
-          if (refusal === undefined || observation.refused !== refusal.code || !('reason' in observation) || observation.reason !== refusal.message) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
+          const legacyCodeOnly = (state.parser_version ?? 1) === 1 && !('reason' in observation);
+          if (refusal === undefined || observation.refused !== refusal.code || (!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message))) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
         } else if ('estimated_tokens' in observation && typeof observation.estimated_tokens === 'number') {
           state.reserved_tokens += observation.estimated_tokens;
         }
