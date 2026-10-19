@@ -642,3 +642,14 @@ test('quality CLI repository operands reject empty and whitespace paths', () => 
 test('docstring API accepts omitted options', () => {
   assert.doesNotThrow(() => runDocstringGate());
 });
+
+/** Repository-relative labels are public text, while absolute homes remain disallowed. */
+test('identity privacy distinguishes relative labels from absolute home prefixes', () => {
+  const root = identityFixture('identity-relative-label');
+  writeFileSync(join(root, 'note.txt'), 'CLI numeric/string/root validation; src/root; docs/home/example; public/Users/guide');
+  fixtureGit(root, ['add', 'note.txt']); fixtureGit(root, ['commit', '-m', 'Relative labels fixture']);
+  assert.deepEqual(auditIdentities(root), []);
+  writeFileSync(join(root, 'note.txt'), '/' + 'root/private');
+  fixtureGit(root, ['add', 'note.txt']); fixtureGit(root, ['commit', '-m', 'Absolute fixture']);
+  assert.match(auditIdentities(root).join('\n'), /added absolute home path/);
+});

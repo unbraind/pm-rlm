@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 const mutations = [
+  { name: 'absolute identity path boundary', file: 'scripts/identity-gate.ts', before: String.raw`(?<!\w)`, after: '', test: 'test/tooling.test.ts', pattern: '^identity privacy distinguishes' },
   { name: 'case-insensitive recovery environment', file: 'scripts/environment.ts', before: '!/^NODE_TEST_CONTEXT$/i.test(key)', after: '!/^NODE_TEST_CONTEXT$/.test(key)', test: 'test/round4.test.ts', pattern: '^test environment' },
   { name: 'case-insensitive Git environment', file: 'scripts/environment.ts', before: '!/^GIT_/i.test(key)', after: '!/^GIT_/.test(key)', test: 'test/round4.test.ts', pattern: '^Git environment' },
   { name: 'case-insensitive npm environment', file: 'scripts/environment.ts', before: '!/^npm_config_(allow_scripts|userconfig)$/i.test(key)', after: '!/^npm_config_(allow_scripts|userconfig)$/.test(key)', test: 'test/round4.test.ts', pattern: '^npm environment' },
@@ -13,7 +14,7 @@ const mutations = [
   { name: 'nonblank quality root operands', file: 'scripts/main-invocation.ts', before: 'argument !== undefined && argument.trim().length === 0', after: 'false', test: 'test/tooling.test.ts', pattern: '^quality CLI' },
   { name: 'root ancestor privacy exclusion', file: 'src/errors.ts', before: 'if (paths.dirname(grandparent) !== grandparent) needles.push', after: 'needles.push', test: 'test/round4.test.ts', pattern: '^privacy skips' },
   { name: 'portable Windows privacy needles', file: 'src/errors.ts', before: 'if (paths === win32) {', after: 'if (false) {', test: 'test/round4.test.ts', pattern: '^privacy skips' },
-  { name: 'portable identity privacy matcher', file: 'scripts/identity-gate.ts', before: String.raw`/[\\/](?:home|Users)[\\/]|[\\/]root(?:[\\/]|\b)/i.test(line)`, after: String.raw`/\/(?:home|Users)\/|\/(?:root)(?:\/|\b)|[A-Za-z]:[\\/]Users[\\/]/.test(line)`, test: 'test/tooling.test.ts', pattern: '^identity privacy' },
+  { name: 'portable identity privacy matcher', file: 'scripts/identity-gate.ts', before: String.raw`/(?<!\w)(?:[\\/](?:home|Users)[\\/]|[\\/]root(?:[\\/]|\b))/i.test(line)`, after: String.raw`/\/(?:home|Users)\/|\/(?:root)(?:\/|\b)|[A-Za-z]:[\\/]Users[\\/]/.test(line)`, test: 'test/tooling.test.ts', pattern: '^identity privacy' },
   { name: 'marker-based report replacement', file: 'test/eval-report.ts', before: 'readme.indexOf(startMarker)', after: "readme.indexOf('The following measurements are **historical')", test: 'test/round4.test.ts', pattern: '^eval report' },
   { name: 'twenty-step actual settlement', file: 'src/ledger.ts', before: '  state.reserved_tokens -= step.reserved - actual;', after: '', test: 'test/settlement.test.ts', pattern: '^twenty sequential' },
   { name: 'pending SIGKILL settlement', file: 'src/ledger.ts', before: '  state.reserved_tokens -= step.reserved - actual;', after: '', test: 'test/settlement.test.ts', pattern: '^pre-response SIGKILL' },

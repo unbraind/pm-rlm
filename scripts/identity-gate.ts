@@ -28,7 +28,7 @@ export function auditIdentities(root: string): string[] {
     if (!approved.has(author)) violations.push(`${commit}: unapproved author identity`);
     if (!approved.has(committer)) violations.push(`${commit}: unapproved committer identity`);
     const patch = git(['show', '--format=', '--diff-merges=first-parent', '--no-ext-diff', '--no-textconv', '--unified=0', commit]);
-    if (patch.split('\n').some(line => line.startsWith('+') && !line.startsWith('+++') && /[\\/](?:home|Users)[\\/]|[\\/]root(?:[\\/]|\b)/i.test(line))) {
+    if (patch.split('\n').some(line => line.startsWith('+') && !line.startsWith('+++') && /(?<!\w)(?:[\\/](?:home|Users)[\\/]|[\\/]root(?:[\\/]|\b))/i.test(line))) {
       violations.push(`${commit}: added absolute home path`);
     }
   }
