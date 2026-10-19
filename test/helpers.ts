@@ -1,3 +1,7 @@
+import assert from 'node:assert/strict';
+import { fork } from 'node:child_process';
+import type { ChildProcess } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -28,4 +32,18 @@ export class ScriptedModel implements RlmModel {
     const output = await this.respond(request, index);
     return { text: output, tokens_in: Buffer.byteLength(request.prompt), tokens_out: Buffer.byteLength(output) };
   }
+}
+
+/** Fork a real recovery worker with coverage inheritance and explicit tracker arguments. */
+export function crashProcess(script: string, workspace: string, mode: string, log: string, run = '') {
+  return fork(join(import.meta.dirname, script), [workspace, mode, log, run], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: { ...process.env, NODE_TEST_CONTEXT: '' } });
+}
+/** Kill precisely after the worker announces a durable checkpoint, then verify signal termination. */
+export async function killAtCheckpoint(t: TestContext, child: ChildProcess): Promise<{ run: string }> {
+  t.after(() => { child.kill('SIGKILL'); });
+  const [message] = await once(child, 'message') as [{ run: string }];
+  const exit = once(child, 'exit');
+  child.kill('SIGKILL');
+  assert.deepEqual(await exit, [null, 'SIGKILL']);
+  return message;
 }

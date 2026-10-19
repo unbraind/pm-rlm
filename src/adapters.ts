@@ -22,8 +22,11 @@ export class HttpModel implements RlmModel {
       ? { model: config.model, messages: [{ role: 'user', content: request.prompt }], max_tokens: request.max_output_tokens, temperature: 0, stream: false }
       : { model: config.model, prompt: request.prompt, stream: false, format: 'json', think: false, options: { temperature: 0, num_predict: request.max_output_tokens, num_ctx: request.context_tokens } };
     try {
-      const response = await fetch(`${config.endpoint.replace(/\/$/, '')}${compatible ? '/chat/completions' : '/api/generate'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(config.timeout_ms) });
-      if (!response.ok) throw new RlmError('model', 'Model endpoint refused the request');
+      const response = await fetch(`${config.endpoint.replace(/\/$/, '')}${compatible ? '/chat/completions' : '/api/generate'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(config.timeout_ms), redirect: 'error' });
+      if (!response.ok) {
+        await response.body?.cancel();
+        throw new RlmError('model', 'Model endpoint refused the request');
+      }
       const limit = 8 * 1024 * 1024;
       const chunks: Uint8Array[] = [];
       let size = 0;

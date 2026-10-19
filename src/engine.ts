@@ -1,7 +1,7 @@
 import { assertLedgerPrivacy, estimateTokens, RlmError, text } from './errors.ts';
 import { matches, parseFilter, partitionItems, readCorpus, RlmContext } from './environment.ts';
 import { HttpModel } from './adapters.ts';
-import { promptDigest, reserveStep, RlmLedger } from './ledger.ts';
+import { promptDigest, reserveStep, settleStep, RlmLedger } from './ledger.ts';
 import { parseAction, parseSlice, PROTOCOL } from './protocol.ts';
 import { readRlmSettings } from './settings.ts';
 import type { RlmAction, RlmCall, RlmFilter, RlmItem, RlmModel, RlmResult, RlmSettings, RlmSlice, RlmState } from './types.ts';
@@ -142,13 +142,13 @@ export class RlmEngine {
         const response = await this.model.complete({ prompt: step.prompt, max_output_tokens: state.settings.output_tokens, context_tokens: state.settings.context_tokens });
         if (typeof response.text !== 'string' || estimateTokens(response.text) > state.settings.output_tokens * 16 || !Number.isSafeInteger(response.tokens_in) || !Number.isSafeInteger(response.tokens_out) || response.tokens_in < 0 || response.tokens_out < 0) throw new RlmError('model', 'Invalid model response');
         assertLedgerPrivacy(response, this.ledger.workspace, state.settings.key_env);
-        step.response = response;
+        settleStep(state, step, response);
         await this.ledger.save(state);
       }
       if (step.observation === undefined) {
         let action: RlmAction | undefined;
         try {
-          action = parseAction(step.response.text);
+          action = parseAction(step.response!.text);
           if (action.action !== 'finish') step.observation = await this.observe(action, call);
         } catch (error) {
           if (!(error instanceof RlmError)) throw error;
@@ -171,6 +171,9 @@ export class RlmEngine {
     const release = await this.ledger.lease(this.state.run);
     try {
       this.state = await this.ledger.load(this.state.run);
+      const legacy = this.state.calls.flatMap(call => call.steps).filter(step => step.response !== undefined && step.settled !== true);
+      for (const step of legacy) settleStep(this.state, step, step.response!);
+      if (legacy.length > 0) await this.ledger.save(this.state);
       if (this.state.calls[0].result !== undefined && this.state.calls.some(call => call.result === undefined && call.failure === undefined)) throw new RlmError('incomplete', 'Completed run contains an unfinished call');
       for (const call of this.state.calls) if (call.result !== undefined || call.failure !== undefined) await this.ledger.complete(this.state, call);
       await this.execute(this.state.calls[0]);
@@ -233,6 +236,7 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
       }
       const action = parseAction(step.response.text);
       if (action.action === 'spawn') {
+        if (typeof step.observation !== 'object' || step.observation === null || typeof (step.observation as { result?: unknown }).result !== 'string') throw new RlmError('replay', 'Recorded spawn step has no completed observation');
         const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, resolveSlice(state, call, action.slice), state.settings));
         if (child === undefined || await replay(child) !== (step.observation as { result: string }).result) throw new RlmError('replay', 'Recorded child result differs');
       }
@@ -260,5 +264,5 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
 /** Read a compact, ordered call tree, retaining the full checkpoint only when explicitly requested. */
 export async function treeRlm(workspace: string, run: string, full = false): Promise<Record<string, unknown>> {
   const state = await new RlmLedger(workspace).load(run);
-  return full ? { state } : { run, calls: state.calls.map(call => ({ id: call.id, parent: call.parent, depth: call.depth, status: call.failure !== undefined ? 'failed' : call.result === undefined ? 'in_progress' : 'closed', tokens: call.steps.reduce((sum, step) => sum + step.reserved, 0), result: (call.result ?? '').replace(/\s+/g, ' ').slice(0, 100) })) };
+  return full ? { state } : { run, calls: state.calls.map(call => ({ id: call.id, parent: call.parent, depth: call.depth, status: call.failure !== undefined ? 'failed' : call.result === undefined ? 'in_progress' : 'closed', reserved_tokens: call.steps.reduce((sum, step) => sum + step.reserved, 0), used_tokens: call.steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0) + (step.response?.tokens_out ?? 0), 0), result: (call.result ?? '').replace(/\s+/g, ' ').slice(0, 100) })) };
 }

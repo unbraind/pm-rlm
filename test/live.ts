@@ -37,7 +37,7 @@ export async function liveSettings(workspace: string): Promise<RlmSettings> {
   const endpoint = process.env.PM_RLM_LIVE_BASE_URL ?? 'http://localhost:11434';
   const url = new URL(endpoint);
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new RlmError('invalid', 'Live evaluation requires a loopback Ollama endpoint');
-  return readRlmSettings(workspace, { model: process.env.PM_RLM_LIVE_MODEL ?? 'gemma4-local:e2b-q3km', adapter: 'ollama', endpoint, key_env: 'PM_RLM_LIVE_UNUSED_KEY', context_tokens: 32768, output_tokens: 512, budget_tokens: 300000, max_depth: 2, max_calls: 8, timeout_ms: 60000 });
+  return readRlmSettings(workspace, { model: process.env.PM_RLM_LIVE_MODEL ?? 'gemma4-local:e2b-q3km', adapter: 'ollama', endpoint, key_env: 'PM_RLM_LIVE_UNUSED_KEY', context_tokens: 131072, output_tokens: 512, budget_tokens: 300000, max_depth: 2, max_calls: 8, timeout_ms: 60000 });
 }
 /** Copy only committed tracker data from a revision independently verified as public. */
 export async function copyPublicTracker(repo: string, base: string): Promise<{ workspace: string; revision: string }> {
@@ -50,7 +50,7 @@ export async function copyPublicTracker(repo: string, base: string): Promise<{ w
 }
 /** Archive the verified revision without incorporating local, untracked or symlinked records. */
 export async function copyVerifiedRevision(source: string, revision: string, base: string): Promise<{ workspace: string; revision: string }> {
-  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const env = { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_'))), GIT_NO_REPLACE_OBJECTS: '1' };
   const tree = execFileSync('git', ['ls-tree', '-r', revision, '--', '.agents/pm'], { cwd: source, env, encoding: 'utf8' });
   if (tree.length === 0 || tree.split('\n').some(line => line.startsWith('120000') || line.startsWith('160000'))) throw new RlmError('invalid', 'Public tracker must contain regular tracked files');
   const archive = execFileSync('git', ['archive', revision, '.agents/pm'], { cwd: source, env, maxBuffer: 64 * 1024 * 1024 });
@@ -109,23 +109,30 @@ export async function liveEval(): Promise<void> {
         start = performance.now();
         const before = await rootIds(workspace);
         let answer = ''; let error = ''; let calls = 0; let tokens = 0; let reserved = 0; let runId = ''; let modelCalls = 0;
+        let pending = 0; let readTokens = 0;
+        const refusals: Record<string, number> = {};
         try {
           const result = await runRlm(task.question, { workspace, model, scope: task.scope, settings: config, author: 'rlm-eval' });
-          runId = result.run; answer = result.answer; calls = result.calls; tokens = result.tokens_in + result.tokens_out; reserved = result.reserved_tokens;
+          runId = result.run; answer = result.answer;
         } catch (failure) {
           error = failure instanceof RlmError ? failure.code : 'sdk';
-          const created = newRoot(before, await rootIds(workspace));
-          if (created !== undefined) {
-            runId = created;
-            const state = await new RlmLedger(workspace).load(created);
-            calls = state.calls.length; reserved = state.reserved_tokens;
-            tokens = state.calls.flatMap(call => call.steps).reduce((sum, step) => sum + (step.response?.tokens_in ?? 0) + (step.response?.tokens_out ?? 0), 0);
+          runId = newRoot(before, await rootIds(workspace)) ?? '';
+        }
+        if (runId !== '') {
+          const state = await new RlmLedger(workspace).load(runId);
+          calls = state.calls.length; reserved = state.reserved_tokens;
+          const steps = state.calls.flatMap(call => call.steps);
+          modelCalls = steps.length;
+          tokens = steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0) + (step.response?.tokens_out ?? 0), 0);
+          pending = steps.filter(step => step.response === undefined).reduce((sum, step) => sum + step.reserved, 0);
+          readTokens = reserved - steps.reduce((sum, step) => sum + step.reserved, 0);
+          for (const step of steps) {
+            if (typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation && typeof step.observation.refused === 'string') refusals[step.observation.refused] = (refusals[step.observation.refused] ?? 0) + 1;
           }
         }
-        if (runId !== '') modelCalls = (await new RlmLedger(workspace).load(runId)).calls.reduce((sum, call) => sum + call.steps.length, 0);
-        const row = { repo, revision, index, question: task.question, expected: task.answer, corpus_items: corpus.items.length, corpus_bytes: Buffer.byteLength(JSON.stringify(corpus.items)), rlm: { correct: answer.trim() === task.answer, answer_sha256: digest(answer), reached_child: calls > 1, tokens, reserved, calls, model_calls: modelCalls, ms: Math.round(performance.now() - start), error }, stuffing: { correct: stuffingAnswer(baseline.text).trim() === task.answer, answer_sha256: digest(baseline.text), tokens: baseline.tokens_in + baseline.tokens_out, calls: 1, ms: stuffingMs, error: baselineError } };
+        const row = { repo, revision, index, question: task.question, expected: task.answer, corpus_items: corpus.items.length, corpus_bytes: Buffer.byteLength(JSON.stringify(corpus.items)), rlm: { correct: answer.trim() === task.answer, answer_sha256: digest(answer), reached_child: calls > 1, tokens, reserved, pending, read_tokens: readTokens, refusals, calls, model_calls: modelCalls, ms: Math.round(performance.now() - start), error }, stuffing: { correct: stuffingAnswer(baseline.text).trim() === task.answer, answer_sha256: digest(baseline.text), tokens: baseline.tokens_in + baseline.tokens_out, calls: 1, ms: stuffingMs, error: baselineError } };
         rows.push(row);
-        await writeFile('eval-results.local.json', JSON.stringify({ design: EVAL_SEED, model: modelName, rows }, null, 2) + '\n');
+        await writeFile('eval-results.local.json', JSON.stringify({ design: EVAL_SEED, model: modelName, measured_at_utc: new Date().toISOString(), context_tokens: config.context_tokens, output_tokens: config.output_tokens, budget_tokens: config.budget_tokens, max_depth: config.max_depth, max_calls: config.max_calls, temperature: 0, rows }, null, 2) + '\n');
         console.log(JSON.stringify(row));
       }
     }

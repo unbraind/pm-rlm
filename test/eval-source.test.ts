@@ -16,12 +16,18 @@ test('eval copies only the verified revision using real Git and SDK data', async
   const git = (...args: string[]): string => execFileSync('git', ['-c', 'user.name=Fixture', '-c', 'user.email=noreply@github.com', ...args], { cwd: root, env, encoding: 'utf8' }).trim();
   git('init', '-b', 'main'); git('add', '.agents/pm'); git('commit', '-m', 'Public fixture');
   const revision = git('rev-parse', 'HEAD');
+  await client.update('public-item', { title: 'Replacement content must stay private' });
+  git('add', '.agents/pm'); git('commit', '-m', 'Replacement fixture');
+  const alternate = git('rev-parse', 'HEAD');
+  git('replace', revision, alternate);
+
   await client.update('public-item', { title: 'Private local edit' });
   await client.create({ title: 'Untracked private item', type: 'Issue' });
   const base = join(root, 'evaluation'); await mkdir(base);
   const copy = await copyVerifiedRevision(root, revision, base);
   const items = (await readCorpus(copy.workspace)).items;
   assert.equal(items.length, 1); assert.equal(items[0].title, 'Public revision');
+  git('replace', '-d', revision);
   await writeFile(join(root, '.gitattributes'), '.agents/pm/attribute-data export-ignore\n');
   await writeFile(join(workspace, 'attribute-data'), '$Format:%H$\n');
   git('add', '.gitattributes', '.agents/pm/attribute-data'); git('commit', '-m', 'Ignored archive fixture');

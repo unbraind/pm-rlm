@@ -74,6 +74,7 @@ export type RlmAction =
 export interface RlmStep {
   prompt: string;
   reserved: number;
+  settled?: true;
   response?: ModelResponse;
   observation?: unknown;
 }

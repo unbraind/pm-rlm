@@ -1,6 +1,6 @@
 # Seeded evaluation design v2
 
-This is a truth-only design audit. No model endpoint was contacted. The historical model measurements in `eval-results.json` used the old unbalanced question set and do not score this design.
+This is a truth-only design audit. No model endpoint was contacted. The original unbalanced model measurements are preserved in the repository history. The subsequent cloud comparison uses this seeded design and is documented separately in [EVAL-CLOUD.md](EVAL-CLOUD.md).
 
 Seed: `pm-rlm-balanced-v2`. Selection is independent of model outputs: generate exact counts, UTF-8 field-length sums and id-valued argmax tasks from certified complete public tracker copies; hash-sort candidates with the seed; require numeric ranges 1–9, 10–99, 100–999 and 1000+, then id answers and remaining diverse candidates. Ties use lexicographic id order. Each source supplies twelve tasks and allows at most two occurrences of an answer, guaranteeing a combined frequency ceiling of 4/24. Insufficiently diverse corpora refuse generation.
 
@@ -17,7 +17,7 @@ Public snapshots:
 | Numeric range | 0–12196 |
 | Most-common constant guess | 2/24 (8.33%) |
 | Constant zero | 1/24 (4.17%) |
-| New model runs | 0; pending orchestrator |
+| Model calls by the design-audit script | 0 |
 
 Answer histogram (answer → count):
 

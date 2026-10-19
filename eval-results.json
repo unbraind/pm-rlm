@@ -1,72 +1,44 @@
 {
-  "design": "legacy-v1-unbalanced",
-  "status": "historical measurements; superseded question design, not v2 scores",
-  "model": "gemma4-local:e2b-q3km",
-  "context_tokens": 32768,
+  "design": "pm-rlm-balanced-v2",
+  "model": "glm-5.3:cloud",
+  "measured_at_utc": "2026-10-19T02:11:40.652Z",
+  "context_tokens": 131072,
   "output_tokens": 512,
-  "rlm_budget_tokens": 300000,
+  "budget_tokens": 300000,
   "max_depth": 2,
   "max_calls": 8,
   "temperature": 0,
-  "questions": 24,
-  "measured_at_utc": "2026-10-18T22:05:40.529544+00:00",
-  "measurement": "one sequential local run per question; persisted reserved steps count model requests; failures count incorrect; complete-item JSON stuffing with an explicit JSON string answer envelope",
-  "transport": "loopback Ollama; no authorization header",
-  "processor_observation": "Ollama reported GPU execution at context 32768 during this run",
-  "source_revisions": {
-    "pm-vcs": "f9283201108919939d0e1cfb489358c87ea8822b",
-    "pm-lint": "f2c20efa78139f4071f3dd08d317bea05337fe28"
-  },
-  "summary": {
-    "rlm": {
-      "correct": 7,
-      "tokens_total": 339641,
-      "tokens_per_question": 14151.708333333334,
-      "model_requests_total": 254,
-      "model_requests_per_question": 10.583333333333334,
-      "wall_ms_total": 1622475,
-      "wall_seconds_per_question": 67.603125
-    },
-    "stuffing": {
-      "correct": 2,
-      "tokens_total": 239974,
-      "tokens_per_question": 9998.916666666666,
-      "model_requests_total": 24,
-      "model_requests_per_question": 1.0,
-      "wall_ms_total": 1001191,
-      "wall_seconds_per_question": 41.71629166666666
-    },
-    "rlm_ledger_calls": 24,
-    "runs_reaching_child": 0,
-    "rlm_budget_refusals": 8,
-    "zero_ground_truths": 12
-  },
   "rows": [
     {
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 0,
-      "question": "How many items have type Issue and status open? Answer only the integer.",
+      "question": "How many items have type Feature and status open? Answer only the integer or id.",
       "expected": "4",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
-        "answer_sha256": "4e07408562bedb8b60ce05c1decfe3ad16b72230967de01f640b7e4729b49fce",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 2655,
-        "reserved": 32915,
+        "tokens": 237603,
+        "reserved": 237603,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 29
+        },
         "calls": 1,
-        "model_calls": 2,
-        "ms": 62650,
-        "error": ""
+        "model_calls": 29,
+        "ms": 523042,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "875c98ed31b215d6582ba4181e1469cc22028230979b42def9ff0ca324010da8",
-        "tokens": 9153,
+        "answer_sha256": "0d594b6370c17dfb4cabef73af3b85633a5d6bbd37e623207010d3983fc1fd6d",
+        "tokens": 31757,
         "calls": 1,
-        "ms": 56692,
+        "ms": 12928,
         "error": ""
       }
     },
@@ -74,27 +46,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 1,
-      "question": "How many items have type Issue and status closed? Answer only the integer.",
-      "expected": "37",
+      "question": "What is the sum of UTF-8 byte lengths of title across items with status canceled, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "68",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 25994,
-        "reserved": 288099,
+        "tokens": 234241,
+        "reserved": 234241,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 29
+        },
         "calls": 1,
-        "model_calls": 22,
-        "ms": 245153,
+        "model_calls": 29,
+        "ms": 411217,
         "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "875c98ed31b215d6582ba4181e1469cc22028230979b42def9ff0ca324010da8",
-        "tokens": 9153,
+        "answer_sha256": "2d0d128176292d6c5f82d6102a18e4037e28ca462bee8b49bdbdcef5940634c5",
+        "tokens": 31828,
         "calls": 1,
-        "ms": 39274,
+        "ms": 5307,
         "error": ""
       }
     },
@@ -102,27 +79,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 2,
-      "question": "How many items have type Task and status open? Answer only the integer.",
-      "expected": "0",
+      "question": "What is the sum of UTF-8 byte lengths of description across items with status canceled, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "277",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
-        "answer_sha256": "05ada863a4cf9660fd8c68e2295f1d35b2264815f5b605003d6625bd9e0492cf",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 3210,
-        "reserved": 61439,
+        "tokens": 226848,
+        "reserved": 226848,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 28
+        },
         "calls": 1,
-        "model_calls": 6,
-        "ms": 30017,
-        "error": ""
+        "model_calls": 28,
+        "ms": 416240,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "35e8fb92774eaccbdee6ad25926e1c3e00b24cd365ee07a5063ed293eb343d6a",
-        "tokens": 9153,
+        "answer_sha256": "bac6b9f9bdbdded5e52734092ecbda00f903eb175b1f03a154a747ed36247401",
+        "tokens": 31828,
         "calls": 1,
-        "ms": 34621,
+        "ms": 8847,
         "error": ""
       }
     },
@@ -130,27 +112,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 3,
-      "question": "How many items have type Task and status closed? Answer only the integer.",
-      "expected": "23",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Epic, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "3355",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 19213,
-        "reserved": 291236,
+        "tokens": 225384,
+        "reserved": 225384,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 28
+        },
         "calls": 1,
-        "model_calls": 26,
-        "ms": 129251,
+        "model_calls": 28,
+        "ms": 339735,
         "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "35e8fb92774eaccbdee6ad25926e1c3e00b24cd365ee07a5063ed293eb343d6a",
-        "tokens": 9153,
+        "answer_sha256": "538bc5e9a25487e357574ca64c21acf690191a4c5422ffa3a673d0427d6c2ec5",
+        "tokens": 31829,
         "calls": 1,
-        "ms": 35199,
+        "ms": 7488,
         "error": ""
       }
     },
@@ -158,27 +145,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 4,
-      "question": "How many items have type Feature and status open? Answer only the integer.",
-      "expected": "4",
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-vcs-5m22",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
-        "answer_sha256": "620c9c332101a5bae955c66ae72268fbcd3972766179522c8deede6a249addb7",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 22545,
-        "reserved": 192299,
+        "tokens": 221806,
+        "reserved": 221806,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 28
+        },
         "calls": 1,
-        "model_calls": 13,
-        "ms": 107027,
-        "error": ""
+        "model_calls": 28,
+        "ms": 313551,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "35e8fb92774eaccbdee6ad25926e1c3e00b24cd365ee07a5063ed293eb343d6a",
-        "tokens": 9153,
+        "answer_sha256": "3f5fea393bc555eadaaf4f89f3d9701c347bf1a1f8e36275b9296c671ca5653a",
+        "tokens": 31823,
         "calls": 1,
-        "ms": 34947,
+        "ms": 8801,
         "error": ""
       }
     },
@@ -186,27 +178,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 5,
-      "question": "How many items have type Feature and status closed? Answer only the integer.",
-      "expected": "38",
+      "question": "Which of items of type Decision has the largest UTF-8 byte length of title, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-vcs-6qva",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 19213,
-        "reserved": 292217,
+        "tokens": 225574,
+        "reserved": 225574,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 28
+        },
         "calls": 1,
-        "model_calls": 26,
-        "ms": 161999,
+        "model_calls": 28,
+        "ms": 298295,
         "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "875c98ed31b215d6582ba4181e1469cc22028230979b42def9ff0ca324010da8",
-        "tokens": 9153,
+        "answer_sha256": "065fee94caafec939f2a8546cbabe4f72b1d5fb61c63a707a278aa65c5deb905",
+        "tokens": 31823,
         "calls": 1,
-        "ms": 35324,
+        "ms": 7793,
         "error": ""
       }
     },
@@ -214,27 +211,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 6,
-      "question": "How many open Issues have acceptance_criteria containing \"coverage\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "1",
+      "question": "Which of items of type Feature has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-vcs-ag8y",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
-        "correct": true,
-        "answer_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 1488,
-        "reserved": 24135,
+        "tokens": 234642,
+        "reserved": 234642,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 29
+        },
         "calls": 1,
-        "model_calls": 2,
-        "ms": 28037,
-        "error": ""
+        "model_calls": 29,
+        "ms": 224925,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 9160,
+        "answer_sha256": "4b18f96d9f99ed187d4a46f36d076a5fa5198e40ea5208d4086f0b97527c260f",
+        "tokens": 31824,
         "calls": 1,
-        "ms": 39901,
+        "ms": 6680,
         "error": ""
       }
     },
@@ -242,27 +244,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 7,
-      "question": "How many open Issues have acceptance_criteria containing \"test\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "1",
+      "question": "Which of items of type Issue has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-vcs-1v6x",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 2608,
-        "reserved": 36475,
+        "tokens": 221821,
+        "reserved": 221821,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 29
+        },
         "calls": 1,
-        "model_calls": 3,
-        "ms": 56046,
-        "error": ""
+        "model_calls": 29,
+        "ms": 208966,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 9160,
+        "answer_sha256": "3095a7b9b9593539ce172949920e43913af00afdd741c79365946814f5c93922",
+        "tokens": 31824,
         "calls": 1,
-        "ms": 37982,
+        "ms": 6498,
         "error": ""
       }
     },
@@ -270,27 +277,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 8,
-      "question": "How many open Issues have acceptance_criteria containing \"SDK\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "0",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Task, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "3154",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 26921,
-        "reserved": 292645,
+        "tokens": 224899,
+        "reserved": 224899,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 29
+        },
         "calls": 1,
-        "model_calls": 23,
-        "ms": 153896,
+        "model_calls": 29,
+        "ms": 177166,
         "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 9160,
+        "answer_sha256": "703b570e4e7686f748e9270d1dea62e0bca848d9b7c13118ca082d3c8925d42f",
+        "tokens": 31829,
         "calls": 1,
-        "ms": 39204,
+        "ms": 6505,
         "error": ""
       }
     },
@@ -298,27 +310,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 9,
-      "question": "How many open Issues have acceptance_criteria containing \"release\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "1",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Issue, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "12196",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 1488,
-        "reserved": 24133,
+        "tokens": 230907,
+        "reserved": 230907,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 29
+        },
         "calls": 1,
-        "model_calls": 2,
-        "ms": 42748,
-        "error": ""
+        "model_calls": 29,
+        "ms": 181798,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 9160,
+        "answer_sha256": "b8520cbe69bbd23a6ad5f2fb6f4bb1e9169b95937e8a9266a9a72d484180763f",
+        "tokens": 31829,
         "calls": 1,
-        "ms": 35113,
+        "ms": 15219,
         "error": ""
       }
     },
@@ -326,27 +343,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 10,
-      "question": "How many open Issues have acceptance_criteria containing \"budget\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "0",
+      "question": "Which of items with status open has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-vcs-b7cb",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
-        "correct": true,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 2608,
-        "reserved": 36479,
+        "tokens": 232801,
+        "reserved": 232801,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 31
+        },
         "calls": 1,
-        "model_calls": 3,
-        "ms": 65549,
-        "error": ""
+        "model_calls": 31,
+        "ms": 175294,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 9160,
+        "answer_sha256": "45d94911c0ea666b2899a126803d62356484c5e6b8bc44eadf6de07d15814edd",
+        "tokens": 31824,
         "calls": 1,
-        "ms": 34544,
+        "ms": 7818,
         "error": ""
       }
     },
@@ -354,27 +376,32 @@
       "repo": "pm-vcs",
       "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
       "index": 11,
-      "question": "Which Epic has the most direct closed children? Break ties by lexicographically smallest id. Answer only its id, or none if there are no Epics.",
-      "expected": "pm-vcs-tr2a",
+      "question": "How many items of type Decision are there? Answer only the integer or id.",
+      "expected": "4",
       "corpus_items": 145,
       "corpus_bytes": 814268,
       "rlm": {
         "correct": false,
-        "answer_sha256": "650a244092436b656a5f7d72ee4028f2126b82c6e4b0738f1561f351f1ccbc22",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 2427,
-        "reserved": 32390,
+        "tokens": 224660,
+        "reserved": 224660,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 28
+        },
         "calls": 1,
-        "model_calls": 2,
-        "ms": 66770,
-        "error": ""
+        "model_calls": 28,
+        "ms": 178254,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "3640bb5601f21e82e50d9e2dd3006a5460cf30cf94ea155dadf73db30daffc06",
-        "tokens": 9175,
+        "answer_sha256": "82a63071ba4ffc5d677cb1a3ca2bfc038d4bcde7353ca8bb5eacf7d0b58e50d9",
+        "tokens": 31793,
         "calls": 1,
-        "ms": 36258,
+        "ms": 5307,
         "error": ""
       }
     },
@@ -382,27 +409,32 @@
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 0,
-      "question": "How many items have type Issue and status open? Answer only the integer.",
-      "expected": "0",
+      "question": "How many items with status in_progress are there? Answer only the integer or id.",
+      "expected": "1",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
         "correct": false,
-        "answer_sha256": "6b51d431df5d7f141cbececcf79edf3dd861c3b4069f0b11661a3eefacbba918",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 2403,
-        "reserved": 50326,
+        "tokens": 224489,
+        "reserved": 224489,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 31
+        },
         "calls": 1,
-        "model_calls": 5,
-        "ms": 20348,
-        "error": ""
+        "model_calls": 31,
+        "ms": 136070,
+        "error": "budget"
       },
       "stuffing": {
-        "correct": true,
-        "answer_sha256": "189685b09669f90fa324ef299e712efb339ac8f331f1764cfb41298e6eddd736",
-        "tokens": 10836,
+        "correct": false,
+        "answer_sha256": "ac9116d6159bcee53130c759330692a7e6a957beb4a07b287974484fb1f36b01",
+        "tokens": 15177,
         "calls": 1,
-        "ms": 43637,
+        "ms": 3286,
         "error": ""
       }
     },
@@ -410,27 +442,32 @@
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 1,
-      "question": "How many items have type Issue and status closed? Answer only the integer.",
-      "expected": "0",
+      "question": "What is the sum of UTF-8 byte lengths of title across items of type Epic, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "32",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
-        "correct": true,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 4345,
-        "reserved": 82457,
+        "tokens": 238503,
+        "reserved": 238503,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 29
+        },
         "calls": 1,
-        "model_calls": 8,
-        "ms": 19860,
-        "error": ""
+        "model_calls": 29,
+        "ms": 179629,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10835,
+        "answer_sha256": "509f9d720922cf949e32c7010d8668b60159b01b01ff9af289d7dadb579357b1",
+        "tokens": 15323,
         "calls": 1,
-        "ms": 44033,
+        "ms": 3752,
         "error": ""
       }
     },
@@ -438,27 +475,32 @@
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 2,
-      "question": "How many items have type Task and status open? Answer only the integer.",
-      "expected": "0",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Epic, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "167",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
         "correct": false,
-        "answer_sha256": "b17ef6d19c7a5b1ee83b907c595526dcb1eb06db8227d650d5dda0a9f4ce8cd9",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 4121,
-        "reserved": 73082,
+        "tokens": 236302,
+        "reserved": 236302,
+        "pending": 0,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 30
+        },
         "calls": 1,
-        "model_calls": 7,
-        "ms": 27619,
-        "error": ""
+        "model_calls": 30,
+        "ms": 310657,
+        "error": "budget"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "923e0a8cb1d3fe8c57104cdcfcb618f3cbd3c79eda02f367a941476b6e99b851",
-        "tokens": 10835,
+        "answer_sha256": "c16322a7bc091e7aa441cb302b5c43586e31807029af3544dba33e8960e74854",
+        "tokens": 15504,
         "calls": 1,
-        "ms": 43926,
+        "ms": 5947,
         "error": ""
       }
     },
@@ -466,27 +508,32 @@
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 3,
-      "question": "How many items have type Task and status closed? Answer only the integer.",
-      "expected": "3",
+      "question": "What is the sum of UTF-8 byte lengths of description across items with status closed, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "1436",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 48129,
-        "reserved": 290474,
+        "tokens": 70646,
+        "reserved": 120368,
+        "pending": 49722,
+        "read_tokens": 0,
+        "refusals": {
+          "invalid": 16
+        },
         "calls": 1,
-        "model_calls": 13,
-        "ms": 68965,
-        "error": "budget"
+        "model_calls": 17,
+        "ms": 162012,
+        "error": "model"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10835,
+        "answer_sha256": "810b9a27a3f6bc615a9a95ba64cfe618ec076f90b080ad8e2f4f56cde434cd8c",
+        "tokens": 15503,
         "calls": 1,
-        "ms": 45045,
+        "ms": 5656,
         "error": ""
       }
     },
@@ -494,225 +541,329 @@
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 4,
-      "question": "How many items have type Feature and status open? Answer only the integer.",
-      "expected": "0",
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-lint-8kis",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
-        "correct": true,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 3394,
-        "reserved": 62188,
+        "tokens": 0,
+        "reserved": 9828,
+        "pending": 9828,
+        "read_tokens": 0,
+        "refusals": {},
         "calls": 1,
-        "model_calls": 6,
-        "ms": 24522,
-        "error": ""
+        "model_calls": 1,
+        "ms": 28131,
+        "error": "model"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10835,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
         "calls": 1,
-        "ms": 49011,
-        "error": ""
+        "ms": 716,
+        "error": "model"
       }
     },
     {
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 5,
-      "question": "How many items have type Feature and status closed? Answer only the integer.",
-      "expected": "6",
+      "question": "Which of items of type Feature has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-lint-trap",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 50440,
-        "reserved": 264062,
+        "tokens": 0,
+        "reserved": 9838,
+        "pending": 9838,
+        "read_tokens": 0,
+        "refusals": {},
         "calls": 1,
-        "model_calls": 7,
-        "ms": 60243,
-        "error": "budget"
+        "model_calls": 1,
+        "ms": 27445,
+        "error": "model"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10835,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
         "calls": 1,
-        "ms": 49421,
-        "error": ""
+        "ms": 729,
+        "error": "model"
       }
     },
     {
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 6,
-      "question": "How many open Issues have acceptance_criteria containing \"coverage\" (case-insensitive substring)? Answer only the integer.",
+      "question": "How many items have type Feature and status open? Answer only the integer or id.",
       "expected": "0",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
-        "correct": true,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 7865,
-        "reserved": 137667,
+        "tokens": 0,
+        "reserved": 9706,
+        "pending": 9706,
+        "read_tokens": 0,
+        "refusals": {},
         "calls": 1,
-        "model_calls": 13,
-        "ms": 38846,
-        "error": ""
+        "model_calls": 1,
+        "ms": 22159,
+        "error": "model"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10843,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
         "calls": 1,
-        "ms": 44324,
-        "error": ""
+        "ms": 607,
+        "error": "model"
       }
     },
     {
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 7,
-      "question": "How many open Issues have acceptance_criteria containing \"test\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "0",
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Task, treating missing values as empty strings? Answer only the integer or id.",
+      "expected": "208",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 26431,
-        "reserved": 297349,
+        "tokens": 0,
+        "reserved": 9786,
+        "pending": 9786,
+        "read_tokens": 0,
+        "refusals": {},
         "calls": 1,
-        "model_calls": 24,
-        "ms": 64078,
-        "error": "budget"
+        "model_calls": 1,
+        "ms": 32648,
+        "error": "model"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10843,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
         "calls": 1,
-        "ms": 43603,
-        "error": ""
+        "ms": 798,
+        "error": "model"
       }
     },
     {
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 8,
-      "question": "How many open Issues have acceptance_criteria containing \"SDK\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "0",
-      "corpus_items": 12,
-      "corpus_bytes": 54941,
-      "rlm": {
-        "correct": true,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
-        "reached_child": false,
-        "tokens": 3044,
-        "reserved": 61150,
-        "calls": 1,
-        "model_calls": 6,
-        "ms": 19100,
-        "error": ""
-      },
-      "stuffing": {
-        "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10843,
-        "calls": 1,
-        "ms": 44385,
-        "error": ""
-      }
-    },
-    {
-      "repo": "pm-lint",
-      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
-      "index": 9,
-      "question": "How many open Issues have acceptance_criteria containing \"release\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "0",
-      "corpus_items": 12,
-      "corpus_bytes": 54941,
-      "rlm": {
-        "correct": true,
-        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
-        "reached_child": false,
-        "tokens": 10910,
-        "reserved": 174006,
-        "calls": 1,
-        "model_calls": 16,
-        "ms": 51107,
-        "error": ""
-      },
-      "stuffing": {
-        "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10843,
-        "calls": 1,
-        "ms": 44904,
-        "error": ""
-      }
-    },
-    {
-      "repo": "pm-lint",
-      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
-      "index": 10,
-      "question": "How many open Issues have acceptance_criteria containing \"budget\" (case-insensitive substring)? Answer only the integer.",
-      "expected": "0",
+      "question": "Which of items with status closed has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-lint-1c6j",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
         "correct": false,
         "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 45269,
-        "reserved": 289965,
+        "tokens": 0,
+        "reserved": 9833,
+        "pending": 9833,
+        "read_tokens": 0,
+        "refusals": {},
         "calls": 1,
-        "model_calls": 14,
-        "ms": 56307,
-        "error": "budget"
+        "model_calls": 1,
+        "ms": 15613,
+        "error": "model"
       },
       "stuffing": {
         "correct": false,
-        "answer_sha256": "aed6cbbe621d94bd02a9b85bd636d371c2039ffdda7da09615ae28e8d19e51f7",
-        "tokens": 10843,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
         "calls": 1,
-        "ms": 43876,
-        "error": ""
+        "ms": 544,
+        "error": "model"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "index": 9,
+      "question": "Which of all items has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-lint-trap",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "reached_child": false,
+        "tokens": 0,
+        "reserved": 9826,
+        "pending": 9826,
+        "read_tokens": 0,
+        "refusals": {},
+        "calls": 1,
+        "model_calls": 1,
+        "ms": 14276,
+        "error": "model"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
+        "calls": 1,
+        "ms": 484,
+        "error": "model"
+      }
+    },
+    {
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "index": 10,
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of title, treating missing values as empty strings and breaking ties by lexicographically smallest id? Answer only the integer or id.",
+      "expected": "pm-lint-8kis",
+      "corpus_items": 12,
+      "corpus_bytes": 54941,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "reached_child": false,
+        "tokens": 0,
+        "reserved": 9822,
+        "pending": 9822,
+        "read_tokens": 0,
+        "refusals": {},
+        "calls": 1,
+        "model_calls": 1,
+        "ms": 18900,
+        "error": "model"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
+        "calls": 1,
+        "ms": 6041,
+        "error": "model"
       }
     },
     {
       "repo": "pm-lint",
       "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
       "index": 11,
-      "question": "Which Epic has the most direct closed children? Break ties by lexicographically smallest id. Answer only its id, or none if there are no Epics.",
+      "question": "Which Epic has the most direct closed children, breaking ties by lexicographically smallest id? Answer only the integer or id.",
       "expected": "pm-lint-epic",
       "corpus_items": 12,
       "corpus_bytes": 54941,
       "rlm": {
         "correct": false,
-        "answer_sha256": "140bedbf9c3f6d56a9846d2ba7088798683f4da0c248231336e6a05679e4fdfe",
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "reached_child": false,
-        "tokens": 2920,
-        "reserved": 52129,
+        "tokens": 0,
+        "reserved": 9752,
+        "pending": 9752,
+        "read_tokens": 0,
+        "refusals": {},
         "calls": 1,
-        "model_calls": 5,
-        "ms": 22337,
-        "error": ""
+        "model_calls": 1,
+        "ms": 14784,
+        "error": "model"
       },
       "stuffing": {
-        "correct": true,
-        "answer_sha256": "58185703c17f14d5d694b164c4e922e2fc300b4ccd62067eaf2a0bd7623b74f9",
-        "tokens": 10855,
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 0,
         "calls": 1,
-        "ms": 45967,
-        "error": ""
+        "ms": 1016,
+        "error": "model"
       }
     }
-  ]
+  ],
+  "started_at_utc": "2026-10-19T00:55:38.591Z",
+  "implementation_source_sha256": "50f8fa21ec16e76a91e621cb2301eec5671ccb6fdb11cc60a22134226138f7ca",
+  "live_invocations": 1,
+  "measurement": "One authorized invocation, sequential arms, stuffing first; all failures included; only recorded provider usage counted",
+  "source_revisions": [
+    {
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "items": 145,
+      "bytes": 814268
+    },
+    {
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "items": 12,
+      "bytes": 54941
+    }
+  ],
+  "summary": {
+    "rlm": {
+      "correct": 0,
+      "questions": 24,
+      "accuracy_pct": 0,
+      "tokens": 3511126,
+      "tokens_per_question": 146296.91666666666,
+      "seconds_per_question": 183.783625,
+      "requests_per_question": 19.166666666666668,
+      "refusal_histogram": {
+        "budget": 15,
+        "model": 9
+      },
+      "reached_child": 0,
+      "tool_refusal_histogram": {
+        "invalid": 451
+      },
+      "mean_charged_tokens": 151634.95833333334,
+      "mean_pending_tokens": 5338.041666666667,
+      "mean_read_tokens": 0
+    },
+    "stuffing": {
+      "correct": 0,
+      "questions": 24,
+      "accuracy_pct": 0,
+      "tokens": 443318,
+      "tokens_per_question": 18471.583333333332,
+      "seconds_per_question": 5.365291666666667,
+      "requests_per_question": 1,
+      "refusal_histogram": {
+        "model": 8
+      }
+    },
+    "answer_distribution": {
+      "questions": 24,
+      "histogram": {
+        "0": 1,
+        "1": 1,
+        "4": 2,
+        "32": 1,
+        "68": 1,
+        "167": 1,
+        "208": 1,
+        "277": 1,
+        "1436": 1,
+        "3154": 1,
+        "3355": 1,
+        "12196": 1,
+        "pm-vcs-5m22": 1,
+        "pm-vcs-6qva": 1,
+        "pm-vcs-ag8y": 1,
+        "pm-vcs-1v6x": 1,
+        "pm-vcs-b7cb": 1,
+        "pm-lint-8kis": 2,
+        "pm-lint-trap": 2,
+        "pm-lint-1c6j": 1,
+        "pm-lint-epic": 1
+      },
+      "most_common": 2,
+      "zero": 1
+    }
+  }
 }

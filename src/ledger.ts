@@ -5,7 +5,7 @@ import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, text } 
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
 import { validateRlmSettings } from './settings.ts';
-import type { RlmCall, RlmSettings, RlmSlice, RlmState, RlmStep } from './types.ts';
+import type { ModelResponse, RlmCall, RlmSettings, RlmSlice, RlmState, RlmStep } from './types.ts';
 import type { SchemaFieldDefinition } from '@unbrained/pm-cli/sdk/authoring';
 
 /** Registered fields shared by SDK-created schemas and extension activation. */
@@ -26,6 +26,16 @@ export function reserveStep(state: RlmState, call: RlmCall, prompt: string): Rlm
   state.reserved_tokens += charge;
   call.steps.push(step);
   return step;
+}
+/** Settle once in memory; the caller atomically checkpoints the response and released allowance together. */
+export function settleStep(state: RlmState, step: RlmStep, response: ModelResponse): void {
+  if (step.settled === true) return;
+  const actual = response.tokens_in + response.tokens_out;
+  if (!Number.isSafeInteger(actual) || actual < 0 || actual > step.reserved) throw new RlmError('model', 'Model usage exceeds its reservation');
+  state.reserved_tokens -= step.reserved - actual;
+  step.reserved = actual;
+  step.response = response;
+  step.settled = true;
 }
 /** SDK-only ledger writes, single-writer runtime lease and idempotent call materialization. */
 export class RlmLedger {
@@ -76,9 +86,11 @@ export class RlmLedger {
         for (const entry of call.steps) {
           const step = record(entry);
           text(step.prompt); integer(step.reserved, 0);
+          if (step.settled !== undefined && (step.settled !== true || step.response === undefined)) throw new Error('Invalid settlement');
           if (step.response !== undefined) {
             const response = record(step.response);
-            text(response.text); integer(response.tokens_in, 0); integer(response.tokens_out, 0);
+            if (typeof response.text !== 'string') throw new Error('Invalid response text');
+            integer(response.tokens_in, 0); integer(response.tokens_out, 0);
           }
         }
       }

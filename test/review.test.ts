@@ -173,7 +173,7 @@ test('typed completion hook refusal preserves a child result already recorded', 
 test('partition index refuses the exact remaining run budget before delivery', async t => {
   const { workspace, client } = await tracker(t);
   await client.create({ title: 'Partition budget', type: 'Task' });
-  const model = new ScriptedModel(() => '{"action":"partition","filter":{},"maxTokens":1000}');
+  const model = { name: 'full-reservation-test', complete: async (request: ModelRequest) => ({ text: '{"action":"partition","filter":{},"maxTokens":1000}', tokens_in: estimateTokens(request.prompt), tokens_out: request.max_output_tokens * 16 }) };
   const config = await readRlmSettings(workspace);
   const prompt = `${PROTOCOL}\n${JSON.stringify({ question: 'partition budget', depth: 0, slice: { fragments: [], estimated_tokens: 2 }, transcript: [] })}`;
   await assert.rejects(runRlm('partition budget', { workspace, model, settings: { budget_tokens: estimateTokens(prompt) + config.output_tokens * 16 } }), { code: 'budget' });

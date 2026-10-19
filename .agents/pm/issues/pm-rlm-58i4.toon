@@ -1,0 +1,21 @@
+id: pm-rlm-58i4
+title: Investigate cloud JSON action compliance with synthetic holdouts
+description: "The single glm-5.3:cloud measurement recorded 451 invalid-action refusals, no delivered reads and no child calls. Both arms scored 0/24. RLM outer refusals were budget 15 and model/transport 9; stuffing had 8 model/transport refusals. Investigate strict action/answer formatting, output allocation and provider behavior with unrelated synthetic holdouts. These observations do not establish recursive aggregation quality or an RLM advantage. Further model calls require separate owner quota authorization; do not tune on the recorded evaluation answers."
+type: Issue
+status: open
+priority: 2
+tags: []
+created_at: "2026-10-19T02:14:44.023Z"
+updated_at: "2026-10-19T02:37:04.419Z"
+author: codex-agent
+estimated_minutes: 90
+acceptance_criteria: Reproduce and classify strict JSON failures with independent synthetic prompts; distinguish provider transport and formatting failures; establish valid action and answer envelopes before another comparative eval; use no additional model quota without owner authorization.
+parent: pm-rlm-a1ih
+files[3]{path,scope}:
+  src/adapters.ts,project
+  src/protocol.ts,project
+  test/live.ts,project
+docs[2]{path,scope}:
+  docs/EVAL-CLOUD.md,project
+  README.md,project
+body: ""

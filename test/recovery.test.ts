@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { fork } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { once } from 'node:events';
@@ -9,27 +8,20 @@ import { RlmLedger, promptDigest, reserveStep } from '../src/ledger.ts';
 import { RlmEngine, replayRlm, runRlm } from '../src/engine.ts';
 import { estimateTokens, RlmError } from '../src/errors.ts';
 import type { RlmResult } from '../src/types.ts';
-import { ScriptedModel, tracker } from './helpers.ts';
+import { ScriptedModel, tracker, crashProcess, killAtCheckpoint } from './helpers.ts';
 
-/** Execute a genuine child process, retaining V8 counters for descendant coverage. */
-function worker(workspace: string, mode: string, log: string, run = '') {
-  return fork(join(import.meta.dirname, 'crash-worker.ts'), [workspace, mode, log, run], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: { ...process.env, NODE_TEST_CONTEXT: '' } });
-}
 /** Kill exactly between completed child persistence and parent observation persistence. */
 test('SIGKILL then resume reuses completed digest with no repeated completed inference and identical total charge', async t => {
   const { workspace, root, client } = await tracker(t);
   const log = join(root, 'requests.jsonl');
-  const child = worker(workspace, 'kill', log);
-  t.after(() => { child.kill('SIGKILL'); });
-  const [message] = await once(child, 'message') as [{ run: string; completed: string }];
-  const exit = once(child, 'exit');
-  child.kill('SIGKILL');
-  assert.deepEqual(await exit, [null, 'SIGKILL']);
+  const child = crashProcess('crash-worker.ts', workspace, 'kill', log);
+  const message = await killAtCheckpoint(t, child);
   const ledger = new RlmLedger(workspace, 'rlm-test');
   const interrupted = await ledger.load(message.run);
   assert.equal(interrupted.calls[1].result, '7');
   assert.equal(interrupted.calls[0].steps[0].observation, undefined);
-  const resumed = worker(workspace, 'resume', log, message.run);
+  await assert.rejects(replayRlm(workspace, message.run), { code: 'replay', message: 'Recorded spawn step has no completed observation' });
+  const resumed = crashProcess('crash-worker.ts', workspace, 'resume', log, message.run);
   const [reply] = await once(resumed, 'message') as [{ result: RlmResult }];
   await once(resumed, 'exit');
   const requests = (await readFile(log, 'utf8')).trim().split('\n');
@@ -37,7 +29,7 @@ test('SIGKILL then resume reuses completed digest with no repeated completed inf
   assert.equal(requests.filter(value => value === 'second').length, 1);
   assert.equal(reply.result.answer, '7+11');
   assert.equal((await replayRlm(workspace, message.run)).answer, '7+11');
-  const baseline = worker(workspace, 'baseline', join(root, 'baseline.jsonl'));
+  const baseline = crashProcess('crash-worker.ts', workspace, 'baseline', join(root, 'baseline.jsonl'));
   const [normal] = await once(baseline, 'message') as [{ result: RlmResult }];
   await once(baseline, 'exit');
   assert.equal(reply.result.answer, normal.result.answer);

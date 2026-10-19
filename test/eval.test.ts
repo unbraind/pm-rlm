@@ -41,7 +41,8 @@ test('eval pins local transport and scores explicit JSON answers', async t => {
   process.env.PM_RLM_LIVE_BASE_URL = 'http://127.0.0.1:11434';
   const config = await liveSettings(workspace);
   assert.equal(config.adapter, 'ollama'); assert.equal(config.model, 'synthetic-local');
-  for (const key of ['context_tokens', 'output_tokens', 'budget_tokens'] as const) assert.equal(config[key], defaults[key]);
+  assert.equal(config.context_tokens, 131072);
+  for (const key of ['output_tokens', 'budget_tokens'] as const) assert.equal(config[key], defaults[key]);
   assert.equal(config.key_env, 'PM_RLM_LIVE_UNUSED_KEY');
   for (const endpoint of ['https://example.invalid', 'http://localhost@external.invalid', 'http://127.0.0.1/path', 'http://localhost?key=x']) {
     process.env.PM_RLM_LIVE_BASE_URL = endpoint;
