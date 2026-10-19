@@ -7,13 +7,13 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:47.468Z"
-updated_at: "2026-10-19T22:39:33.197Z"
+updated_at: "2026-10-19T22:43:16.897Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 acceptance_criteria: Six aggregate revert proofs; npm and Bun release gates; one honest 24-question comparison
 parent: pm-rlm-a1ih
-comments[40]{created_at,author,text}:
+comments[41]{created_at,author,text}:
   "2026-10-19T05:54:26.312Z",codex-agent,"Plan fixed before live inference: six deterministic snapshot aggregates with no evaluation or code execution; len(field) means UTF-8 bytes, numeric fields must be finite, extrema return sorted tied ids, missing text is empty. Reuse existing budget, projection, ledger and replay paths. Pin both public source revisions and verify the same 24 selected questions. One invocation only, no answer tuning; include cheap generic precomputed-tool context arm if it fits."
   "2026-10-19T06:00:47.940Z",codex-agent,"Optional third arm omitted before inference to conserve owner quota: it requires 24 additional full cloud requests. The new harness verifies public visibility, exact historical revisions, complete corpus counts/bytes and all 24 seeded questions/truths before its exclusive once-only marker. Successful new runs are replayed. New raw response evidence stays in ignored local artifacts."
   "2026-10-19T06:01:38.699Z",codex-agent,"Revert proof receipt: count, sum, distinct, group_count, argmax and argmin each independently fail the exact scoped observation regression when only that operation is removed. All six passed behavioral revert verification in node test/v2-revert.ts; source bytes restored. Starting the only authorized cloud invocation with the implementation frozen."
@@ -54,6 +54,7 @@ comments[40]{created_at,author,text}:
   "2026-10-19T22:27:26.038Z",codex-agent,"Behavioral revert proof receipt: pinned pm test pm-rlm-v2agg --run --progress --match review-r6-revert --timeout 600 passes node test/review-r6-revert.ts, 13/13 independent proofs (seven new). Removing spawn validation makes the ten-kind matrix fail; independently removing code comparison, reason comparison or child-message persistence also fails its targeted assertion. Reverting either report correction or the formatter source wording fails the source-drift report regression. Every mutation exits 1 with ERR_ASSERTION and restores source byte-for-byte. Focused matrix/report suite passes 11/11 and the separate nested/reuse check passes 1/1; prior recovery regressions pass 17/17. PM linked-result persistence is disabled by existing project policy, so this comment records the receipt."
   "2026-10-19T22:30:50.539Z",codex-agent,"Final inventory refinement: added explicit reversed-range, text/offset mismatch and incorrect slice-estimate execution-refusal cases. The table now covers thirteen spawn refusal paths, each with code/reason/missing-reason tampering through replay and resume, completed and unfinished checkpoints, plus v1 code-only recovery. The admission implementation already recomputed these paths. Interrupted the preliminary release runs before completion to freeze the expanded test inventory; those partial runs are not gate receipts."
   "2026-10-19T22:39:33.157Z",codex-agent,"CI correction at 2990af4: all 163 regular/other suite checks passed, but two shallow-clone proof scripts failed (166 total, 163 pass and 3 fail including the parent suite). The old corrective-feedback selector matched three error-message receipts after the new persistence fields; narrowed it to the exact step observation assignment, preserving the one-match guard. Legacy parser-version proof now wraps successful replay/resume in assertions so a regenerated execution-integrity refusal becomes the required assertion failure. Removed redundant partition/child code checks from replay traversal: validateRecorded already rejects them first, making the old alternate-error lines unreachable. No threshold or dependency changes. Both Node 22/26 CI failures are excluded from gate receipts; local partial runs stopped for this correction."
+  "2026-10-19T22:43:16.882Z",codex-agent,"CI at 86c6d49 passes all 166/166 tests and all 94/94 behavioral proofs in both Node versions. Unchanged 100-percent branch gate correctly rejects one remaining gap (99.91 overall): earlier integrity validation now rejects the former missing-child-failure fixture before the completed-root/unfinished-call guard. Added a distinct orphaned unfinished-call corruption fixture that reaches and asserts that guard. No production code, thresholds or pins changed. This unsuccessful gate remains excluded from final receipts."
 files[26]{path,scope}:
   eval-results-constrained.json,project
   index.ts,project

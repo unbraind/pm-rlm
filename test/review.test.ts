@@ -154,6 +154,12 @@ test('child interruption remains resumable and terminal refusal tampering fails 
   const ledger = new RlmLedger(workspace); const state = await ledger.load(result.run);
   const unfinished = structuredClone(state); delete unfinished.calls[1].failure; await ledger.save(unfinished);
   await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'replay' });
+  const orphaned = structuredClone(state);
+  const orphan = { ...orphaned.calls[1], id: `${result.run}-orphan`, steps: [] };
+  delete orphan.failure;
+  orphaned.calls.push(orphan);
+  await ledger.save(orphaned);
+  await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'incomplete', message: 'Completed run contains an unfinished call' });
   state.calls[1].failure = { code: 'budget' }; await ledger.save(state);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
 });
