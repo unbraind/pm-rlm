@@ -15,7 +15,7 @@ function execute(cwd: string, args: string[], executable: string, env: NodeJS.Pr
   return child.stdout;
 }
 /** Install the actual packed distribution in independent package-manager consumers. */
-test('packed npm/npx and Bun/bunx install, discover and render the rlm command family', t => {
+for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs, discovers and executes the rlm command`, t => {
   const repository = resolve(import.meta.dirname, '..');
   const scratch = mkdtempSync(join(tmpdir(), 'rlm-consumer-'));
   t.after(() => rmSync(scratch, { recursive: true, force: true }));
@@ -25,7 +25,6 @@ test('packed npm/npx and Bun/bunx install, discover and render the rlm command f
   const allowed = /^(dist\/|manifest\.json$|eval-results\.json$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|CHANGELOG\.md$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
-  for (const manager of ['npm', 'bun']) {
     const consumer = join(scratch, manager); mkdirSync(consumer);
     writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'rlm-consumer-fixture', private: true, type: 'module', dependencies: { 'pm-rlm': `file:${join(scratch, packed[0].filename)}`, '@unbrained/pm-cli': manifest.devDependencies['@unbrained/pm-cli'] } }));
     execute(consumer, manager === 'npm' ? ['install', '--prefer-offline', '--ignore-scripts', '--no-audit', '--no-fund'] : ['install', '--ignore-scripts'], manager, env);
@@ -35,8 +34,21 @@ test('packed npm/npx and Bun/bunx install, discover and render the rlm command f
     execute(consumer, [...prefix, 'init', '--prefix', 'rlm-consumer', '--defaults', '--agent-guidance', 'skip'], executable, hostEnv);
     execute(consumer, [...prefix, 'package', 'install', join(scratch, packed[0].filename)], executable, hostEnv);
     const help = execute(consumer, [...prefix, 'rlm', '--help'], executable, hostEnv);
-    for (const command of ['run', 'tree', 'resume', 'replay']) assert.match(help, new RegExp(command));
+    for (const command of ['run', 'tree', 'resume', 'replay']) assert.ok(help.includes(command));
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
-  }
+    writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm } from 'pm-rlm';
+const result = await runRlm('Packed tree fixture', { workspace: process.env.PM_PATH!, author: 'rlm-consumer', model: { name: 'packed-test-only', complete: async () => ({ text: '{"action":"finish","answer":"packed result"}', tokens_in: 20, tokens_out: 10 }) } });
+console.log(JSON.stringify(result));
+`);
+    const run = JSON.parse(execute(consumer, ['create-run.ts'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as { run: string; answer: string };
+    assert.equal(run.answer, 'packed result');
+    const tree = JSON.parse(execute(consumer, [...prefix, 'rlm', 'tree', run.run, '--json'], executable, hostEnv)) as { run: string; token_usage: string; calls: { id: string; parent: string; depth: number; status: string; result: string; used_tokens: number; reserved_tokens: number }[] };
+    assert.equal(tree.token_usage, 'reported_or_estimated');
+    assert.equal(tree.run, run.run); assert.equal(tree.calls.length, 1);
+    assert.equal(tree.calls[0].id, run.run); assert.equal(tree.calls[0].depth, 0);
+    assert.equal(tree.calls[0].status, 'closed'); assert.equal(tree.calls[0].result, 'packed result');
+    assert.equal(tree.calls[0].reserved_tokens, 30); assert.equal(tree.calls[0].used_tokens, 30);
+    assert.match(tree.calls[0].parent, /^rlm-consumer-/);
+
 });

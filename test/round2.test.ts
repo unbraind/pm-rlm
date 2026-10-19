@@ -40,9 +40,9 @@ test('malformed scope JSON identifies the flag', async t => {
   const { workspace } = await tracker(t);
   const context = { command: 'rlm run', pm_root: workspace, args: ['q'], options: { scope: '{' }, global: { author: 'rlm-test' } } as CommandHandlerContext;
   await assert.rejects(runCommand('run', context), { exitCode: 2, message: 'rlm invalid: Invalid --scope JSON' });
-  await assert.rejects(runCommand('run', { ...context, options: { scope: '' } }), { message: 'rlm invalid: Expected nonempty text' });
+  await assert.rejects(runCommand('run', { ...context, options: { scope: '' } }), { exitCode: 2, message: 'rlm invalid: Expected nonempty text' });
   await writeFile(getSettingsPath(workspace), '{');
-  await assert.rejects(runCommand('run', { ...context, options: {} }), { message: 'rlm invalid: Command failed; check inputs and tracker integrity' });
+  await assert.rejects(runCommand('run', { ...context, options: {} }), { exitCode: 2, message: 'rlm incomplete: Workspace data could not be read completely' });
 });
 
 /** Escaped secrets and path separators cannot bypass serialization-time privacy checks. */

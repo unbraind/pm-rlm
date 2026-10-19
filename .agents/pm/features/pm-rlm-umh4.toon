@@ -6,7 +6,7 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:33:05.897Z"
-updated_at: "2026-10-19T03:35:47.253Z"
+updated_at: "2026-10-19T04:52:48.537Z"
 author: codex-agent
 estimated_minutes: 80
 acceptance_criteria: "At least twenty exact questions on copies of verified public trackers compare recursive and truncated one-call runs with the same local model; report accuracy, tokens, calls and wall time honestly."
@@ -14,7 +14,7 @@ parent: pm-rlm-a1ih
 blocked_by: pm-rlm-kaht
 dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
   pm-rlm-kaht,blocked_by,"2026-10-18T20:00:27.314Z",codex-agent,"cli:update:blocked_by",detected
-comments[11]{created_at,author,text}:
+comments[13]{created_at,author,text}:
   "2026-10-18T19:44:09.352Z",codex-agent,"Live evaluation is running sequentially on verified PUBLIC copies of pm-vcs and pm-lint. Twenty-four exact ground-truth aggregations; same installed local model in both arms; 4096 context, 96 output limit. Early results are negative: the small model copies context or requests excessive reads; budget refusals count as incorrect. No success claim is inferred from the architecture."
   "2026-10-18T19:59:55.257Z",codex-agent,"Measured npm run test:live: 24 exact questions from verified PUBLIC tracker copies (145 and 12 items; 814268 and 54941 JSON bytes), local gemma4-local:e2b-q3km, context 4096, output 96, temperature 0. RLM: 1/24 correct (4.17%), 35557 provider tokens total (1481.54/question), 82 model requests (3.42/question), 622384 ms total (25.93 s/question), 23 budget refusals. Truncated stuffing: 0/24 correct, 25225 tokens (1051.04/question), 24 requests (1/question), 117573 ms (4.90 s/question). One root per RLM question and no child calls. This does not demonstrate an RLM advantage. Public per-question metrics and response digests are in eval-results.json; README contains the table."
   "2026-10-18T21:16:44.464Z",codex-agent,"Calibration diagnosis: eval overrode defaults to 4096 context, 96 output tokens and 16000 run budget. Full read/partition payloads exceeded the next prompt, while output was too small for copying useful slices into spawn JSON. Add compact deterministic partition references in the model protocol, retain the exported lossless environment API, calibrate with synthetic two-partition/two-child tests, and measure without answer-based tuning. Eval will copy only a verified public revision and explicitly pin loopback Ollama transport."
@@ -26,9 +26,12 @@ comments[11]{created_at,author,text}:
   "2026-10-19T02:14:47.518Z",codex-agent,"Exactly one authorized cloud invocation completed all 24 pairs with glm-5.3:cloud, 131072 shared context allocation, 512 output allocation, temperature 0, existing 300000 charged-token budget, depth 2 and eight ledger calls. Source fingerprint matched before report generation. RLM: 0/24; 3511126 recorded tokens total, 146296.92 tokens/question; 183.78 seconds/question; 19.17 model requests/question; child reach 0/24. Stuffing: 0/24; 443318 recorded tokens total, 18471.58 tokens/question; 5.37 seconds/question; 1 request/question. RLM outer refusal histogram: budget 15, model/transport 9. Stuffing model/transport refusals: 8. RLM recorded 451 invalid-action refusals and zero delivered-read charge. Mean RLM charged/used/pending tokens: 151634.96/146296.92/5338.04. Pending reservations explain the difference; recorded responses settled to actual usage. Constant baselines: most-common answer 2/24 (8.33%), zero 1/24 (4.17%). No questions, prompts or settings were tuned during the run, and no further model calls were made. docs/EVAL-CLOUD.md, README and eval-results.json record exact results and limitations. This null result does not establish recursive aggregation quality or an RLM advantage."
   "2026-10-19T03:25:37.481Z",codex-agent,"Offline report regression uses saved synthetic measurements only: edited headings and misleading historical prose outside the marked region are preserved, a second report is byte-identical, and malformed/duplicate/reversed markers leave existing artifacts untouched. No live inference or measured-result artifact rewrite."
   "2026-10-19T03:31:18.487Z",codex-agent,"Revert evidence: restoring the historical-prose README locator fails the offline-report regression, which also proves rerun idempotence and no report writes on invalid marker structure. No model calls were made. Existing eval archive and seeded-design mutations also passed their revert proofs."
-files[9]{path,scope}:
+  "2026-10-19T04:32:36.455Z",codex-agent,"DJ8 and metric sweep: historical token provenance cannot be reconstructed per response. Reports now say reported-or-estimated, with explicit provenance for provider/fallback model counters, accounting charges, worst-case pending estimates and byte-estimated reads; scoring and observed counts are exact, timing is measured, allocations are configured limits. Run/tree summaries also label token usage. README, architecture, cloud report and artifact labels agree. Verified all pre-existing numeric values, rows, source revisions and measurement fingerprint unchanged; no live model calls."
+  "2026-10-19T04:34:39.484Z",codex-agent,"Revert evidence: restoring the provider-only measurement description or table heading separately fails the offline report regression. Removing only the host tree token label fails native host JSON acceptance. Report regeneration remains idempotent under valid markers, with exact marker-failure exit 1 and no output writes on invalid markers. Historical numeric data is unchanged; provenance is intentionally reported-or-estimated because it was not retained per response."
+files[10]{path,scope}:
   eval-results.json,project
   test/eval-design.ts,project
+  test/eval-metrics.ts,project
   test/eval-questions.ts,project
   test/eval-report.ts,project
   test/eval-source.test.ts,project

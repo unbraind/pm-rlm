@@ -12,6 +12,14 @@ export class RlmError extends Error {
     this.code = code;
   }
 }
+/** Convert failed SDK reads into sanitized refusals while preserving existing typed failures. */
+export async function sdkRead<T>(read: () => T | Promise<T>): Promise<T> {
+  try { return await read(); }
+  catch (error) {
+    if (error instanceof RlmError) throw error;
+    throw new RlmError('incomplete', 'Workspace data could not be read completely');
+  }
+}
 /** Conservative byte-based token estimate: one token per UTF-8 byte, minimum one. */
 export function estimateTokens(value: unknown): number {
   return Math.max(1, Buffer.byteLength(typeof value === 'string' ? value : JSON.stringify(value), 'utf8'));

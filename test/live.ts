@@ -1,3 +1,4 @@
+import { METRIC_PROVENANCE } from './eval-metrics.ts';
 import { gitEnvironment } from '../scripts/environment.ts';
 /** Live evaluation: copied public trackers, exact SDK truth, same local model in both arms. */
 import { createHash } from 'node:crypto';
@@ -133,8 +134,8 @@ export async function liveEval(): Promise<void> {
         }
         const row = { repo, revision, index, question: task.question, expected: task.answer, corpus_items: corpus.items.length, corpus_bytes: Buffer.byteLength(JSON.stringify(corpus.items)), rlm: { correct: answer.trim() === task.answer, answer_sha256: digest(answer), reached_child: calls > 1, tokens, reserved, pending, read_tokens: readTokens, refusals, calls, model_calls: modelCalls, ms: Math.round(performance.now() - start), error }, stuffing: { correct: stuffingAnswer(baseline.text).trim() === task.answer, answer_sha256: digest(baseline.text), tokens: baseline.tokens_in + baseline.tokens_out, calls: 1, ms: stuffingMs, error: baselineError } };
         rows.push(row);
-        await writeFile('eval-results.local.json', JSON.stringify({ design: EVAL_SEED, model: modelName, measured_at_utc: new Date().toISOString(), context_tokens: config.context_tokens, output_tokens: config.output_tokens, budget_tokens: config.budget_tokens, max_depth: config.max_depth, max_calls: config.max_calls, temperature: 0, rows }, null, 2) + '\n');
-        console.log(JSON.stringify(row));
+        await writeFile('eval-results.local.json', JSON.stringify({ design: EVAL_SEED, model: modelName, measured_at_utc: new Date().toISOString(), context_tokens: config.context_tokens, output_tokens: config.output_tokens, budget_tokens: config.budget_tokens, max_depth: config.max_depth, max_calls: config.max_calls, temperature: 0, metric_provenance: METRIC_PROVENANCE, rows }, null, 2) + '\n');
+        console.log(JSON.stringify({ metric_provenance: METRIC_PROVENANCE, ...row }));
       }
     }
   } finally { await rm(root, { recursive: true, force: true }); }

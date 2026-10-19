@@ -89,9 +89,15 @@ test('eval report replaces only a unique marked block and is idempotent', async 
   assert.equal(await readFile(join(root, 'README.md'), 'utf8'), updated);
   const results = await readFile(join(root, 'eval-results.json'), 'utf8');
   const cloud = await readFile(join(root, 'docs/EVAL-CLOUD.md'), 'utf8');
+  for (const output of [updated, cloud]) assert.ok(output.includes('| Reported-or-estimated model tokens / question |'));
+  assert.match((JSON.parse(results) as { measurement: string }).measurement, /reported-or-estimated/);
+  const metadata = JSON.parse(results) as { metric_provenance: { model_tokens: string; timing: string; pending_tokens: string } };
+  assert.match(metadata.metric_provenance.model_tokens, /Provider-reported.*estimates/);
+  assert.match(metadata.metric_provenance.timing, /Measured/);
+  assert.match(metadata.metric_provenance.pending_tokens, /estimates/);
   for (const malformed of [before + end, start + 'missing end', start + end + start, end + start + end, start + end + end]) {
     await writeFile(join(root, 'README.md'), malformed);
-    const rejected = report(); assert.notEqual(rejected.status, 0); assert.match(rejected.stderr, /markers/);
+    const rejected = report(); assert.equal(rejected.status, 1); assert.match(rejected.stderr, /markers/);
     assert.equal(await readFile(join(root, 'README.md'), 'utf8'), malformed);
     assert.equal(await readFile(join(root, 'eval-results.json'), 'utf8'), results);
     assert.equal(await readFile(join(root, 'docs/EVAL-CLOUD.md'), 'utf8'), cloud);

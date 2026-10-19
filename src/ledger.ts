@@ -1,7 +1,7 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { acquireLock, certifyCompleteListResult, PmClient, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
-import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, text } from './errors.ts';
+import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
 import { validateRlmSettings } from './settings.ts';
@@ -51,7 +51,7 @@ export class RlmLedger {
   }
   /** Persist package schema through native SDK schema mutations. */
   async registerFields(): Promise<void> {
-    const registered = (await this.client.schemaListFields()).fields;
+    const registered = (await sdkRead(() => this.client.schemaListFields())).fields;
     for (const field of RLM_FIELDS) {
       const previous = registered.find(entry => entry.key === field.name);
       if (previous !== undefined && previous.type !== field.type) throw new RlmError('invalid', 'Incompatible existing rlm schema field');
@@ -60,12 +60,12 @@ export class RlmLedger {
   }
   /** Allocate a canonical SDK id before creating the root call. */
   async newRunId(): Promise<string> {
-    const settings = await readSettings(this.workspace);
+    const settings = await sdkRead(() => readSettings(this.workspace));
     return `${settings.id_prefix}rlm-${randomUUID().replaceAll('-', '')}`;
   }
   /** Read a certified full corpus to recover the root checkpoint without compact projections. */
   async load(run: string): Promise<RlmState> {
-    const corpus = certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true }));
+    const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
     const root = corpus.items.find(item => item.id === run);
     if (root === undefined || typeof root.rlm_state !== 'string') throw new RlmError('invalid', 'Run checkpoint was not found');
     try {
@@ -105,7 +105,7 @@ export class RlmLedger {
   /** Create a deterministic call item, or reuse its crash-surviving SDK write. */
   async materialize(state: RlmState, call: RlmCall): Promise<void> {
     assertLedgerPrivacy({ state, call }, this.workspace, state.settings.key_env);
-    const corpus = certifyCompleteListResult(await this.client.listAllComplete());
+    const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
     if (corpus.items.some(item => item.id === call.id)) return;
     await this.client.run('create', { options: { id: call.id, title: call.depth === 0 ? 'RLM root call' : `RLM sub-call ${call.depth}`, type: 'Task', status: 'in_progress', tags: 'rlm:call', parent: call.parent, description: call.subgoal, allowDuplicate: true,
       rlmRun: state.run, rlmDepth: call.depth, rlmModel: state.settings.model, rlmPromptDigest: call.digest, rlmTokensIn: 0, rlmTokensOut: 0,
@@ -118,7 +118,7 @@ export class RlmLedger {
     assertLedgerPrivacy(call, this.workspace, state.settings.key_env);
     await this.materialize(state, call);
     await this.client.comments(call.id, { add: call.failure === undefined ? `RLM result:\n${call.result}` : `RLM refusal:\n${JSON.stringify(call.failure)}`, ifAbsent: true });
-    const corpus = certifyCompleteListResult(await this.client.listAllComplete());
+    const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
     const row = corpus.items.find(item => item.id === call.id)!;
     if (row.status !== 'closed') {
       await this.client.run('update', { id: call.id, options: {
@@ -136,9 +136,9 @@ export class RlmLedger {
     const path = join(this.workspace, 'runtime', `rlm-${run}.json`);
     const token = randomUUID();
     try {
-      const raw = await readFileIfExists(path);
+      const raw = await sdkRead(() => readFileIfExists(path));
       if (raw !== null) {
-        const owner = record(JSON.parse(raw));
+        const owner = await sdkRead(() => record(JSON.parse(raw)));
         const pid = integer(owner.pid, 1);
         let alive = true;
         try { process.kill(pid, 0); } catch (error) { alive = record(error).code !== 'ESRCH'; }
@@ -147,8 +147,8 @@ export class RlmLedger {
       await writeFileAtomic(path, JSON.stringify({ pid: process.pid, token }));
     } finally { await unlock(); }
     return async () => {
-      const current = await readFileIfExists(path);
-      if (current !== null && record(JSON.parse(current)).token === token) await removeFileIfExists(path);
+      const current = await sdkRead(() => readFileIfExists(path));
+      if (current !== null && (await sdkRead(() => record(JSON.parse(current)))).token === token) await removeFileIfExists(path);
     };
   }
 }

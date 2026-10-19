@@ -4,6 +4,22 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 const mutations = [
+  { name: 'fatal child evidence mutation boundary', file: 'src/ledger.ts', before: "await this.client.comments(call.id, { add: call.failure === undefined ? `RLM result:\\n${call.result}` : `RLM refusal:\\n${JSON.stringify(call.failure)}`, ifAbsent: true });", after: "await sdkRead(() => this.client.comments(call.id, { add: call.failure === undefined ? `RLM result:\\n${call.result}` : `RLM refusal:\\n${JSON.stringify(call.failure)}`, ifAbsent: true }));", test: 'test/round5.test.ts', pattern: '^failed child evidence' },
+  { name: 'CLI unexpected error sanitization', file: 'src/commands.ts', before: "error instanceof RlmError ? error.message : 'Command failed; check inputs and tracker integrity'", after: "error instanceof Error ? error.message : 'Unexpected failure'", test: 'test/commands.test.ts', pattern: '^command dispatcher sanitizes' },
+  { name: 'SDK read error conversion', file: 'src/errors.ts', before: "    throw new RlmError('incomplete', 'Workspace data could not be read completely');", after: '    throw error;', test: 'test/round5.test.ts', pattern: '^SDK read boundaries' },
+  { name: 'history SDK read boundary', file: 'src/environment.ts', before: `    const entries = await sdkRead(async () => {
+      const history = await readHistoryEntries(getHistoryPath(this.workspace, id), id);
+      if (history.length === 0 || !verifyHistoryEntries(history).ok) throw new RlmError('incomplete', 'History chain is missing or invalid');
+      return history;
+    });`, after: `    const entries = await readHistoryEntries(getHistoryPath(this.workspace, id), id);
+    if (entries.length === 0 || !verifyHistoryEntries(entries).ok) throw new RlmError('incomplete', 'History chain is missing or invalid');`, test: 'test/round5.test.ts', pattern: '^malformed child history' },
+  { name: 'certified corpus SDK boundary', file: 'src/environment.ts', before: 'await sdkRead(async () => certifyCompleteListResult(await new PmClient({ pmRoot: workspace, noExtensions: true }).listAllComplete({ includeBody: true })))', after: 'certifyCompleteListResult(await new PmClient({ pmRoot: workspace, noExtensions: true }).listAllComplete({ includeBody: true }))', test: 'test/round5.test.ts', pattern: '^SDK read boundaries' },
+  { name: 'settings SDK boundary', file: 'src/settings.ts', before: "await sdkRead(async () => record(JSON.parse((await readFileIfExists(getSettingsPath(workspace))) ?? '{}')))", after: "record(JSON.parse((await readFileIfExists(getSettingsPath(workspace))) ?? '{}'))", test: 'test/round5.test.ts', pattern: '^SDK read boundaries' },
+  { name: 'CLI usage exit codes', file: 'src/commands.ts', before: "? 3 : 2", after: '? 3 : 1', test: 'test/commands.test.ts', pattern: '^command dispatcher' },
+  { name: 'report token measurement provenance', file: 'test/eval-report.ts', before: 'model usage is reported-or-estimated; per-response provenance was not retained', after: 'only recorded provider usage counted', test: 'test/round4.test.ts', pattern: '^eval report' },
+  { name: 'report token table provenance', file: 'test/eval-report.ts', before: 'Reported-or-estimated model tokens / question', after: 'Provider tokens / question', test: 'test/round4.test.ts', pattern: '^eval report' },
+  { name: 'host token usage provenance', file: 'src/engine.ts', before: "return full ? { state, token_usage: 'reported_or_estimated' } : { run, token_usage: 'reported_or_estimated', calls:", after: 'return full ? { state } : { run, calls:', test: 'test/commands.test.ts', pattern: '^real host tree' },
+  ...['npm', 'bun'].map(manager => ({ name: `packed ${manager} dispatch`, file: 'src/commands.ts', before: "if (command === 'tree') return await treeRlm(ctx.pm_root, argument, ctx.options.full === true);", after: "if (command === 'tree') throw new RlmError('invalid', 'Tree dispatch disabled');", build: true, test: 'test/install.acceptance.ts', pattern: `^packed ${manager} consumer` })),
   { name: 'absolute identity path boundary', file: 'scripts/identity-gate.ts', before: String.raw`(?<!\w)`, after: '', test: 'test/tooling.test.ts', pattern: '^identity privacy distinguishes' },
   { name: 'case-insensitive recovery environment', file: 'scripts/environment.ts', before: '!/^NODE_TEST_CONTEXT$/i.test(key)', after: '!/^NODE_TEST_CONTEXT$/.test(key)', test: 'test/round4.test.ts', pattern: '^test environment' },
   { name: 'case-insensitive Git environment', file: 'scripts/environment.ts', before: '!/^GIT_/i.test(key)', after: '!/^GIT_/.test(key)', test: 'test/round4.test.ts', pattern: '^Git environment' },
@@ -41,20 +57,27 @@ const mutations = [
   { name: 'resume by digest', file: 'src/engine.ts', before: 'let call = state.calls.find(call => call.parent === parent.id && call.digest === digest);', after: 'let call: RlmCall | undefined = undefined;', test: 'test/recovery.test.ts', pattern: '^SIGKILL' },
   { name: 'partitioner', file: 'src/environment.ts', before: 'if (estimateTokens([...fragments, candidate]) <= maxTokens) low = size;', after: 'if (true) low = size;', test: 'test/core.test.ts', pattern: '^partition slices' },
 ];
+/** Rebuild only proofs whose consumers load the compiled tarball, restoring that build too. */
+function buildPackage(): void {
+  const child = spawnSync('npm', ['run', 'build'], { encoding: 'utf8', timeout: 120000 });
+  assert.equal(child.status, 0, child.stdout + child.stderr);
+}
 for (const mutation of mutations) {
   const original = readFileSync(mutation.file, 'utf8');
   assert.equal(original.split(mutation.before).length, 2, 'Mutation must identify exactly one invariant');
   const hash = createHash('sha256').update(original).digest('hex');
   try {
     writeFileSync(mutation.file, original.replace(mutation.before, mutation.after));
+    if ('build' in mutation && mutation.build) buildPackage();
     const child = spawnSync(process.execPath, ['--test', '--test-name-pattern', mutation.pattern, mutation.test], { encoding: 'utf8', timeout: 300000 });
     assert.equal(child.error, undefined);
-    assert.notEqual(child.status, 0, `${mutation.name} regression incorrectly passed`);
+    assert.equal(child.status, 1, `${mutation.name} regression must fail with its assertion exit code`);
     assert.match(child.stdout + child.stderr, /AssertionError|ERR_ASSERTION/);
     console.log(`${mutation.name}: regression failed with invariant removed (exit ${child.status})`);
   } finally {
     writeFileSync(mutation.file, original);
     assert.equal(createHash('sha256').update(readFileSync(mutation.file)).digest('hex'), hash);
+    if ('build' in mutation && mutation.build) buildPackage();
   }
 }
 console.log(`${mutations.length}/${mutations.length} behavioral revert proofs; original source bytes restored`);

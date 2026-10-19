@@ -49,7 +49,7 @@ export interface ModelRequest {
   max_output_tokens: number;
   context_tokens: number;
 }
-/** Model response with optional provider-reported usage, distinct from budget reservations. */
+/** Model response counters use provider reports when available and conservative estimates otherwise. */
 export interface ModelResponse {
   text: string;
   tokens_in: number;
@@ -102,8 +102,9 @@ export interface RlmState {
   calls: RlmCall[];
   reserved_tokens: number;
 }
-/** Completed run summary. */
+/** Completed run summary: exact call count, accounting charge and reported-or-estimated model counters. */
 export interface RlmResult {
+  token_usage: 'reported_or_estimated';
   run: string;
   answer: string;
   calls: number;

@@ -1,5 +1,5 @@
 import { certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries } from '@unbrained/pm-cli/sdk';
-import { estimateTokens, integer, record, RlmError, text } from './errors.ts';
+import { estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
 import type { RlmFilter, RlmItem, RlmRead, RlmSlice } from './types.ts';
 import type { PmCompleteListCertificate } from '@unbrained/pm-cli/sdk';
 
@@ -111,8 +111,11 @@ export class RlmContext {
   async history(id: string, range: { start: number; end: number }): Promise<RlmRead<unknown[]>> {
     const item = this.item(id);
     integer(range.start, 0); integer(range.end, range.start);
-    const entries = await readHistoryEntries(getHistoryPath(this.workspace, id), id);
-    if (entries.length === 0 || !verifyHistoryEntries(entries).ok) throw new RlmError('incomplete', 'History chain is missing or invalid');
+    const entries = await sdkRead(async () => {
+      const history = await readHistoryEntries(getHistoryPath(this.workspace, id), id);
+      if (history.length === 0 || !verifyHistoryEntries(history).ok) throw new RlmError('incomplete', 'History chain is missing or invalid');
+      return history;
+    });
     return this.deliver(entries.filter(entry => entry.ts <= item.updated_at).slice(range.start, range.end));
   }
   /** Inspect a bounded UTF-16 substring of text or a serialized structured field. */
@@ -135,6 +138,6 @@ export async function createRlmContext(options: RlmContextOptions): Promise<RlmC
 }
 /** Read all statuses and fields with explicit complete-list certification. */
 export async function readCorpus(workspace: string): Promise<{ items: RlmItem[]; complete_list: PmCompleteListCertificate }> {
-  const result = certifyCompleteListResult(await new PmClient({ pmRoot: workspace, noExtensions: true }).listAllComplete({ includeBody: true }));
+  const result = await sdkRead(async () => certifyCompleteListResult(await new PmClient({ pmRoot: workspace, noExtensions: true }).listAllComplete({ includeBody: true })));
   return { items: result.items.filter(item => !item.tags.includes('rlm:call') && !item.tags.includes('rlm:question')).sort((a, b) => a.id.localeCompare(b.id)), complete_list: result.complete_list };
 }

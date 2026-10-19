@@ -25,11 +25,11 @@ npx --package=@unbrained/pm-cli pm package install pm-rlm
 bunx --package=@unbrained/pm-cli pm package install pm-rlm
 ```
 
-The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are verified by `npm run test:install`. `pm package install` performs extension discovery; npm or Bun dependency installation alone is not the activation step.
+The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are verified by `npm run test:install`: each creates a real SDK run and queries its closed call through the installed `pm rlm tree --json` command. `pm package install` performs extension discovery; npm or Bun dependency installation alone is not the activation step.
 
 | Command | Example | Result |
 | --- | --- | --- |
-| `run` | `pm rlm run "Count open Issues" --scope '{"type":"Issue"}' --max-depth 3 --max-calls 32 --budget-tokens 300000` | Answer, run id, calls, reservations and measured usage |
+| `run` | `pm rlm run "Count open Issues" --scope '{"type":"Issue"}' --max-depth 3 --max-calls 32 --budget-tokens 300000` | Answer, run id, calls, reservations and reported-or-estimated model usage |
 | `tree` | `pm rlm tree run-id` | One compact row per call: parent, depth, status, tokens and result excerpt |
 | `tree --full` | `pm rlm tree run-id --full --json` | Entire ledger checkpoint, including snapshot and recorded outputs |
 | `resume` | `pm rlm resume run-id` | Recovered answer; completed digests and recorded model responses are reused |
@@ -73,11 +73,13 @@ try {
 | `partition(filter, maxTokens)` | Lossless JSON fragments packed into slices; each slice fits its advertised estimate |
 | `remaining` | Remaining budget for this environment instance |
 
-Each read returns `{data, estimated_tokens, complete_list}`. The certificate describes the complete source corpus before scope and selection. Incomplete scans fail closed; budget refusal never silently truncates a complete read. Returned objects are copies. Linked file/doc metadata and comments are available through `get`; arbitrary linked file contents are not opened. That keeps reads inside the selected tracker.
+Each read returns `{data, estimated_tokens, complete_list}`. The certificate describes the complete source corpus before scope and selection. SDK read and history parsing failures become typed `incomplete` refusals. Incomplete scans fail closed; budget refusal never silently truncates a complete read. Returned objects are copies. Linked file/doc metadata and comments are available through `get`; arbitrary linked file contents are not opened. That keeps reads inside the selected tracker.
 
 Token estimates use **one token per UTF-8 byte**, minimum one, as a conservative and reproducible accounting unit, not a model tokenizer. The estimate covers the operation's `data`; its receipt is control metadata. A slice's estimate covers the serialized fragments including ids and offsets, excluding the estimate field. A complete partition response must also fit the environment's remaining budget. Oversized items split into escaped JSON fragments with exact UTF-16 offsets; concatenate fragments in order to recover the original item. A budget too small for a fragment header refuses.
 
 The built-in model loop is accessible through `runRlm(question, options)`, `resumeRlm(workspace, run)`, `replayRlm(workspace, run)` and `treeRlm(workspace, run, full)`. `RlmLedger`, `RlmEngine`, `reserveStep`, `promptDigest`, `estimateTokens`, typed contracts and errors are also exported for embedded tooling. Pass `question_item` to link an existing question; otherwise a generated question Task is created. `RlmEngine.spawn(parentId, subgoal, slice)` provides digest-based child reuse for custom orchestrators; custom orchestration must hold `ledger.lease(run)` for its entire read/modify/write sequence and await calls sequentially. `snapshot()` returns an independent state copy. The built-in runner acquires that lease automatically and reloads the checkpoint after acquisition.
+
+Run and tree outputs include `token_usage: reported_or_estimated`: input/output counters come from the provider when supplied and conservative byte estimates otherwise. Reserved totals are accounting charges that also include pending worst-case reservations and delivered-read byte estimates. Call/depth counters are exact ledger values; settings numbers are configured limits. These values do not establish provider billing.
 
 Implement `RlmModel` to supply a third-party model. Its `complete({prompt, max_output_tokens, context_tokens})` method returns `{text, tokens_in, tokens_out}` and its stable `name` is recorded in the ledger. The JSON action protocol supports `list`, `search`, `get`, `history`, `peek`, `partition`, `spawn`, and `finish`. For example:
 
@@ -135,7 +137,7 @@ Histogram: `4`, `pm-lint-8kis`, `pm-lint-trap` occur twice each; `0`, `1`, `32`,
 <!-- eval-table:start -->
 Measured once with `glm-5.3:cloud` at a shared 131072 context allocation after two-phase settlement.
 
-| Arm | Correct | Provider tokens / question | Seconds / question | Model requests / question | Reached a child |
+| Arm | Exact correct | Reported-or-estimated model tokens / question | Measured seconds / question | Observed model requests / question | Observed child reach |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | RLM | 0/24 (0.00%) | 146296.92 | 183.78 | 19.17 | 0/24 |
 | Complete-item stuffing | 0/24 (0.00%) | 18471.58 | 5.37 | 1.00 | — |
@@ -144,7 +146,7 @@ Most-common constant guess: 2/24 (8.33%). Constant zero: 1/24 (4.17%).
 
 Outer refusal histograms: RLM {"budget":15,"model":9}; stuffing {"model":8}. Recorded RLM tool refusals: {"invalid":451}.
 
-Both arms use the same model and 131072 context allocation, 512 output allocation and temperature 0. The conservative context estimator permits one UTF-8 byte per token, so effective provider context use can be lower than the configured ceiling. RLM limits are 300000 charged tokens, depth 2 and eight ledger calls. Wall time includes SDK work and concurrent host load. There is one invocation and no answer-based tuning, retries of the eval, or confidence interval. Refused runs count incorrect. Lost/unrecorded provider usage cannot be included; pending reservations are shown separately. This does not establish an RLM advantage. See [the cloud evaluation report](docs/EVAL-CLOUD.md) and [per-question results](eval-results.json).
+Provider-reported counters when present; conservative UTF-8 byte estimates otherwise. Per-response provenance was not retained, so totals are reported-or-estimated, not measured-only provider usage. Exact scoring, baselines, observed counts and corpus byte lengths are computed from recorded data; wall time is measured. Allocations and ceilings are configured limits. Both arms use the same model and 131072 context allocation, 512 output allocation and temperature 0. The conservative context estimator permits one UTF-8 byte per token, so effective provider context use can be lower than the configured ceiling. RLM limits are 300000 charged tokens, depth 2 and eight ledger calls. Wall time includes SDK work and concurrent host load. There is one invocation and no answer-based tuning, retries of the eval, or confidence interval. Refused runs count incorrect. Lost/unrecorded response counters cannot be included; pending reservations are shown separately. This does not establish an RLM advantage. See [the cloud evaluation report](docs/EVAL-CLOUD.md) and [per-question results](eval-results.json).
 
 Historical superseded v1 small-model measurement: RLM 7/24, stuffing 2/24, child reach 0/24, constant zero 12/24. Its [original artifact](https://github.com/unbraind/pm-rlm/blob/aa3787b2c1a2d66ed784a4b0d824eb7341581bc0/eval-results.json) remains available. Those scores do not measure this design.
 <!-- eval-table:end -->
@@ -161,7 +163,7 @@ npm run release:check
 bun run release:check
 ```
 
-Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove environment casing guards, CLI numeric/string/root validation, root-ancestor and Windows privacy matching, identity path matching and marker-based report replacement, as well as two-phase settlement, pre-response crash accounting, empty-response recovery, redirect rejection, rejected-body cancellation, typed replay observations, Git replacement isolation, checkpoint validation, transport byte and HTTPS guards, scope diagnostics, escaped privacy checks, verified archive checks and seeded answer caps, alongside the calibration, terminal child refusal, observation, scoped privacy, reservation, digest reuse and partition checks. Each regression must fail before exact source bytes are restored.
+Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove SDK read boundaries, fatal evidence-write classification, metric provenance labels and independent npm/Bun packed dispatch, as well as environment casing guards, CLI numeric/string/root validation, root-ancestor and Windows privacy matching, identity path matching and marker-based report replacement, as well as two-phase settlement, pre-response crash accounting, empty-response recovery, redirect rejection, rejected-body cancellation, typed replay observations, Git replacement isolation, checkpoint validation, transport byte and HTTPS guards, scope diagnostics, escaped privacy checks, verified archive checks and seeded answer caps, alongside the calibration, terminal child refusal, observation, scoped privacy, reservation, digest reuse and partition checks. Each regression must fail before exact source bytes are restored.
 
 Exit codes: `0` success; `2` invalid command, scope, model, integrity, replay or executor-conflict failure; `3` exhausted token, depth or call budget. Tool-level refusals can be recovered within a run; an exhausted outer budget ends the command. `test:live` counts refused answers rather than presenting them as successes.
 

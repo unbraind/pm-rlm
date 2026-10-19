@@ -18,10 +18,10 @@ export interface RlmRunOptions {
 }
 /** Empty slice for a root call whose scope lives outside the model prompt. */
 const EMPTY_SLICE: RlmSlice = { fragments: [], estimated_tokens: 2 };
-/** Summarize reservations separately from provider-reported token usage. */
+/** Summarize exact call counts and label model usage that can contain byte-based estimates. */
 function result(state: RlmState): RlmResult {
   const responses = state.calls.flatMap(call => call.steps.flatMap(step => step.response === undefined ? [] : [step.response]));
-  return { run: state.run, answer: state.calls[0].result!, calls: state.calls.length, reserved_tokens: state.reserved_tokens, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0) };
+  return { token_usage: 'reported_or_estimated', run: state.run, answer: state.calls[0].result!, calls: state.calls.length, reserved_tokens: state.reserved_tokens, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0) };
 }
 /** Return full items only when the child received their complete serialized representation. */
 function callItems(state: RlmState, call: RlmCall): RlmItem[] {
@@ -264,5 +264,5 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
 /** Read a compact, ordered call tree, retaining the full checkpoint only when explicitly requested. */
 export async function treeRlm(workspace: string, run: string, full = false): Promise<Record<string, unknown>> {
   const state = await new RlmLedger(workspace).load(run);
-  return full ? { state } : { run, calls: state.calls.map(call => ({ id: call.id, parent: call.parent, depth: call.depth, status: call.failure !== undefined ? 'failed' : call.result === undefined ? 'in_progress' : 'closed', reserved_tokens: call.steps.reduce((sum, step) => sum + step.reserved, 0), used_tokens: call.steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0) + (step.response?.tokens_out ?? 0), 0), result: (call.result ?? '').replace(/\s+/g, ' ').slice(0, 100) })) };
+  return full ? { state, token_usage: 'reported_or_estimated' } : { run, token_usage: 'reported_or_estimated', calls: state.calls.map(call => ({ id: call.id, parent: call.parent, depth: call.depth, status: call.failure !== undefined ? 'failed' : call.result === undefined ? 'in_progress' : 'closed', reserved_tokens: call.steps.reduce((sum, step) => sum + step.reserved, 0), used_tokens: call.steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0) + (step.response?.tokens_out ?? 0), 0), result: (call.result ?? '').replace(/\s+/g, ' ').slice(0, 100) })) };
 }

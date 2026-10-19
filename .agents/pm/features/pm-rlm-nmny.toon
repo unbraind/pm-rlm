@@ -6,23 +6,28 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:36.868Z"
-updated_at: "2026-10-18T20:05:55.281Z"
+updated_at: "2026-10-19T04:52:45.706Z"
 author: codex-agent
 estimated_minutes: 80
 acceptance_criteria: "All seven read operations use certified complete SDK reads, enforce scope and budget; partitions fit their exact estimate."
 parent: pm-rlm-a1ih
-comments[3]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-18T19:38:29.717Z",codex-agent,"Implemented seven scoped operations with certified all-status full SDK reads and conservative UTF-8 byte estimates. Exact boundary and lossless escaped-Unicode partition tests pass on real trackers. SDK gap: standalone registered schema fields need native schema options; --field requires active extension registrations."
   "2026-10-18T19:51:43.784Z",codex-agent,"Behavioral revert proofs: node test/revert.ts passed 3/3. Removing only the reservation budget guard made the exact-boundary regression fail (exit 1). Replacing only completed-digest lookup with no reuse made the real SIGKILL resume regression fail (exit 1). Removing only the partition fit check made slice-budget reconstruction regression fail (exit 1). Original source SHA-256 bytes were restored after each mutation; tests import authored TypeScript directly."
   "2026-10-18T20:01:52.042Z",codex-agent,"Pinned pm test --run --progress passed both linked commands: 2 selected, 2 passed, zero failures/skips/timeouts. Commands ran real SDK tracker tests. The minimal tracker disables automatic test-result tracking, so this comment records the result explicitly. Environment, exact read boundaries, scope, history corruption and lossless partition checks passed."
-files[4]{path,scope}:
+  "2026-10-19T04:32:34.088Z",codex-agent,"DJw and SDK-read sweep: shared sdkRead converts unexpected SDK read/parse failures into sanitized incomplete refusals and preserves existing typed codes. It covers certified corpus reads, history parsing plus chain verification, schema/settings, checkpoint lists, comment deduplication and runtime lease reads. Snapshot list/search/get/comment projections perform no additional SDK I/O. Real SDK tracker corruption regressions now prove typed refusals, and malformed child history records an incomplete observation then permits both calls to finish, replay and resume without repeated inference."
+  "2026-10-19T04:34:37.761Z",codex-agent,"Revert evidence: bypassing the history wrapper aborts the malformed-child-history regression instead of recording incomplete; disabling shared read conversion or bypassing corpus/settings wrapping fails the real-corruption boundary regression. All four reverted guards restored exactly. Successful recovery closes both calls, records the refusal in the child checkpoint, and reuses results on replay/resume with no further model requests."
+files[6]{path,scope}:
   src/environment.ts,project
   src/errors.ts,project
   test/core.test.ts,project
   test/environment.test.ts,project
-tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  test/failures.test.ts,project
+  test/round5.test.ts,project
+tests[3]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/core.test.ts,project,codex-agent,"2026-10-18T19:38:38.912Z",local_mutation,feat/rlm
   node --test test/core.test.ts test/environment.test.ts,project,codex-agent,"2026-10-18T19:53:10.961Z",local_mutation,feat/rlm
+  node --test test/round5.test.ts,project,codex-agent,"2026-10-19T04:34:03.711Z",local_mutation,feat/rlm
 docs[2]{path,scope}:
   ARCHITECTURE.md,project
   README.md,project

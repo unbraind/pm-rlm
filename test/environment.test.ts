@@ -44,9 +44,9 @@ test('incomplete corpus and corrupt history fail closed without SDK mocks', asyn
   const item = (await client.create({ title: 'History' })).item;
   const ctx = await createRlmContext({ workspace, budget: 100000 });
   await appendFile(getHistoryPath(workspace, item.id), '\n{"broken":true}\n');
-  await assert.rejects(ctx.history(item.id, { start: 0, end: 10 }));
+  await assert.rejects(ctx.history(item.id, { start: 0, end: 10 }), { code: 'incomplete' });
   await mkdir(join(workspace, 'tasks', 'unreadable.toon'));
-  await assert.rejects(createRlmContext({ workspace, budget: 10000 }));
+  await assert.rejects(createRlmContext({ workspace, budget: 10000 }), { code: 'incomplete' });
 });
 
 /** Primitive validators and privacy refusals never print rejected contents. */

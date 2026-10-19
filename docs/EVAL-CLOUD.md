@@ -2,7 +2,7 @@
 
 Model: `glm-5.3:cloud`; completed at 2026-10-19T02:11:40.652Z. Seed: `pm-rlm-balanced-v2`. Exactly one authorized live invocation.
 
-| Arm | Correct | Provider tokens / question | Seconds / question | Model requests / question | Reached a child |
+| Arm | Exact correct | Reported-or-estimated model tokens / question | Measured seconds / question | Observed model requests / question | Observed child reach |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | RLM | 0/24 (0.00%) | 146296.92 | 183.78 | 19.17 | 0/24 |
 | Complete-item stuffing | 0/24 (0.00%) | 18471.58 | 5.37 | 1.00 | — |
@@ -11,9 +11,9 @@ Most-common constant guess: 2/24 (8.33%). Constant zero: 1/24 (4.17%).
 
 Outer refusal histograms: RLM {"budget":15,"model":9}; stuffing {"model":8}. Recorded RLM tool refusals: {"invalid":451}.
 
-Mean RLM charged / recorded provider / pending / delivered-read tokens: 151634.96 / 146296.92 / 5338.04 / 0.00. Charged tokens include actual settled model usage, delivered-read estimates and outstanding reservations.
+Mean RLM accounting charge / reported-or-estimated model / worst-case estimated pending / byte-estimated read tokens: 151634.96 / 146296.92 / 5338.04 / 0.00. Charged tokens include reported-or-estimated settled model usage, delivered-read estimates and outstanding reservations.
 
-Both arms use the same model and 131072 context allocation, 512 output allocation and temperature 0. The conservative context estimator permits one UTF-8 byte per token, so effective provider context use can be lower than the configured ceiling. RLM limits are 300000 charged tokens, depth 2 and eight ledger calls. Wall time includes SDK work and concurrent host load. There is one invocation and no answer-based tuning, retries of the eval, or confidence interval. Refused runs count incorrect. Lost/unrecorded provider usage cannot be included; pending reservations are shown separately. This does not establish an RLM advantage.
+Provider-reported counters when present; conservative UTF-8 byte estimates otherwise. Per-response provenance was not retained, so totals are reported-or-estimated, not measured-only provider usage. Exact scoring, baselines, observed counts and corpus byte lengths are computed from recorded data; wall time is measured. Allocations and ceilings are configured limits. Both arms use the same model and 131072 context allocation, 512 output allocation and temperature 0. The conservative context estimator permits one UTF-8 byte per token, so effective provider context use can be lower than the configured ceiling. RLM limits are 300000 charged tokens, depth 2 and eight ledger calls. Wall time includes SDK work and concurrent host load. There is one invocation and no answer-based tuning, retries of the eval, or confidence interval. Refused runs count incorrect. Lost/unrecorded response counters cannot be included; pending reservations are shown separately. This does not establish an RLM advantage.
 
 Sources:
 

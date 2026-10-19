@@ -106,7 +106,7 @@ test("an omit-dev checkout without pm-ops skips with one notice and registers no
 
 test("a pm-ops too old to export the launcher entry fails the install", posixOnly, () => {
   const result = prepare(checkout("stale", "stale"), hostPath);
-  assert.notEqual(result.status, 0);
+  assert.equal(result.status, 1);
   assert.match(result.stderr, /ERR_PACKAGE_PATH_NOT_EXPORTED/);
 });
 
@@ -114,7 +114,7 @@ test("an incomplete pm-ops directory fails instead of skipping merge-driver inst
   const directory = checkout("incomplete", "absent");
   mkdirSync(join(directory, "node_modules", "pm-ops"), { recursive: true });
   const result = prepare(directory, hostPath);
-  assert.notEqual(result.status, 0);
+  assert.equal(result.status, 1);
   assert.match(result.stderr, /MODULE_NOT_FOUND/);
   assert.doesNotMatch(result.stderr, /skipping merge-driver install/);
 });
@@ -134,7 +134,7 @@ test("a malformed lookup path preserves the original installer failure", () => {
   const directory = checkout("malformed-lookup", "absent");
   writeFileSync(join(directory, "node_modules"), "not a directory\n");
   const result = prepare(directory, hostPath);
-  assert.notEqual(result.status, 0);
+  assert.equal(result.status, 1);
   assert.match(result.stderr, /MODULE_NOT_FOUND/);
   assert.doesNotMatch(result.stderr, /ENOTDIR|skipping merge-driver install/);
 });

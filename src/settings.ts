@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { createExtensionCommandSdk, PmClient, getSettingsPath, readFileIfExists } from '@unbrained/pm-cli/sdk';
-import { assertLedgerPrivacy, integer, record, RlmError, text } from './errors.ts';
+import { assertLedgerPrivacy, integer, record, RlmError, sdkRead, text } from './errors.ts';
 import type { RlmSettings } from './types.ts';
 
 /** Resolve extension settings with explicit flags taking precedence over persisted defaults. */
 export async function readRlmSettings(workspace: string, overrides: Partial<RlmSettings> = {}): Promise<RlmSettings> {
-  const source = record(JSON.parse((await readFileIfExists(getSettingsPath(workspace))) ?? '{}'));
+  const source = await sdkRead(async () => record(JSON.parse((await readFileIfExists(getSettingsPath(workspace))) ?? '{}')));
   const section = source.rlm === undefined ? {} : record(source.rlm);
   const config: RlmSettings = {
     model: 'gemma4:e4b', adapter: 'ollama', endpoint: 'http://localhost:11434', key_env: 'OPENAI_API_KEY',

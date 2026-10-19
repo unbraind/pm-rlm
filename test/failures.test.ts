@@ -42,16 +42,18 @@ test('invalid model shapes and usage counters refuse before response persistence
   }
 });
 
-/** Native SDK history failures propagate, and persisted execution controls still remain observable. */
+/** Invalid SDK history is a billable typed refusal and cannot strand a successful call. */
 test('history transport failure and unfinished tree state retain their real SDK evidence', async t => {
   const { workspace, client } = await tracker(t);
   const item = (await client.create({ title: 'History failure' })).item;
   await appendFile(getHistoryPath(workspace, item.id), '\ninvalid-history-json\n');
-  const model = new ScriptedModel(() => JSON.stringify({ action: 'history', id: item.id, start: 0, end: 1 }));
-  await assert.rejects(runRlm('history failure', { workspace, model }));
+  const model = new ScriptedModel((_request, index) => JSON.stringify(index === 0 ? { action: 'history', id: item.id, start: 0, end: 1 } : { action: 'finish', answer: 'recovered' }));
+  const result = await runRlm('history failure', { workspace, model });
+  assert.equal(result.answer, 'recovered');
+  assert.deepEqual((await new RlmLedger(workspace).load(result.run)).calls[0].steps[0].observation, { refused: 'incomplete' });
   const roots = (await client.listAllComplete()).items.filter(item => typeof item.rlm_state === 'string');
   const tree = await treeRlm(workspace, roots[0].id) as { calls: { status: string; result: string }[] };
-  assert.equal(tree.calls[0].status, 'in_progress'); assert.equal(tree.calls[0].result, '');
+  assert.equal(tree.calls[0].status, 'closed'); assert.equal(tree.calls[0].result, 'recovered');
 });
 
 /** Settings are extension-owned but use the audited public SDK mutation service. */
