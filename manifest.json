@@ -8,7 +8,6 @@
   "priority": 90,
   "capabilities": [
     "commands",
-    "renderers",
     "schema"
   ]
 }

@@ -21,6 +21,7 @@ import { auditPublishAttestation, runIfMain } from "../scripts/verify-release-pu
 import { isMainInvocation } from "../scripts/main-invocation.ts";
 import { runCoverageGate } from "../scripts/coverage-gate.ts";
 import { runDocstringGate } from "../scripts/docstring-gate.ts";
+import { gitEnvironment } from '../scripts/environment.ts';
 import { auditIdentities, runIdentityGate } from "../scripts/identity-gate.ts";
 import * as typeContracts from "../src/types.ts";
 
@@ -111,7 +112,7 @@ after(() => rmSync(scratchBase, { recursive: true, force: true }));
 
 /** Isolate fixture Git from the caller's global and system configuration (e.g. commit.gpgsign, init.templateDir). */
 function fixtureGitEnvironment(root: string, extra: Readonly<Record<string, string>> = {}): NodeJS.ProcessEnv {
-  return { ...process.env, GIT_CONFIG_GLOBAL: join(root, '.gitconfig-global'), GIT_CONFIG_NOSYSTEM: '1', ...extra };
+  return { ...gitEnvironment(process.env), GIT_CONFIG_GLOBAL: join(root, '.gitconfig-global'), GIT_CONFIG_NOSYSTEM: '1', ...extra };
 }
 
 /** Run Git in an isolated fixture with an explicit public test identity. */
@@ -582,4 +583,73 @@ test("publish attestation verifier audits the tracked repository as main", () =>
   const outcome = runScript("verify-release-publish-attestation.ts");
   assert.equal(outcome.status, 0);
   assert.ok(outcome.stdout.length > 0);
+});
+test('identity gate ignores inherited repository selection overrides', () => {
+  const root = identityFixture('identity-selection');
+  const other = identityFixture('identity-selection-other');
+  const env = { ...process.env, GIT_DIR: join(other, '.git'), GIT_WORK_TREE: other, GIT_COMMON_DIR: join(other, '.git'), GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: 'core.bare', GIT_CONFIG_VALUE_0: 'true', Git_DIR: join(other, '.git'), git_work_tree: other, GiT_CONFIG_COUNT: '1' };
+  const result = spawnSync(process.execPath, [join(repositoryRoot, 'scripts/identity-gate.ts'), root], { env, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stdout + result.stderr);
+  writeFileSync(join(root, 'violation.txt'), 'identity');
+  fixtureGit(root, ['add', 'violation.txt']);
+  fixtureGit(root, ['commit', '-m', 'Unapproved fixture'], 'unapproved@example.invalid');
+  assert.equal(spawnSync(process.execPath, [join(repositoryRoot, 'scripts/identity-gate.ts'), root], { env, encoding: 'utf8' }).status, 1);
+});
+
+/** Coverage children discard all case variants of inherited runner state. */
+test('coverage subprocess filters Windows-style environment spellings', () => {
+  const root = fixtureProject('coverage-env', {
+    'package.json': coverageManifest(FULL_THRESHOLDS),
+    'src/covered.ts': COVERED_SOURCE,
+    'test/covered.test.ts': COVERED_TEST,
+    'inspect.cjs': "require('node:fs').writeFileSync('child-env.json', JSON.stringify(process.env)); process.exit(1);",
+  });
+  const keys = ['Node_V8_Coverage', 'node_test_context'];
+  const previous = keys.map(key => process.env[key]);
+  try {
+    for (const key of keys) process.env[key] = 'inherited';
+    assert.equal(capturedGate(root, { executable: process.execPath, script: join(root, 'inspect.cjs') }).status, 1);
+    const child = JSON.parse(readFileSync(join(root, 'child-env.json'), 'utf8')) as Record<string, string>;
+    for (const key of keys) assert.equal(child[key], undefined);
+    assert.equal(child.NODE_TEST_CONTEXT, undefined);
+  } finally {
+    for (const [index, key] of keys.entries()) { if (previous[index] === undefined) delete process.env[key]; else process.env[key] = previous[index]; }
+  }
+});
+
+/** Public path checks recognize Windows casing and both path separators. */
+test('identity privacy rejects mixed-case drive and backslash home paths', () => {
+  const paths = ['c:' + '\\' + 'uSeRs' + '\\' + 'fixture' + '\\', '\\' + 'HOME' + '\\' + 'fixture', 'D:/' + 'users/' + 'fixture/', '/' + 'ROOT/fixture/'];
+  for (const [index, path] of paths.entries()) {
+    const root = identityFixture(`identity-portable-${index}`);
+    writeFileSync(join(root, 'note.txt'), path);
+    fixtureGit(root, ['add', 'note.txt']); fixtureGit(root, ['commit', '-m', 'Portable private fixture']);
+    assert.match(auditIdentities(root).join('\n'), /added absolute home path/);
+  }
+});
+
+/** Optional repository operands must never turn a blank path into the current checkout. */
+test('quality CLI repository operands reject empty and whitespace paths', () => {
+  for (const script of ['identity-gate.ts', 'docstring-gate.ts', 'coverage-gate.ts']) {
+    for (const operand of ['', ' ', '\t\n']) {
+      const child = runScript(script, [operand]);
+      assert.equal(child.status, 1); assert.match(child.stderr, /nonblank repository root/);
+    }
+  }
+});
+
+/** Embedded callers retain the documented current-directory and logger defaults. */
+test('docstring API accepts omitted options', () => {
+  assert.doesNotThrow(() => runDocstringGate());
+});
+
+/** Repository-relative labels are public text, while absolute homes remain disallowed. */
+test('identity privacy distinguishes relative labels from absolute home prefixes', () => {
+  const root = identityFixture('identity-relative-label');
+  writeFileSync(join(root, 'note.txt'), 'CLI numeric/string/root validation; src/root; docs/home/example; public/Users/guide');
+  fixtureGit(root, ['add', 'note.txt']); fixtureGit(root, ['commit', '-m', 'Relative labels fixture']);
+  assert.deepEqual(auditIdentities(root), []);
+  writeFileSync(join(root, 'note.txt'), '/' + 'root/private');
+  fixtureGit(root, ['add', 'note.txt']); fixtureGit(root, ['commit', '-m', 'Absolute fixture']);
+  assert.match(auditIdentities(root).join('\n'), /added absolute home path/);
 });
