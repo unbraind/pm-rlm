@@ -6,11 +6,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:46.263Z"
-updated_at: "2026-10-19T13:15:31.685Z"
+updated_at: "2026-10-19T13:59:55.544Z"
 author: codex-agent
 acceptance_criteria: Real-shape diagnosis; parser and feedback regressions with behavioral revert proofs
 parent: pm-rlm-a1ih
-comments[18]{created_at,author,text}:
+comments[22]{created_at,author,text}:
   "2026-10-19T05:54:25.038Z",codex-agent,"Diagnosis before edits: the historical cloud harness deletes scratch ledgers in finally and publishes only response hashes. The 451 glm invalid-action outputs are unavailable, so their shapes cannot honestly be classified. A surviving older local-model ledger contains six exact responses {\"action\":\"finish\",\"answer\":0}; these remain schema refusals. Historical question text conflicted with JSON protocol; merged main already makes questions format-neutral. Plan: wrapper extraction without key coercion, ambiguity refusal, specific correction feedback, recorded-shape regression plus synthetic wrapper edges; retain local-only new-run evidence."
   "2026-10-19T06:00:45.080Z",codex-agent,"Implementation preserves string answer types and rejects duplicate keys, array envelopes, multiple objects and unterminated reasoning. Braces, escaped quotes and reasoning-like text inside JSON strings remain data. Both eval arms share envelope extraction for fair answer formatting. Initial focused suite passes 4/4. Full coverage initially found one untested absent-field branch; added a real-tracker boundary case. Shared eval helpers remove duplicate orchestration without lowering the zero-duplication threshold."
   "2026-10-19T06:01:36.846Z",codex-agent,"Behavioral revert proofs: node test/v2-revert.ts passed 8/8. Parser envelope extraction, corrective feedback, count, sum, distinct, group_count, argmax and argmin each caused its targeted regression to fail with exit 1 when only that production behavior was removed; all source bytes restored. npx pm test pm-rlm-v2parse --run --progress passed both linked commands (focused tests 4/4 plus proofs 8/8). The tracker has result tracking disabled, so this comment is the durable result receipt. Full coverage passed 120/120 tests and 100/100/100/100 over 21 source files."
@@ -29,22 +29,30 @@ comments[18]{created_at,author,text}:
   "2026-10-19T12:58:07.842Z",codex-agent,"Review round 2 revert proof: node test/constrained-revert.ts passed 8/8. Removing only extractObject(output) from compatibleAction makes the new duplicate-key regression fail with exit 1 (assertion failure); raw wrapper, response, nested filter and array-member duplicates are no longer refused, and corrective feedback fails. All source bytes restored. Focused HTTP/schema suite passes 10/10, including valid wrapped actions, escaped duplicate keys, sibling object keys, typed invalid refusal, charged recovery and deterministic replay. Shared extractor moved unchanged to src/action-envelope.ts to avoid a schema/protocol dependency cycle; protocol preserves its existing export. README now links the completed 24-question v2 result. Thresholds and dependency pins unchanged."
   "2026-10-19T13:12:34.061Z",codex-agent,"Review round 2 npm result: isolated-HOME, empty-global-Git npm run release:check passed all gates, 130/130 tests with zero fail/skip/cancel/todo and 2/2 packed npm/npx and Bun/bunx consumers. Coverage 100/100/100/100 across 23 required sources; 82 documented declarations; zero duplication; production audit clean. Pinned pm focused test execution passed 4/4; tracking_disabled is project policy, so this comment retains results. Known development dependency advisory is already tracked by pm-rlm-wiav; no dependency changes. Bun release:check is running against the unchanged code."
   "2026-10-19T13:15:28.567Z",codex-agent,"Review round 2 final local gates: npm run release:check and bun run release:check each passed 130/130 tests and 2/2 packed npm/npx and Bun/bunx consumers, with zero fail/skip/cancel/todo. Both used isolated HOME and empty global Git settings. Coverage remains 100/100/100/100 across all 23 required sources; 82 documented declarations; 0% duplication; production audit, package allowlist, generated changelog and publish attestation all pass. Review revert proofs passed 8/8; focused HTTP/schema tests passed 10/10; pinned pm linked constrained tests passed 4/4. No new pm defect reproduced. The known development advisory remains in pm-rlm-wiav. Releasing the claim with this item in progress for orchestrator review. PR evidence: https://github.com/unbraind/pm-rlm/pull/8 . Review threads remain untouched; no merge or release."
-files[14]{path,scope}:
+  "2026-10-19T13:46:47.990Z",codex-agent,"Round 3 at head 448e55d: verified both Major findings. Plan: derive one compatible wire schema without minLength, pattern, minimum or maximum while preserving full local validation; verify recorded parse-refusal code and reason before replay or resume. Add real HTTP and real-ledger regressions, prove each fails with only its fix reverted, then run unchanged npm/Bun release gates and regenerate changelog after tracker writes."
+  "2026-10-19T13:50:15.485Z",codex-agent,"Round 3 implementation and revert receipts: node --test test/review-r3.test.ts test/constrained.test.ts test/adapters.test.ts passes 12/12. node test/review-r3-revert.ts passes 5/5 independent behavioral reversions: wire keyword removal, adapter wire selection, shared code/message comparison, resume verification and replay verification each make the targeted new regression fail with exit 1 and ERR_ASSERTION; every source is restored byte-for-byte. node test/constrained-revert.ts still passes all 8/8 prior proofs. Real HTTP requests use the stripped schema; local schemaAction/parseAction reject unsupported operands. Real ledgers reject altered or missing refusal reasons, altered codes and null observations for completed and unfinished runs before inference or durable writes. Untampered replay preserves all toon/jsonl bytes. Initial duplication gate caught repeated HTTP fixture parsing; shared test requestBody removes it, keeping the zero threshold."
+  "2026-10-19T13:53:07.816Z",codex-agent,"Compatibility audit: origin/main confirms original v1 checkpoints stored code-only refusals. Preserve those original receipts without rewriting them: require the recomputed code, and compare a reason whenever present. Versions 2 and 3 require both fields. The unchanged preexisting legacy regression is retained; new real-ledger coverage rejects changed v1 codes and recorded reasons too. Initial npm release check passed 132/132 plus 2/2 packed consumers and 100/100/100/100; rerun both full gates after this compatibility addition. Pinned pm focused execution passed 2/2; result persistence is disabled by project policy, so comments retain receipts."
+  "2026-10-19T13:59:53.149Z",codex-agent,"Round 3 final verification: npm run release:check and bun run release:check both PASS, each with 133/133 tests, zero fail/skip/cancel/todo, and 2/2 actual packed npm/npx and Bun/bunx consumers. Both gates use isolated HOME and empty global Git settings. Unchanged coverage thresholds are met at 100/100/100/100 across all 23 required sources; 86/86 documented declarations; 0% duplication; production audit, pack allowlist, generated changelog and publish attestation pass. Focused HTTP/schema/ledger suite passes 13/13. Pinned pm test execution of both review-r3 commands passes 3/3 new tests and 5/5 independent revert proofs; prior review proofs remain 8/8. Both new regressions demonstrably fail with only their production correction reverted, including independent resume and replay verification bypasses; source bytes are restored. Tests import TypeScript sources directly. Untampered real ledgers replay byte-identically; tampered recorded reasons/codes refuse before inference or durable writes. Original v1 code-only compatibility remains, with every recorded reason compared. Strict tracker health passes with one nonblocking runtime advisory. No new pm CLI/SDK bug or UX gap reproduced; disabled linked-result persistence is existing project policy. No additional live-provider measurement; existing development advisory stays in pm-rlm-wiav. Releasing claim with item in progress for orchestrator verification. PR https://github.com/unbraind/pm-rlm/pull/8 ; review threads remain untouched."
+files[18]{path,scope}:
   src/action-envelope.ts,project
   src/action-schema.ts,project
   src/adapters.ts,project
   src/engine.ts,project
   src/ledger.ts,project
   src/protocol.ts,project
+  test/adapters.test.ts,project
   test/constrained-revert.ts,project
   test/constrained.test.ts,project
   test/fixtures/glm-5.3-orphan-think.txt,project
   test/fixtures/glm-5.3-prose-action.txt,project
+  test/http.ts,project
   test/live-v2.ts,project
   test/live.ts,project
+  test/review-r3-revert.ts,project
+  test/review-r3.test.ts,project
   test/v2-revert.ts,project
   test/v2.test.ts,project
-tests[7]:
+tests[9]:
   - command: node --test test/v2.test.ts
     scope: project
     provenance:
@@ -94,6 +102,20 @@ tests[7]:
     provenance:
       author: codex-agent
       created_at: "2026-10-19T12:57:15.755Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: node --test test/review-r3.test.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T13:49:20.594Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+  - command: node test/review-r3-revert.ts
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T13:49:22.449Z"
       source_kind: local_mutation
       source_ref: feat/protocol-and-aggregates
 docs[3]{path,scope}:

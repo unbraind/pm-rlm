@@ -1,4 +1,4 @@
-import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSWER_SCHEMA, compatibleAction } from './action-schema.ts';
+import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_WIRE_SCHEMA, COMPATIBLE_ANSWER_WIRE_SCHEMA, compatibleAction } from './action-schema.ts';
 import { estimateTokens, integer, record, RlmError, text } from './errors.ts';
 import type { ModelRequest, ModelResponse, RlmModel, RlmSettings } from './types.ts';
 
@@ -23,7 +23,7 @@ export class HttpModel implements RlmModel {
     const legacy = request.parser_version !== undefined && request.parser_version < 3;
     const schema = answer ? ANSWER_SCHEMA : ACTION_SCHEMA;
     const body = compatible
-      ? { model: config.model, messages: [{ role: 'user', content: request.prompt }], max_tokens: request.max_output_tokens, temperature: 0, stream: false, ...(legacy ? {} : { response_format: { type: 'json_schema', json_schema: { name: answer ? 'answer' : 'action', strict: true, schema: answer ? COMPATIBLE_ANSWER_SCHEMA : COMPATIBLE_ACTION_SCHEMA } } }) }
+      ? { model: config.model, messages: [{ role: 'user', content: request.prompt }], max_tokens: request.max_output_tokens, temperature: 0, stream: false, ...(legacy ? {} : { response_format: { type: 'json_schema', json_schema: { name: answer ? 'answer' : 'action', strict: true, schema: answer ? COMPATIBLE_ANSWER_WIRE_SCHEMA : COMPATIBLE_ACTION_WIRE_SCHEMA } } }) }
       : { model: config.model, prompt: request.prompt, stream: false, format: legacy ? 'json' : schema, think: false, options: { temperature: 0, num_predict: request.max_output_tokens, num_ctx: request.context_tokens } };
     try {
       const response = await fetch(`${config.endpoint.replace(/\/$/, '')}${compatible ? '/chat/completions' : '/api/generate'}`, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(config.timeout_ms), redirect: 'error' });

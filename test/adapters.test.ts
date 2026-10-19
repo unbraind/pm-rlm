@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { httpFixture } from './http.ts';
+import { httpFixture, requestBody } from './http.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSWER_SCHEMA } from '../src/action-schema.ts';
+import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_WIRE_SCHEMA, COMPATIBLE_ANSWER_WIRE_SCHEMA } from '../src/action-schema.ts';
 import { HttpModel } from '../src/adapters.ts';
 import { readRlmSettings, writeRlmSettings } from '../src/settings.ts';
 import { parseAction, parseSlice } from '../src/protocol.ts';
@@ -18,9 +18,7 @@ test('HTTP adapters use real endpoints, transient env credentials and provider u
   let received: Record<string, unknown> = {};
   const { server, endpoint } = await httpFixture(t, async (request, response) => {
     authorization = request.headers.authorization;
-    const chunks: Buffer[] = [];
-    for await (const chunk of request) chunks.push(Buffer.from(chunk));
-    received = JSON.parse(Buffer.concat(chunks).toString()) as Record<string, unknown>;
+    received = await requestBody(request);
     response.writeHead(status, { 'Content-Type': 'application/json' }); response.end(JSON.stringify(payload));
   });
   const config = await readRlmSettings(workspace, { endpoint: endpoint, key_env: 'RLM_ADAPTER_TEST_KEY' });
@@ -41,11 +39,11 @@ test('HTTP adapters use real endpoints, transient env credentials and provider u
   assert.deepEqual(await compatible.complete(request), { text: 'ok', tokens_in: 11, tokens_out: 2 });
   assert.equal(authorization, `Bearer ${privateKey}`);
   assert.equal(received.max_tokens, 64);
-  assert.deepEqual(received.response_format, { type: 'json_schema', json_schema: { name: 'action', strict: true, schema: COMPATIBLE_ACTION_SCHEMA } });
+  assert.deepEqual(received.response_format, { type: 'json_schema', json_schema: { name: 'action', strict: true, schema: COMPATIBLE_ACTION_WIRE_SCHEMA } });
   payload = { choices: [{ message: { content: '{"response":{"action":"count","filter":null}}' } }] };
   assert.equal((await compatible.complete(request)).text, '{"action":"count"}');
   await compatible.complete({ ...request, response_kind: 'answer' });
-  assert.deepEqual(received.response_format, { type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: COMPATIBLE_ANSWER_SCHEMA } });
+  assert.deepEqual(received.response_format, { type: 'json_schema', json_schema: { name: 'answer', strict: true, schema: COMPATIBLE_ANSWER_WIRE_SCHEMA } });
   await compatible.complete({ ...request, parser_version: 1 });
   assert.equal(received.response_format, undefined);
   payload = { response: 'answer' };

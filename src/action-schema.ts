@@ -73,6 +73,22 @@ function strictSchema(schema: ActionSchema): ActionSchema {
 export const COMPATIBLE_ACTION_SCHEMA = strictSchema(object({ response: ACTION_SCHEMA }));
 /** Strict stuffing contract generated through the same compatibility conversion. */
 export const COMPATIBLE_ANSWER_SCHEMA = strictSchema(ANSWER_SCHEMA);
+/** Remove endpoint-dependent constraint keywords recursively, retaining the local contracts above. */
+function wireSchema(schema: ActionSchema): ActionSchema {
+  const wire = { ...schema };
+  delete wire.minLength;
+  delete wire.pattern;
+  delete wire.minimum;
+  delete wire.maximum;
+  if (wire.properties !== undefined) wire.properties = Object.fromEntries(Object.entries(wire.properties).map(([key, value]) => [key, wireSchema(value)]));
+  if (wire.anyOf !== undefined) wire.anyOf = wire.anyOf.map(wireSchema);
+  if (wire.items !== undefined) wire.items = wireSchema(wire.items);
+  return wire;
+}
+/** Common strict action wire contract for every compatible endpoint and model. */
+export const COMPATIBLE_ACTION_WIRE_SCHEMA = wireSchema(COMPATIBLE_ACTION_SCHEMA);
+/** Common strict answer wire contract, derived through the same keyword removal. */
+export const COMPATIBLE_ANSWER_WIRE_SCHEMA = wireSchema(COMPATIBLE_ANSWER_SCHEMA);
 /** Remove only schema-declared optional nulls, preserving every other emitted value for validation. */
 function optionalNulls(schema: ActionSchema, value: unknown): unknown {
   if (schema.anyOf !== undefined) {

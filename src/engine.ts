@@ -4,7 +4,7 @@ import { HttpModel } from './adapters.ts';
 import { promptDigest, reserveStep, settleStep, RlmLedger } from './ledger.ts';
 import { parseAction, parseSlice, PROTOCOL } from './protocol.ts';
 import { readRlmSettings } from './settings.ts';
-import type { RlmAction, RlmCall, RlmFilter, RlmItem, RlmModel, RlmResult, RlmSettings, RlmSlice, RlmState } from './types.ts';
+import type { RlmAction, RlmCall, RlmFilter, RlmItem, RlmModel, RlmResult, RlmSettings, RlmSlice, RlmState, RlmStep } from './types.ts';
 
 /** Run creation parameters for third-party loops. Workspace is an explicit pm tracker root. */
 export interface RlmRunOptions {
@@ -61,6 +61,18 @@ async function readAction(context: RlmContext, action: Exclude<RlmAction, { acti
     case 'get': return context.get(action.id, action.fields);
     case 'history': return context.history(action.id, action);
     case 'peek': return context.peek(action.id, action.field, action.start, action.end);
+  }
+}
+/** Recompute parser refusals before trusting their recorded code or corrective prompt text. */
+function recordedAction(state: RlmState, call: RlmCall, step: RlmStep): RlmAction | undefined {
+  try { return parseAction(step.response!.text, state.parser_version ?? 1); }
+  catch (error) {
+    // parseAction exposes only typed RlmError refusals for recorded string outputs.
+    const refusal = error as RlmError;
+    const observation = step.observation as { refused?: unknown; reason?: unknown } | undefined;
+    const legacyCodeOnly = (state.parser_version ?? 1) === 1 && observation?.reason === undefined;
+    if (observation?.refused !== refusal.code || (!legacyCodeOnly && observation?.reason !== refusal.message)) throw new RlmError('replay', `Recorded parse refusal differs at step ${call.id}:${call.steps.indexOf(step)}`);
+    return undefined;
   }
 }
 /** Bounded recursive loop backed by a durable SDK call graph. */
@@ -173,6 +185,7 @@ export class RlmEngine {
     const release = await this.ledger.lease(this.state.run);
     try {
       this.state = await this.ledger.load(this.state.run);
+      for (const call of this.state.calls) for (const step of call.steps) if (step.response !== undefined && step.observation !== undefined) recordedAction(this.state, call, step);
       const legacy = this.state.calls.flatMap(call => call.steps).filter(step => step.response !== undefined && step.settled !== true);
       for (const step of legacy) settleStep(this.state, step, step.response!);
       if (legacy.length > 0) await this.ledger.save(this.state);
@@ -217,10 +230,10 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
     visited.add(call.id);
     for (const step of call.steps) {
       if (step.response === undefined) continue;
+      const action = recordedAction(state, call, step);
+      if (action === undefined) continue;
       const refused = step.observation !== undefined && typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation;
       if (refused) {
-        let action: RlmAction;
-        try { action = parseAction(step.response.text, state.parser_version ?? 1); } catch { continue; }
         if (action.action === 'spawn') {
           let slice: RlmSlice;
           try { slice = resolveSlice(state, call, action.slice); }
@@ -236,7 +249,6 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
         }
         continue;
       }
-      const action = parseAction(step.response.text, state.parser_version ?? 1);
       if (action.action === 'spawn') {
         if (typeof step.observation !== 'object' || step.observation === null || typeof (step.observation as { result?: unknown }).result !== 'string') throw new RlmError('replay', 'Recorded spawn step has no completed observation');
         const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, resolveSlice(state, call, action.slice), state.settings));
