@@ -1,0 +1,1079 @@
+{
+  "started_at_utc": "2026-10-19T10:29:30.214Z",
+  "paths": [
+    "src/action-schema.ts",
+    "src/adapters.ts",
+    "src/aggregates.ts",
+    "src/commands.ts",
+    "src/engine.ts",
+    "src/environment.ts",
+    "src/errors.ts",
+    "src/ledger.ts",
+    "src/protocol.ts",
+    "src/settings.ts",
+    "src/types.ts",
+    "test/eval-questions.ts",
+    "test/live-v2.ts",
+    "test/live.ts"
+  ],
+  "implementation_source_sha256": "1b04b87807ff61eb35263a3b1c81dcf50124b227e6fbbb27c94ea143f72d0a47",
+  "design": "pm-rlm-balanced-v2",
+  "model": "glm-5.3:cloud",
+  "measured_at_utc": "2026-10-19T11:25:50.230Z",
+  "context_tokens": 131072,
+  "output_tokens": 512,
+  "budget_tokens": 300000,
+  "max_depth": 2,
+  "max_calls": 8,
+  "temperature": 0,
+  "live_invocations": 1,
+  "third_arm": "Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests.",
+  "rows": [
+    {
+      "question": "How many items have type Feature and status open?",
+      "expected": "4",
+      "index": 0,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 238921,
+        "reserved": 238921,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 37,
+        "refusals": {
+          "invalid": 37
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 37
+        },
+        "replay": "not completed",
+        "ms": 194276,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "f3fe55822db565d13e28f82ea0565b68cdb846ed0ceb9c72c18884179c590f03",
+        "tokens": 31806,
+        "calls": 1,
+        "ms": 4968,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of title across items with status canceled, treating missing values as empty strings?",
+      "expected": "68",
+      "index": 1,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 241454,
+        "reserved": 241456,
+        "pending": 0,
+        "read_tokens": 2,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 36,
+        "refusals": {
+          "invalid": 35
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 30,
+          "Unterminated JSON action object": 5
+        },
+        "replay": "not completed",
+        "ms": 132246,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "4f979bbb2ab52b50e5909d467e1da68115d3b551402c4e976f0ae32513617c4f",
+        "tokens": 31821,
+        "calls": 1,
+        "ms": 4569,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of description across items with status canceled, treating missing values as empty strings?",
+      "expected": "277",
+      "index": 2,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 240769,
+        "reserved": 240772,
+        "pending": 0,
+        "read_tokens": 3,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 39,
+        "refusals": {
+          "invalid": 38
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 37,
+          "Expected one JSON action object": 1
+        },
+        "replay": "not completed",
+        "ms": 155576,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "3eb236dfea2b22e6abbd47e24b30b5a038643985f482e864dd16ced699b10e74",
+        "tokens": 31821,
+        "calls": 1,
+        "ms": 5250,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Epic, treating missing values as empty strings?",
+      "expected": "3355",
+      "index": 3,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 252597,
+        "reserved": 252601,
+        "pending": 0,
+        "read_tokens": 4,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 43,
+        "refusals": {
+          "invalid": 42
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 38,
+          "Unterminated JSON action object": 4
+        },
+        "replay": "not completed",
+        "ms": 160729,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "ba166b9d356ac8d65cd2da06b97c3d685be7d06ae5ffb317fe945d7b514009a3",
+        "tokens": 31822,
+        "calls": 1,
+        "ms": 5149,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-vcs-5m22",
+      "index": 4,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 248263,
+        "reserved": 248263,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 39,
+        "refusals": {
+          "invalid": 39
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 39
+        },
+        "replay": "not completed",
+        "ms": 158686,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "f944b0074efd66758f7917a89079976a1e12b1861397a7040ac54791f480b0cd",
+        "tokens": 31829,
+        "calls": 1,
+        "ms": 4821,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items of type Decision has the largest UTF-8 byte length of title, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-vcs-6qva",
+      "index": 5,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 237905,
+        "reserved": 237920,
+        "pending": 0,
+        "read_tokens": 15,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 30,
+        "refusals": {
+          "invalid": 29
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 28,
+          "Unterminated JSON action object": 1
+        },
+        "replay": "not completed",
+        "ms": 121967,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "3f882da5dabf5b084c5c6b3453f1236f41d5b9fac167ab9fc20b74e5844c9f0a",
+        "tokens": 31829,
+        "calls": 1,
+        "ms": 4934,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items of type Feature has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-vcs-ag8y",
+      "index": 6,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 241360,
+        "reserved": 241360,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 42,
+        "refusals": {
+          "invalid": 42
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 42
+        },
+        "replay": "not completed",
+        "ms": 148030,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "a6b326ba9fa37f496344c88042cfe22e7a82cccd4918669f39bb6ddbe77b070e",
+        "tokens": 31830,
+        "calls": 1,
+        "ms": 49727,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items of type Issue has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-vcs-1v6x",
+      "index": 7,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 233265,
+        "reserved": 233280,
+        "pending": 0,
+        "read_tokens": 15,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 34,
+        "refusals": {
+          "invalid": 33
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 5,
+          "Ambiguous action envelope": 28
+        },
+        "replay": "not completed",
+        "ms": 174766,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "7d31d601c2bb9820d05eb31fabca11ed88cc386dcf8c4a55c6efd80344d10dd5",
+        "tokens": 31830,
+        "calls": 1,
+        "ms": 5168,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Task, treating missing values as empty strings?",
+      "expected": "3154",
+      "index": 8,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": true,
+        "answer_sha256": "ff49a4f6ed54f15fa0954b265ad056a6f0fdab175ac8a1c3eb0a98a38e46da3d",
+        "tokens": 117785,
+        "reserved": 117789,
+        "pending": 0,
+        "read_tokens": 4,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 22,
+        "refusals": {
+          "invalid": 20
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 19,
+          "Unterminated JSON action object": 1
+        },
+        "replay": "verified",
+        "ms": 89885,
+        "error": ""
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "994eb8e6d3915b19ff5375b72bf58eb8458824f95bc3bbc454b6cac0893e5ff4",
+        "tokens": 31822,
+        "calls": 1,
+        "ms": 5198,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Issue, treating missing values as empty strings?",
+      "expected": "12196",
+      "index": 9,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 247081,
+        "reserved": 247086,
+        "pending": 0,
+        "read_tokens": 5,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 43,
+        "refusals": {
+          "invalid": 42
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 42
+        },
+        "replay": "not completed",
+        "ms": 166236,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "2763cd50c804e0ff90152750877650e2f453d19ac05f6ac697797c8180b70d31",
+        "tokens": 31822,
+        "calls": 1,
+        "ms": 5094,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items with status open has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-vcs-b7cb",
+      "index": 10,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 248674,
+        "reserved": 248689,
+        "pending": 0,
+        "read_tokens": 15,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 48,
+        "refusals": {
+          "invalid": 47
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 45,
+          "Ambiguous action envelope": 2
+        },
+        "replay": "not completed",
+        "ms": 146541,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "37bf469afc1842e6db4daa38000fd3a6ffeb3a981631da58257cb390b512bd4a",
+        "tokens": 31830,
+        "calls": 1,
+        "ms": 5252,
+        "error": ""
+      }
+    },
+    {
+      "question": "How many items of type Decision are there?",
+      "expected": "4",
+      "index": 11,
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "corpus_bytes": 814268,
+      "corpus_items": 145,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 251928,
+        "reserved": 251928,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 43,
+        "refusals": {
+          "invalid": 43
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 43
+        },
+        "replay": "not completed",
+        "ms": 153593,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "89ac290b8090b011c9386f6f3166a4f75f2d8cb8e7e943941ec067a64f584269",
+        "tokens": 31805,
+        "calls": 1,
+        "ms": 4502,
+        "error": ""
+      }
+    },
+    {
+      "question": "How many items with status in_progress are there?",
+      "expected": "1",
+      "index": 0,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": true,
+        "answer_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+        "tokens": 233121,
+        "reserved": 233122,
+        "pending": 0,
+        "read_tokens": 1,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 34,
+        "refusals": {
+          "invalid": 32
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 32
+        },
+        "replay": "verified",
+        "ms": 94543,
+        "error": ""
+      },
+      "stuffing": {
+        "correct": true,
+        "answer_sha256": "63e1b7e170c3820933438cdd532488d188f669ff14e0a999a2965b053e22251e",
+        "tokens": 15170,
+        "calls": 1,
+        "ms": 2085,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of title across items of type Epic, treating missing values as empty strings?",
+      "expected": "32",
+      "index": 1,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 238895,
+        "reserved": 238895,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 37,
+        "refusals": {
+          "invalid": 37
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 36,
+          "Ambiguous action envelope": 1
+        },
+        "replay": "not completed",
+        "ms": 97988,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "b425addd56a539ec7c751dfb8bd4017098c6ae96666cf53d8b2122e7250f5970",
+        "tokens": 15357,
+        "calls": 1,
+        "ms": 2876,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Epic, treating missing values as empty strings?",
+      "expected": "167",
+      "index": 2,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 243075,
+        "reserved": 243078,
+        "pending": 0,
+        "read_tokens": 3,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 38,
+        "refusals": {
+          "invalid": 37
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 37
+        },
+        "replay": "not completed",
+        "ms": 121387,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "44b07d633fd451640b7eacfe4dd130758e42de7b97e85d96ac9f4e638eb59681",
+        "tokens": 15497,
+        "calls": 1,
+        "ms": 3820,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of description across items with status closed, treating missing values as empty strings?",
+      "expected": "1436",
+      "index": 3,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 236958,
+        "reserved": 236958,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 33,
+        "refusals": {
+          "invalid": 33
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 33
+        },
+        "replay": "not completed",
+        "ms": 99705,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "6001005adb56735380b965d3531a4440a22176ab726b031b4843ec4295cfbf88",
+        "tokens": 15496,
+        "calls": 1,
+        "ms": 3958,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-lint-8kis",
+      "index": 4,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 250846,
+        "reserved": 250862,
+        "pending": 0,
+        "read_tokens": 16,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 47,
+        "refusals": {
+          "invalid": 46
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 42,
+          "Ambiguous action envelope": 4
+        },
+        "replay": "not completed",
+        "ms": 111428,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "536d92124d8cf4077d4fd168c3edcc06bfe14c2b5cb212d77a083cc4f2b3bbd5",
+        "tokens": 15504,
+        "calls": 1,
+        "ms": 3657,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items of type Feature has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-lint-trap",
+      "index": 5,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 248133,
+        "reserved": 248149,
+        "pending": 0,
+        "read_tokens": 16,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 39,
+        "refusals": {
+          "invalid": 38
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 14,
+          "Unterminated JSON action object": 1,
+          "Ambiguous action envelope": 23
+        },
+        "replay": "not completed",
+        "ms": 103560,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "f74f891a375f1cc7a6498f9a7827339c05043269709329af1469a50a1b560a14",
+        "tokens": 15505,
+        "calls": 1,
+        "ms": 18799,
+        "error": ""
+      }
+    },
+    {
+      "question": "How many items have type Feature and status open?",
+      "expected": "0",
+      "index": 6,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 247138,
+        "reserved": 247139,
+        "pending": 0,
+        "read_tokens": 1,
+        "reads": 0,
+        "aggregates": 1,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 37,
+        "refusals": {
+          "invalid": 36
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 35,
+          "Unterminated JSON action object": 1
+        },
+        "replay": "not completed",
+        "ms": 100575,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "606a416f58a4327102ccf3413bded0207609432761ac490585b8feb73362353d",
+        "tokens": 15238,
+        "calls": 1,
+        "ms": 2463,
+        "error": ""
+      }
+    },
+    {
+      "question": "What is the sum of UTF-8 byte lengths of acceptance_criteria across items of type Task, treating missing values as empty strings?",
+      "expected": "208",
+      "index": 7,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 249831,
+        "reserved": 249831,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 47,
+        "refusals": {
+          "invalid": 47
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 47
+        },
+        "replay": "not completed",
+        "ms": 161128,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "07bb1448fff74ebed9cbd9a75cb7ddc8c42181934f6d02fecb0a833a158a7f14",
+        "tokens": 15497,
+        "calls": 1,
+        "ms": 55972,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items with status closed has the largest UTF-8 byte length of description, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-lint-1c6j",
+      "index": 8,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 240683,
+        "reserved": 240683,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 36,
+        "refusals": {
+          "invalid": 36
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 36
+        },
+        "replay": "not completed",
+        "ms": 111297,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "c1d379d65f288f9fe68d62b595086b5bee71eb2d86175bb7be5c38746900c07a",
+        "tokens": 15504,
+        "calls": 1,
+        "ms": 3289,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of all items has the largest UTF-8 byte length of acceptance_criteria, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-lint-trap",
+      "index": 9,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 239436,
+        "reserved": 239436,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 31,
+        "refusals": {
+          "invalid": 31
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 28,
+          "Unterminated JSON action object": 3
+        },
+        "replay": "not completed",
+        "ms": 141490,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "963d6a8fea30ef36348b2b89f4627d7894f4da385dfde77b21173144aef134c2",
+        "tokens": 15503,
+        "calls": 1,
+        "ms": 3142,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which of items of type Chore has the largest UTF-8 byte length of title, treating missing values as empty strings and breaking ties by lexicographically smallest id?",
+      "expected": "pm-lint-8kis",
+      "index": 10,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 236467,
+        "reserved": 236467,
+        "pending": 0,
+        "read_tokens": 0,
+        "reads": 0,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 36,
+        "refusals": {
+          "invalid": 36
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 35,
+          "Unterminated JSON action object": 1
+        },
+        "replay": "not completed",
+        "ms": 114096,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "8f1fcd5ec25385be0ab5a210f05f69ea65f3b3ecec14e48bb299ad988f2fd469",
+        "tokens": 15504,
+        "calls": 1,
+        "ms": 3942,
+        "error": ""
+      }
+    },
+    {
+      "question": "Which Epic has the most direct closed children, breaking ties by lexicographically smallest id?",
+      "expected": "pm-lint-epic",
+      "index": 11,
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_bytes": 54941,
+      "corpus_items": 12,
+      "rlm": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "tokens": 234497,
+        "reserved": 244090,
+        "pending": 0,
+        "read_tokens": 9593,
+        "reads": 1,
+        "aggregates": 0,
+        "reached_child": false,
+        "calls": 1,
+        "model_calls": 28,
+        "refusals": {
+          "invalid": 27
+        },
+        "reasons": {
+          "Ambiguous action envelope: return exactly one object": 17,
+          "Model output is not valid JSON": 1,
+          "Ambiguous action envelope": 8,
+          "Action does not match the action JSON Schema": 1
+        },
+        "replay": "not completed",
+        "ms": 90436,
+        "error": "budget"
+      },
+      "stuffing": {
+        "correct": false,
+        "answer_sha256": "53e4de4ef95a9e152dd66dce7909d39e9974b837332e72edad49cb9048dcaa91",
+        "tokens": 15489,
+        "calls": 1,
+        "ms": 6039,
+        "error": ""
+      }
+    }
+  ],
+  "implementation_revision": "495a156824ce0631c52292ecb744671491698089",
+  "wrapped_deliveries": 8,
+  "validation": {
+    "status": "complete",
+    "task_identity": "Same historical revisions and 24 exact tasks; format-neutral questions with historical seed hash inputs."
+  },
+  "metric_provenance": {
+    "model_tokens": "Provider-reported counters when present; conservative UTF-8 byte estimates otherwise. Per-response provenance was not retained, so totals are reported-or-estimated, not measured-only provider usage.",
+    "charged_tokens": "Accounting sum of reported-or-estimated model usage, byte-estimated reads and worst-case pending reservations.",
+    "pending_tokens": "Worst-case reservation estimates, not observed provider usage.",
+    "read_tokens": "Conservative delivered-data UTF-8 byte estimates, not tokenizer measurements.",
+    "execution_counts": "Exact observed request, call, child and refusal counts.",
+    "accuracy_and_baselines": "Exact counts and ratios computed from tracker truth and recorded answers; displayed percentages are rounded.",
+    "timing": "Measured wall-clock milliseconds; seconds per question are arithmetic means.",
+    "corpus": "Exact item counts and computed UTF-8 serialized byte lengths.",
+    "limits": "Configured context/output/token budgets, depth/call ceilings and temperature, not measured consumption."
+  },
+  "summary": [
+    {
+      "arm": "rlm",
+      "correct": 2,
+      "questions": 24,
+      "tokens": 5699082,
+      "tokens_per_question": 237461.75,
+      "seconds_per_question": 131.25683333333333,
+      "requests": 899,
+      "requests_per_question": 37.458333333333336,
+      "failures": {
+        "budget": 22
+      }
+    },
+    {
+      "arm": "stuffing",
+      "correct": 1,
+      "questions": 24,
+      "tokens": 567131,
+      "tokens_per_question": 23630.458333333332,
+      "seconds_per_question": 8.94475,
+      "requests": 24,
+      "requests_per_question": 1,
+      "failures": {}
+    }
+  ],
+  "tools": {
+    "child_reach": 0,
+    "delivered_reads": 1,
+    "delivered_aggregates": 13,
+    "observation_tokens": 9693,
+    "pending_tokens": 0,
+    "replay_verified": 2,
+    "refusals": {
+      "invalid": 883
+    },
+    "reasons": {
+      "Ambiguous action envelope: return exactly one object": 797,
+      "Unterminated JSON action object": 17,
+      "Expected one JSON action object": 1,
+      "Ambiguous action envelope": 66,
+      "Model output is not valid JSON": 1,
+      "Action does not match the action JSON Schema": 1
+    }
+  },
+  "invalid_action_shapes": {
+    "other prose or malformed JSON": 883
+  },
+  "baselines": {
+    "questions": 24,
+    "histogram": {
+      "0": 1,
+      "1": 1,
+      "4": 2,
+      "32": 1,
+      "68": 1,
+      "167": 1,
+      "208": 1,
+      "277": 1,
+      "1436": 1,
+      "3154": 1,
+      "3355": 1,
+      "12196": 1,
+      "pm-vcs-5m22": 1,
+      "pm-vcs-6qva": 1,
+      "pm-vcs-ag8y": 1,
+      "pm-vcs-1v6x": 1,
+      "pm-vcs-b7cb": 1,
+      "pm-lint-8kis": 2,
+      "pm-lint-trap": 2,
+      "pm-lint-1c6j": 1,
+      "pm-lint-epic": 1
+    },
+    "most_common": 2,
+    "zero": 1
+  }
+}

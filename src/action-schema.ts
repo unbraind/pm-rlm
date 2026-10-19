@@ -61,7 +61,7 @@ export function schemaAction(value: unknown): RlmAction {
 
 /** Convert optional properties to required nullable properties for strict compatible endpoints. */
 function strictSchema(schema: ActionSchema): ActionSchema {
-  if (schema.anyOf !== undefined) return { ...schema, anyOf: schema.anyOf.map(strictSchema) };
+  if (schema.anyOf !== undefined) return { anyOf: schema.anyOf.map(strictSchema) };
   if (schema.type === 'object') {
     const properties = Object.fromEntries(Object.entries(schema.properties!).map(([key, value]) => [key, schema.required!.includes(key) ? strictSchema(value) : { anyOf: [strictSchema(value), { type: 'null' as const }] }]));
     return object(properties);

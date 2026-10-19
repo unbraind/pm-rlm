@@ -8,6 +8,7 @@ const proofs = [
   { name: 'URL-decoded source paths', file: 'test/live.ts', before: 'fileURLToPath(new URL(`../../../fleet/${repo}/`, base))', after: 'new URL(`../../../fleet/${repo}/`, base).pathname', pattern: '^live source URL', test: 'test/constrained.test.ts' },
   { name: 'Ollama action schema', file: 'src/adapters.ts', before: "format: legacy ? 'json' : schema", after: "format: 'json'", pattern: '^HTTP adapters', test: 'test/adapters.test.ts' },
   { name: 'OpenAI-compatible action schema', file: 'src/adapters.ts', before: 'schema: answer ? COMPATIBLE_ANSWER_SCHEMA : COMPATIBLE_ACTION_SCHEMA', after: 'schema: {}', pattern: '^HTTP adapters', test: 'test/adapters.test.ts' },
+  { name: 'strict compatible union nodes', file: 'src/action-schema.ts', before: 'return { anyOf: schema.anyOf.map(strictSchema) }', after: 'return { ...schema, anyOf: schema.anyOf.map(strictSchema) }', pattern: '^constrained compatible', test: 'test/constrained.test.ts' },
   { name: 'shared schema validation', file: 'src/action-schema.ts', before: '!acceptsSchema(ACTION_SCHEMA, value)', after: 'false', pattern: '^constrained schema', test: 'test/constrained.test.ts' },
 ];
 for (const proof of proofs) {

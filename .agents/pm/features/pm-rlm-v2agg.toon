@@ -7,13 +7,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:47.468Z"
-updated_at: "2026-10-19T10:24:11.548Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-19T11:34:37.032Z"
 author: codex-agent
 acceptance_criteria: Six aggregate revert proofs; npm and Bun release gates; one honest 24-question comparison
 parent: pm-rlm-a1ih
-comments[10]{created_at,author,text}:
+comments[15]{created_at,author,text}:
   "2026-10-19T05:54:26.312Z",codex-agent,"Plan fixed before live inference: six deterministic snapshot aggregates with no evaluation or code execution; len(field) means UTF-8 bytes, numeric fields must be finite, extrema return sorted tied ids, missing text is empty. Reuse existing budget, projection, ledger and replay paths. Pin both public source revisions and verify the same 24 selected questions. One invocation only, no answer tuning; include cheap generic precomputed-tool context arm if it fits."
   "2026-10-19T06:00:47.940Z",codex-agent,"Optional third arm omitted before inference to conserve owner quota: it requires 24 additional full cloud requests. The new harness verifies public visibility, exact historical revisions, complete corpus counts/bytes and all 24 seeded questions/truths before its exclusive once-only marker. Successful new runs are replayed. New raw response evidence stays in ignored local artifacts."
   "2026-10-19T06:01:38.699Z",codex-agent,"Revert proof receipt: count, sum, distinct, group_count, argmax and argmin each independently fail the exact scoped observation regression when only that operation is removed. All six passed behavioral revert verification in node test/v2-revert.ts; source bytes restored. Starting the only authorized cloud invocation with the implementation frozen."
@@ -24,7 +22,13 @@ comments[10]{created_at,author,text}:
   "2026-10-19T07:28:28.154Z",codex-agent,"Single authorized glm-5.3:cloud run complete on the original fixed revisions and 24 tasks: RLM 1/24, stuffing 1/24; no accuracy advantage. Mean reported-or-estimated tokens 231491.58 versus 23623.29; seconds 204.60 versus 6.70; requests 32.00 versus 1.00. Child reach 0/24; delivered reads 0, aggregates 13; successful replay 1. RLM outer failures budget 23; tool refusals invalid 754; no model/transport failures in either arm. Most-common constant 2/24, zero 1/24. Observation charge 266 byte-estimated tokens; pending 0. Optional third arm was omitted before inference to avoid 24 additional cloud requests. No completed question was retried or answer-tuned. Measured source hash and commit 4be91f0 reproduce exactly; report and per-question artifact contain every counter."
   "2026-10-19T07:32:36.662Z",codex-agent,"Final full-gate receipt: npx pm test pm-rlm-v2agg --run --progress --timeout 900 passed all three linked commands under isolated HOME and Git identity. Focused suite 6/6. npm run release:check and bun run release:check each pass 122/122 tests plus 2/2 packed npm/npx and Bun/bunx consumers. Coverage 100/100/100/100 across 21 required sources; docstrings 72/72; duplication zero; production audit, pack allowlist, changelog and publish-attestation checks pass. Report regeneration is byte-identical and makes no model calls. No pm CLI/SDK defects were found; linked result tracking is disabled by project policy, so comments retain the durable receipts. All work stays in the package branch and release remains disabled."
   "2026-10-19T10:24:11.532Z",codex-agent,"Additional orchestrator-authorized measurement: preserve the prior v2 artifacts and the exact historical revisions, seed, 24 questions and truths. The default test:live now selects the constrained harness with a new exclusive marker and separate outputs. Same aggregation tools, same limits, same scoring, separate stuffing answer contract. No inference has run in this round yet; no retries or model substitution will follow provider refusal."
-files[8]{path,scope}:
+  "2026-10-19T10:52:58.356Z",codex-agent,"Single constrained-run interim checkpoint, not a final result: 8/24 tasks complete; RLM 0/8, stuffing 0/8; 295 invalid actions, 5 delivered aggregates, no reads or child reach. Schema-bearing native requests still return malformed or ambiguous action envelopes. Evaluation continues unchanged on source commit 495a156; no completed question is retried and no protocol, limits or answer scoring is being tuned."
+  "2026-10-19T11:02:06.628Z",codex-agent,"Halfway checkpoint from the same invocation: original first corpus complete, 12/24 total tasks; RLM 1/12, stuffing 0/12; 447 invalid actions, 8 delivered aggregates, no reads or child reach. The second frozen corpus is now running. These are interim measurements; implementation, schema, prompts, task selection and limits remain unchanged."
+  "2026-10-19T11:09:10.881Z",codex-agent,"Two-thirds interim receipt: 16/24 tasks complete, RLM 2/16 and stuffing 1/16; 586 invalid actions, 10 delivered aggregates, no reads or children. This is still the one authorized invocation on unchanged source 495a156. Full 24-question counts, usage, time and baselines will be recorded after completion."
+  "2026-10-19T11:29:15.382Z",codex-agent,"Only newly authorized glm-5.3:cloud invocation complete on the exact original 24 tasks: RLM 2/24, stuffing 1/24; most-common constant also 2/24 and zero 1/24. RLM mean reported-or-estimated tokens 237461.75, seconds 131.256833, requests 37.458333; stuffing 23630.458333, 8.94475 seconds, one request. RLM total requests 899; stuffing 24. Delivered reads 1, aggregates 13, child reach 0/24, successful replay 2. Invalid actions 883; outer budget failures 22; no model/transport failures. Reasons: ambiguous trailing objects 797, ambiguous envelope 66, truncated object 17, no object 1, invalid JSON 1, schema operands 1. Native endpoint did not enforce the schema. Observation charge 9693; pending 0. Recorded source 495a156 and source hash 1b04b87807ff61eb35263a3b1c81dcf50124b227e6fbbb27c94ea143f72d0a47 reproduce exactly. Model-free report is byte-idempotent; no retries or answer tuning. Third arm omitted to conserve 24 additional cloud requests."
+  "2026-10-19T11:34:34.597Z",codex-agent,"Final evaluation report and per-question artifact are linked. Model-free formatter passed through pm test and regeneration is byte-identical. Exactly one new live invocation used the original 24 tasks; no retries or answer tuning. RLM 2/24 versus stuffing 1/24 ties the most-common constant baseline; no recursive-quality claim. Final source passes both complete release gates (128 tests plus two packed consumers each). Measured native source is 495a156; the later OpenAI-only schema correction leaves native action/answer contracts unchanged. Public PR evidence and CI checks: https://github.com/unbraind/pm-rlm/pull/8 . Release stays disabled; items remain open for verification."
+files[9]{path,scope}:
+  eval-results-constrained.json,project
   index.ts,project
   src/aggregates.ts,project
   src/environment.ts,project
@@ -33,7 +37,7 @@ files[8]{path,scope}:
   test/install.acceptance.ts,project
   test/live-v2.ts,project
   test/report-v2.ts,project
-tests[3]:
+tests[4]:
   - command: node --test test/v2.test.ts
     scope: project
     provenance:
@@ -61,9 +65,17 @@ tests[3]:
       source_ref: feat/protocol-and-aggregates
     updated_by: codex-agent
     updated_at: "2026-10-19T06:10:44.919Z"
-docs[4]{path,scope}:
+  - command: node test/report-v2.ts --constrained
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-19T11:29:08.384Z"
+      source_kind: local_mutation
+      source_ref: feat/protocol-and-aggregates
+docs[5]{path,scope}:
   ARCHITECTURE.md,project
   docs/EVAL-CLOUD.md,project
+  docs/EVAL-CONSTRAINED.md,project
   docs/EVAL-V2.md,project
   eval-results-v2.json,project
 body: ""

@@ -5,6 +5,7 @@ import { ACTION_SCHEMA, ANSWER_SCHEMA, COMPATIBLE_ACTION_SCHEMA, COMPATIBLE_ANSW
 import { Ajv } from 'ajv';
 import { publicSource } from './live.ts';
 import { estimateTokens } from '../src/errors.ts';
+import type { ActionSchema } from '../src/action-schema.ts';
 import { parseAction, PROTOCOL } from '../src/protocol.ts';
 import { runRlm, replayRlm, resumeRlm } from '../src/engine.ts';
 import { RlmLedger } from '../src/ledger.ts';
@@ -48,6 +49,17 @@ test('constrained schema and action validator agree on all alternatives and inva
 
 /** Strict compatible transport needs a root object and required nullable optional fields. */
 test('constrained compatible action wrapping strips only optional nulls and keeps the fallback', () => {
+  /** Audit the provider's strict-object requirements independently of our generator. */
+  function audit(schema: ActionSchema): void {
+    if (schema.type === 'object') {
+      assert.equal(schema.additionalProperties, false);
+      assert.deepEqual(schema.required?.slice().sort(), Object.keys(schema.properties ?? {}).sort());
+    }
+    for (const child of Object.values(schema.properties ?? {})) audit(child);
+    for (const child of schema.anyOf ?? []) audit(child);
+    if (schema.items !== undefined) audit(schema.items);
+  }
+  audit(COMPATIBLE_ACTION_SCHEMA); audit(COMPATIBLE_ANSWER_SCHEMA);
   const count = { response: { action: 'count', filter: { type: null, status: 'open', parent: null, tag: null, text: null, ids: null } } };
   assert.equal(acceptsSchema(COMPATIBLE_ACTION_SCHEMA, count), true);
   assert.deepEqual(JSON.parse(compatibleAction(JSON.stringify(count))), { action: 'count', filter: { status: 'open' } });

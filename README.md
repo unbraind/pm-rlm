@@ -160,7 +160,7 @@ npm test
 npm run coverage
 node test/revert.ts
 npm run test:install
-npm run test:live
+PM_RLM_LIVE_MODEL=glm-5.3:cloud nice -n 10 npm run test:live
 npm run release:check
 bun run release:check
 ```
@@ -185,3 +185,18 @@ Child reach: 0/24. Delivered reads: 0; delivered aggregates: 13. Delivered respo
 
 Most-common constant guess: 2/24; constant zero: 1/24. Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests. See [the v2 report](docs/EVAL-V2.md).
 <!-- eval-v2:end -->
+
+## constrained measurement
+
+<!-- eval-constrained:start -->
+RLM constrained request scored higher on this single fixed set.
+
+| Arm | Correct | Tokens / question | Seconds / question | Requests / question |
+| --- | ---: | ---: | ---: | ---: |
+| RLM constrained request | 2/24 | 237461.75 | 131.26 | 37.46 |
+| Complete-item stuffing | 1/24 | 23630.46 | 8.94 | 1.00 |
+
+Child reach: 0/24. Delivered reads: 1; delivered aggregates: 13. Delivered responses requiring envelope extraction: 8. Successful read-only replays: 2. Tool refusals: `{"invalid":883}`. Outer failures: RLM `{"budget":22}`; stuffing `{}`.
+
+Most-common constant guess: 2/24; constant zero: 1/24. Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests. See [the constrained report](docs/EVAL-CONSTRAINED.md).
+<!-- eval-constrained:end -->
