@@ -87,7 +87,16 @@ try {
         const observed = observations(state);
         counters = { tokens: steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0) + (step.response?.tokens_out ?? 0), 0), reserved: state.reserved_tokens, pending: steps.filter(step => step.response === undefined).reduce((sum, step) => sum + step.reserved, 0), read_tokens: state.reserved_tokens - steps.reduce((sum, step) => sum + step.reserved, 0), reads: observed.reads, aggregates: observed.aggregates, reached_child: state.calls.length > 1, calls: state.calls.length, model_calls: steps.length, refusals: observed.refusals, reasons: observed.reasons, replay: 'not completed' };
         raw.push({ repo, index, invalid: observed.invalid, responses: steps.filter(step => step.response !== undefined).map(step => ({ text: step.response!.text, observation: step.observation })) });
-        if (!error) { assert.equal((await replayRlm(workspace, runId)).answer, answer); counters.replay = 'verified'; }
+        // A replay mismatch is recorded in the row, not thrown: the exclusive marker forbids a rerun, so one
+        // failed replay must not cost the remaining questions their only measurement.
+        if (!error) {
+          try {
+            const replayed = (await replayRlm(workspace, runId)).answer;
+            counters.replay = replayed === answer ? 'verified' : 'failed: replayed answer differs';
+          } catch (replayError) {
+            counters.replay = `failed: ${replayError instanceof Error ? replayError.message : String(replayError)}`;
+          }
+        }
       }
       const row = { question: task.question, expected: task.answer, index, repo, revision, corpus_bytes: Buffer.byteLength(JSON.stringify(corpus.items)), corpus_items: corpus.items.length, rlm: { correct: answer.trim() === task.answer, answer_sha256: digest(answer), ...counters, ms: Math.round(performance.now() - start), error }, stuffing: baseline };
       rows.push(row);
