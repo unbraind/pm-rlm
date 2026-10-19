@@ -117,8 +117,7 @@ export class RlmEngine {
     return `${PROTOCOL}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
   }
   /** Execute one action, refusing oversized observations before charging or retaining data. */
-  private async observe(action: Exclude<RlmAction, { action: 'finish' }>, call: RlmCall): Promise<unknown> {
-    const state = this.state;
+  private async observe(action: Exclude<RlmAction, { action: 'finish' }>, call: RlmCall, state = this.state): Promise<unknown> {
     let observation: unknown;
     let charge = 0;
     if (action.action === 'spawn') observation = { result: await this.spawn(call.id, action.subgoal, resolveSlice(state, call, action.slice)) };
@@ -138,6 +137,43 @@ export class RlmEngine {
     assertLedgerPrivacy(observation, this.ledger.workspace, state.settings.key_env);
     state.reserved_tokens += charge;
     return observation;
+  }
+  /** Verify execution refusals without writes, rebuilding the budget in recursive execution order. */
+  async validateRecorded(): Promise<void> {
+    const state = { ...this.state, reserved_tokens: 0 };
+    const visited = new Set<string>();
+    /** Charge each logical call once, including children reached before a parent observation. */
+    const visit = async (call: RlmCall): Promise<void> => {
+      if (visited.has(call.id)) return;
+      visited.add(call.id);
+      for (const [index, step] of call.steps.entries()) {
+        state.reserved_tokens += step.reserved;
+        if (step.response === undefined) continue;
+        let action: RlmAction;
+        try { action = parseAction(step.response.text, state.parser_version ?? 1); } catch { continue; }
+        if (action.action === 'finish') continue;
+        const prefix = { ...call, steps: call.steps.slice(0, index + 1) };
+        if (action.action === 'spawn') {
+          let slice: RlmSlice;
+          try { slice = resolveSlice(state, prefix, action.slice); }
+          catch { continue; }
+          const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, slice, state.settings));
+          if (child !== undefined) await visit(child);
+          continue;
+        }
+        const observation = step.observation;
+        if (typeof observation !== 'object' || observation === null) continue;
+        if ('refused' in observation) {
+          let refusal: RlmError | undefined;
+          try { await this.observe(action, prefix, state); }
+          catch (error) { refusal = error as RlmError; }
+          if (refusal === undefined || observation.refused !== refusal.code || !('reason' in observation) || observation.reason !== refusal.message) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
+        } else if ('estimated_tokens' in observation && typeof observation.estimated_tokens === 'number') {
+          state.reserved_tokens += observation.estimated_tokens;
+        }
+      }
+    };
+    await visit(state.calls[0]);
   }
   /** Reuse persisted outputs and observations; unfinished inference alone is retried. */
   private async execute(call: RlmCall): Promise<string> {
@@ -186,6 +222,7 @@ export class RlmEngine {
     try {
       this.state = await this.ledger.load(this.state.run);
       for (const call of this.state.calls) for (const step of call.steps) if (step.response !== undefined && step.observation !== undefined) recordedAction(this.state, call, step);
+      await this.validateRecorded();
       const legacy = this.state.calls.flatMap(call => call.steps).filter(step => step.response !== undefined && step.settled !== true);
       for (const step of legacy) settleStep(this.state, step, step.response!);
       if (legacy.length > 0) await this.ledger.save(this.state);
@@ -223,7 +260,9 @@ export async function resumeRlm(workspace: string, run: string, model?: RlmModel
 }
 /** Replay the recorded call graph and actions, checking every child result and final answer byte-for-byte. */
 export async function replayRlm(workspace: string, run: string): Promise<RlmResult> {
-  const state = await new RlmLedger(workspace).load(run);
+  const ledger = new RlmLedger(workspace);
+  const state = await ledger.load(run);
+  await new RlmEngine(ledger, state, new HttpModel(state.settings)).validateRecorded();
   const visited = new Set<string>();
   /** Follow recorded spawn edges and finish actions without executing a model or writing the tracker. */
   async function replay(call: RlmCall): Promise<string | undefined> {

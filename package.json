@@ -20,7 +20,12 @@
     "LICENSE",
     "CHANGELOG.md",
     "ARCHITECTURE.md",
-    "eval-results.json"
+    "eval-results.json",
+    "eval-results-v2.json",
+    "eval-results-constrained.json",
+    "docs/EVAL-V2.md",
+    "docs/EVAL-CONSTRAINED.md",
+    "docs/ACTION-DIAGNOSIS.md"
   ],
   "scripts": {
     "build": "tsc",
