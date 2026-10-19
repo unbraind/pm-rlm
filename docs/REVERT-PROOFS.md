@@ -45,7 +45,8 @@ exactly once and retries only a missing finish. Altered codes or present reasons
 remain invalid, and v2/v3 still require reasons.
 
 Round eight adds seven independent reversions to the round-six script (13/13
-in that script). The spawn matrix covers unavailable references, non-partition
+in that script). The spawn matrix covers reversed slice ranges, text/offset
+mismatches, incorrect slice token estimates, unavailable references, non-partition
 references, absent partition indexes, inherited-scope refusals, depth, call count,
 post-child observation budget, child model/context failures and completion-hook
 failures. Both replay and resume reject altered codes, altered reasons and

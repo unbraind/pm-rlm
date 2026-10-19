@@ -21,7 +21,7 @@ const proofs = [
 ];
 for (const proof of proofs) proveRevert(proof, 'test/review-r6.test.ts', 180000);
 const spawnProofs = [
-  { name: 'all ten spawn refusal kinds', file: 'src/engine.ts', before: '        const observation = step.observation;', after: "        if (action.action === 'spawn') continue;\n        const observation = step.observation;", pattern: '^review r8 spawn refusal' },
+  { name: 'all thirteen spawn refusal kinds', file: 'src/engine.ts', before: '        const observation = step.observation;', after: "        if (action.action === 'spawn') continue;\n        const observation = step.observation;", pattern: '^review r8 spawn refusal' },
   { name: 'spawn refusal code comparison', file: 'src/engine.ts', before: 'observation.refused !== refusal.code', after: 'false', pattern: '^review r8 spawn refusal depth limit' },
   { name: 'spawn refusal reason comparison', file: 'src/engine.ts', before: "(!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message))", after: 'false', pattern: '^review r8 spawn refusal slice scope' },
   { name: 'child failure message receipt', file: 'src/engine.ts', before: 'call.failure = { code: error.code, reason: error.message };', after: 'call.failure = { code: error.code };', pattern: '^review r8 spawn refusal child model failure' },
