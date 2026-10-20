@@ -24,7 +24,7 @@ for (const failure of ['model', 'budget'] as const) {
     const result = await runRlm('root', { workspace, model });
     assert.equal(result.answer, 'recovered');
     const state = await new RlmLedger(workspace).load(result.run);
-    assert.deepEqual(state.calls[1].failure, { code: failure });
+    assert.partialDeepStrictEqual(state.calls[1].failure, { code: failure });
     assert.equal(model.requests.filter(request => input(request).depth === 1).length, 1);
     assert.equal((await replayRlm(workspace, result.run)).answer, 'recovered');
     const requests = model.requests.length;
@@ -44,7 +44,7 @@ test('oversized read is refused before charging and root can finish', async t =>
   const model = new ScriptedModel((_request, index) => JSON.stringify(index === 0 ? { action: 'get', id: item.id, fields: ['description'] } : { action: 'finish', answer: 'recovered' }));
   const result = await runRlm('root', { workspace, model, settings: { context_tokens: 4096, output_tokens: 96 } }).catch(error => assert.fail(`Run should recover: ${String(error)}`));
   const state = await new RlmLedger(workspace).load(result.run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
   assert.equal(result.reserved_tokens, state.calls[0].steps.reduce((sum, step) => sum + step.reserved, 0));
   assert.equal((await replayRlm(workspace, result.run)).answer, 'recovered');
 });
@@ -98,7 +98,7 @@ test('child context refusal after creation records a terminal outcome (#4)', asy
   const result = await runRlm('root', { workspace, model, settings: { context_tokens: 4096, output_tokens: 96 } });
   const state = await new RlmLedger(workspace).load(result.run);
   assert.equal(state.calls.length, 2);
-  assert.deepEqual(state.calls[1].failure, { code: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[1].failure, { code: 'budget' });
   assert.equal(state.calls[1].steps.length, 0);
   assert.equal((await replayRlm(workspace, result.run)).answer, result.answer);
   assert.equal((await resumeRlm(workspace, result.run, model)).answer, result.answer);
@@ -130,7 +130,7 @@ test('partition references fail closed and completed oversized child results rem
   });
   const largeRun = await runRlm('large child', { workspace, model: large, settings: { context_tokens: 4096 } });
   const state = await new RlmLedger(workspace).load(largeRun.run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
   assert.equal(state.calls[1].result?.length, 3000);
   assert.equal((await replayRlm(workspace, largeRun.run)).answer, 'recovered');
 });
@@ -153,7 +153,13 @@ test('child interruption remains resumable and terminal refusal tampering fails 
   const result = await runRlm('typed', { workspace, model: typed });
   const ledger = new RlmLedger(workspace); const state = await ledger.load(result.run);
   const unfinished = structuredClone(state); delete unfinished.calls[1].failure; await ledger.save(unfinished);
-  await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'incomplete' });
+  await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'replay' });
+  const orphaned = structuredClone(state);
+  const orphan = { ...orphaned.calls[1], id: `${result.run}-orphan`, steps: [] };
+  delete orphan.failure;
+  orphaned.calls.push(orphan);
+  await ledger.save(orphaned);
+  await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'incomplete', message: 'Completed run contains an unfinished call' });
   state.calls[1].failure = { code: 'budget' }; await ledger.save(state);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
 });
@@ -179,7 +185,7 @@ test('partition index refuses the exact remaining run budget before delivery', a
   await assert.rejects(runRlm('partition budget', { workspace, model, settings: { budget_tokens: estimateTokens(prompt) + config.output_tokens * 16 } }), { code: 'budget' });
   const [run] = await rootIds(workspace);
   const state = await new RlmLedger(workspace).load(run);
-  assert.deepEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
+  assert.partialDeepStrictEqual(state.calls[0].steps[0].observation, { refused: 'budget' });
   assert.equal(state.calls[0].steps.length, 1);
 });
 

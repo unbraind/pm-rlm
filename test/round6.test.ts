@@ -21,7 +21,7 @@ test('historical private observations are refused before persistence and survive
       const input = JSON.parse(request.prompt.slice(PROTOCOL.length + 1)) as { question: string; transcript: { observation?: unknown }[] };
       if (recursive && input.question === 'root') return JSON.stringify(input.transcript.length === 0 ? { action: 'spawn', subgoal: 'child', slice } : { action: 'finish', answer: 'root recovered' });
       if (input.transcript.length === 0) return JSON.stringify({ action: 'history', id: item.id, start: 0, end: 10 });
-      assert.deepEqual(input.transcript[0].observation, { refused: 'invalid' });
+      assert.partialDeepStrictEqual(input.transcript[0].observation, { refused: 'invalid' });
       assert.ok(!request.prompt.includes(workspace));
       return JSON.stringify({ action: 'finish', answer: `${input.question} recovered` });
     });
@@ -29,7 +29,7 @@ test('historical private observations are refused before persistence and survive
     assert.equal(result.answer, 'root recovered');
     const ledger = new RlmLedger(workspace); const state = await ledger.load(result.run);
     assert.equal(state.calls.length, recursive ? 2 : 1);
-    assert.deepEqual(state.calls[recursive ? 1 : 0].steps[0].observation, { refused: 'invalid' });
+    assert.partialDeepStrictEqual(state.calls[recursive ? 1 : 0].steps[0].observation, { refused: 'invalid' });
     assert.ok(!JSON.stringify(state).includes(workspace));
     const settled = state.calls.flatMap(call => call.steps).reduce((sum, step) => sum + step.reserved, 0);
     assert.equal(state.reserved_tokens, settled, 'Refused observations are not charged as delivered reads');

@@ -1,6 +1,7 @@
 import { certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries } from '@unbrained/pm-cli/sdk';
+import { aggregateItems } from './aggregates.ts';
 import { estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
-import type { RlmFilter, RlmItem, RlmRead, RlmSlice } from './types.ts';
+import type { RlmAggregate, RlmFilter, RlmItem, RlmRead, RlmSlice } from './types.ts';
 import type { PmCompleteListCertificate } from '@unbrained/pm-cli/sdk';
 
 /** Validate supported predicates; silently ignored filters would widen private scope. */
@@ -67,10 +68,12 @@ export class RlmContext {
   private readonly workspace: string;
   private readonly items: readonly RlmItem[];
   private readonly certificate: PmCompleteListCertificate;
+  private readonly aggregateVersion: 1 | 2;
   remaining: number;
   /** Retain a certified snapshot and charge only successful reads. */
-  constructor(workspace: string, items: readonly RlmItem[], certificate: PmCompleteListCertificate, remaining: number) {
+  constructor(workspace: string, items: readonly RlmItem[], certificate: PmCompleteListCertificate, remaining: number, aggregateVersion: 1 | 2 = 2) {
     integer(remaining, 0);
+    this.aggregateVersion = aggregateVersion;
     this.workspace = workspace; this.items = structuredClone(items); this.certificate = structuredClone(certificate); this.remaining = remaining;
   }
   /** Charge the entire delivered representation before revealing it. */
@@ -125,6 +128,10 @@ export class RlmContext {
     if (!Object.hasOwn(item, field)) throw new RlmError('invalid', 'Unknown item field');
     const value = item[field];
     return this.deliver((typeof value === 'string' ? value : JSON.stringify(value)).slice(start, end));
+  }
+  /** Execute a typed aggregate over this frozen scope and charge the entire result. */
+  aggregate(action: RlmAggregate): RlmRead<ReturnType<typeof aggregateItems>> {
+    return this.deliver(aggregateItems(this.items, action, this.aggregateVersion));
   }
   /** Return lossless packed slices; the whole partition response is also charged. */
   partition(filter: RlmFilter, maxTokens: number): RlmRead<RlmSlice[]> {

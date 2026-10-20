@@ -71,6 +71,8 @@ export class RlmLedger {
     try {
       const decoded = record(JSON.parse(root.rlm_state));
       if (decoded.version !== 1 || decoded.run !== run || !Array.isArray(decoded.calls) || decoded.calls.length === 0) throw new Error('Invalid checkpoint');
+      if (decoded.parser_version !== undefined && ![1, 2, 3].includes(decoded.parser_version as number)) throw new Error('Invalid parser version');
+      if (decoded.aggregate_version !== undefined && ![1, 2].includes(decoded.aggregate_version as number)) throw new Error('Invalid aggregate version');
       validateRlmSettings(decoded.settings);
       text(decoded.question); parseFilter(decoded.scope); record(decoded.certificate);
       integer(decoded.reserved_tokens, 0);
@@ -82,6 +84,12 @@ export class RlmLedger {
         if (call.parent !== undefined) text(call.parent);
         if (call.result !== undefined && typeof call.result !== 'string') throw new Error('Invalid result');
         if (call.failure !== undefined && !['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay'].includes(text(record(call.failure).code))) throw new Error('Invalid refusal');
+        if (call.failure !== undefined && record(call.failure).reason !== undefined) text(record(call.failure).reason);
+        if (call.completion_refusal !== undefined) {
+          const refusal = record(call.completion_refusal);
+          if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay'].includes(text(refusal.code))) throw new Error('Invalid completion refusal');
+          text(refusal.reason);
+        }
         if (!Array.isArray(call.steps)) throw new Error('Invalid steps');
         for (const entry of call.steps) {
           const step = record(entry);

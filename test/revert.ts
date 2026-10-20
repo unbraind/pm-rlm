@@ -1,4 +1,6 @@
 /** Behavioral revert proofs: each removed invariant must make its regression fail. */
+import { assertRegression, replaceFixed } from './revert-source.ts';
+import { testEnvironment } from '../scripts/environment.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -53,30 +55,26 @@ const mutations = [
   { name: 'verified archive bytes', file: 'test/live.ts', before: "!(await readFile(path)).equals(expected)", after: 'false', test: 'test/eval-source.test.ts', pattern: '^eval copies' },
   { name: 'seeded answer frequency cap', file: 'test/eval-questions.ts', before: "if (!chosen.includes(task) && (histogram.get(task.answer) ?? 0) < 2)", after: 'if (!chosen.includes(task))', test: 'test/round2.test.ts', pattern: '^seeded eval' },
   { name: 'eval calibrated limits', file: 'test/live.ts', before: 'context_tokens: 131072, output_tokens: 512, budget_tokens: 300000, ', after: '', test: 'test/eval.test.ts', pattern: '^eval pins' },
-  { name: 'terminal child refusal (#4)', file: 'src/engine.ts', before: 'call.failure = { code: error.code };', after: 'void error.code;', test: 'test/review.test.ts', pattern: '^terminal child model' },
+  { name: 'terminal child refusal (#4)', file: 'src/engine.ts', before: 'call.failure = { code: error.code, reason: error.message };', after: 'void error.code;', test: 'test/review.test.ts', pattern: '^terminal child model' },
   { name: 'projected observation guard', file: 'src/engine.ts', before: "    if (estimateTokens(this.prompt(call, observation)) + state.settings.output_tokens > state.settings.context_tokens) throw new RlmError('budget', 'Observation does not fit the next model prompt');", after: '', test: 'test/review.test.ts', pattern: '^oversized read' },
   { name: 'scoped privacy', file: 'src/engine.ts', before: 'assertLedgerPrivacy({ question, items: snapshot, settings }', after: 'assertLedgerPrivacy({ question, items: corpus.items, settings }', test: 'test/review.test.ts', pattern: '^privacy applies' },
   { name: 'budget reserver', file: 'src/ledger.ts', before: "  if (charge > state.settings.budget_tokens - state.reserved_tokens) throw new RlmError('budget', 'Model step exceeds remaining run budget');", after: '', test: 'test/recovery.test.ts', pattern: '^model reservation' },
-  { name: 'resume by digest', file: 'src/engine.ts', before: 'let call = state.calls.find(call => call.parent === parent.id && call.digest === digest);', after: 'let call: RlmCall | undefined = undefined;', test: 'test/recovery.test.ts', pattern: '^SIGKILL' },
+  { name: 'resume by digest', file: 'src/engine.ts', before: 'let call = prepareSpawn(state, parent, subgoal, slice);', after: 'let call: RlmCall | undefined = undefined;', test: 'test/recovery.test.ts', pattern: '^SIGKILL' },
   { name: 'partitioner', file: 'src/environment.ts', before: 'if (estimateTokens([...fragments, candidate]) <= maxTokens) low = size;', after: 'if (true) low = size;', test: 'test/core.test.ts', pattern: '^partition slices' },
 ];
 /** Rebuild only proofs whose consumers load the compiled tarball, restoring that build too. */
 function buildPackage(): void {
-  const child = spawnSync('npm', ['run', 'build'], { encoding: 'utf8', timeout: 120000 });
+  const child = spawnSync('npm', ['run', 'build'], { env: testEnvironment(process.env), encoding: 'utf8', timeout: 120000 });
   assert.equal(child.status, 0, child.stdout + child.stderr);
 }
 for (const mutation of mutations) {
   const original = readFileSync(mutation.file, 'utf8');
-  assert.equal(original.split(mutation.before).length, 2, 'Mutation must identify exactly one invariant');
   const hash = createHash('sha256').update(original).digest('hex');
   try {
-    writeFileSync(mutation.file, original.replace(mutation.before, mutation.after));
+    writeFileSync(mutation.file, replaceFixed(original, mutation.before, mutation.after, mutation.name));
     if ('build' in mutation && mutation.build) buildPackage();
-    const child = spawnSync(process.execPath, ['--test', '--test-name-pattern', mutation.pattern, mutation.test], { encoding: 'utf8', timeout: 300000 });
-    assert.equal(child.error, undefined);
-    assert.equal(child.status, 1, `${mutation.name} regression must fail with its assertion exit code`);
-    assert.match(child.stdout + child.stderr, /AssertionError|ERR_ASSERTION/);
-    console.log(`${mutation.name}: regression failed with invariant removed (exit ${child.status})`);
+    assertRegression(mutation.test, mutation.pattern, 300000);
+    console.log(`${mutation.name}: regression failed with invariant removed (exit 1)`);
   } finally {
     writeFileSync(mutation.file, original);
     assert.equal(createHash('sha256').update(readFileSync(mutation.file)).digest('hex'), hash);

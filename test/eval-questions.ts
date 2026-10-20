@@ -28,8 +28,8 @@ export function questions(items: RlmItem[]): EvalQuestion[] {
   for (const type of ['Issue', 'Task', 'Feature']) for (const status of ['open', 'closed']) add(`How many items have type ${type} and status ${status}?`, ordered.filter(item => item.type === type && item.status === status).length);
   const epics = ordered.filter(item => item.type === 'Epic').map(item => ({ id: item.id, count: ordered.filter(child => child.parent === item.id && child.status === 'closed').length })).sort((a, b) => b.count - a.count || (a.id < b.id ? -1 : 1));
   if (epics.length) add('Which Epic has the most direct closed children, breaking ties by lexicographically smallest id?', epics[0].id);
-  /** Stable hash ordering prevents source order or provider output from influencing selection. */
-  const rank = (task: EvalQuestion): string => createHash('sha256').update(EVAL_SEED + task.question).digest('hex');
+  /** Preserve historical hash inputs while keeping the model-facing question format-neutral. */
+  const rank = (task: EvalQuestion): string => createHash('sha256').update(EVAL_SEED + task.question + ' Answer only the integer or id.').digest('hex');
   candidates.sort((a, b) => rank(a).localeCompare(rank(b)));
   const chosen: EvalQuestion[] = [];
   const histogram = new Map<string, number>();

@@ -1,0 +1,15 @@
+/** Prove each new behavior fails independently when only its production branch is removed. */
+import { proveRevert } from './revert-source.ts';
+const proofs = [
+  { name: 'same seeded question selection', file: 'test/eval-questions.ts', before: "EVAL_SEED + task.question + ' Answer only the integer or id.'", after: 'EVAL_SEED + task.question', pattern: '^seeded eval', test: 'test/round2.test.ts' },
+  { name: 'fair stuffing envelope extraction', file: 'test/live.ts', before: 'JSON.parse(extractObject(output))', after: 'JSON.parse(output)', pattern: '^v2 parser' },
+  { name: 'parser envelope extraction', file: 'src/protocol.ts', before: 'version === 1 ? output : extractObject(output)', after: 'output', pattern: '^v2 parser' },
+  { name: 'corrective refusal feedback', file: 'src/engine.ts', before: 'step.observation = { refused: error.code, reason: error.message };', after: 'step.observation = { refused: error.code };', pattern: '^v2 ledger' },
+  { name: 'count', file: 'src/aggregates.ts', before: "case 'count': return rows.length;", after: "case 'count': return 0;", pattern: '^v2 aggregates compute' },
+  { name: 'sum', file: 'src/aggregates.ts', before: "case 'sum': return rows.reduce((sum, item) => finite(sum + numeric(item, action.field_expr)), 0);", after: "case 'sum': return 0;", pattern: '^v2 aggregates compute' },
+  { name: 'distinct', file: 'src/aggregates.ts', before: "sorted.map(row => row.value) : sorted", after: '[] : sorted', pattern: '^v2 aggregates compute' },
+  { name: 'group_count', file: 'src/aggregates.ts', before: 'sorted.map(row => row.value) : sorted', after: 'sorted.map(row => row.value) : []', pattern: '^v2 aggregates compute' },
+  ...['argmax', 'argmin'].map(name => ({ name, file: 'src/aggregates.ts', before: 'return sorted.filter(row => row.value === sorted[0].value).map(row => row.id).sort();', after: `if (action.action === '${name}') return []; return sorted.filter(row => row.value === sorted[0].value).map(row => row.id).sort();`, pattern: '^v2 aggregates compute' })),
+];
+for (const proof of proofs) proveRevert(proof, proof.test ?? 'test/v2.test.ts');
+console.log(`${proofs.length}/${proofs.length} behavioral revert proofs; source restored byte-for-byte`);

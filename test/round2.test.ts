@@ -119,6 +119,8 @@ test('seeded eval questions span magnitudes and cap answer frequency', async t =
   const tasks = questions(items);
   assert.deepEqual(questions([...items].reverse()), tasks);
   assert.equal(tasks.length, 12);
+  assert.equal(tasks[0].question, 'How many items of type Task are there?', 'Preserve historical seeded selection');
+  assert.equal(tasks.at(-1)!.question, 'How many items with status open are there?');
   for (const task of tasks) {
     assert.ok(task.question.endsWith('?'));
     assert.doesNotMatch(task.question, FORMAT_DIRECTIVE, 'Questions must leave response formatting to each arm protocol');

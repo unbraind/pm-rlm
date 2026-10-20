@@ -115,10 +115,10 @@ await writeRlmSettings('.agents/pm', {
 
 A model step reserves prompt bytes plus `16 × output_tokens` before inference. When validated usage arrives, the response, actual input-plus-output charge and `settled` marker are saved in the same atomic checkpoint, releasing the unused reservation. Pending steps keep one worst-case reservation across a crash; completed responses settle once and are never inferred again. The tree exposes `reserved_tokens` (settled usage plus pending allowance) and `used_tokens` per call. Delivered-read estimates remain charged separately, and the output byte ceiling remains enforced. A process can die between an HTTP response and its durable checkpoint; that unfinished inference may be repeated by resume. Its logical reservation is reused. Completed model outputs and terminal child outcomes are never inferred again. A typed child failure is checkpointed as a failure code, recorded in an `RLM refusal:` evidence comment, closed and released. Resume and replay accept that terminal refusal when its parent finishes successfully. This is not an exactly-once guarantee for a remote provider's billing. Observations are checked against the exact next prompt before charging, so oversized reads become recoverable tool refusals. Large complete reads and growing transcripts can legitimately hit the conservative context or total budget and refuse; use narrower filters, `get`, `peek`, suitable partitions and explicit limits.
 
-`npm run test:live` verifies public repository visibility and a published revision, archives only tracked regular files from that revision, then copies the tracker with `cp -a` into a scratch project. Dirty and untracked local records are excluded; symlinks refuse evaluation. Extracted archive paths and bytes must match the verified Git blobs, so export-ignore or export-subst changes refuse evaluation. The copied workspace cannot select the transport: the harness explicitly uses Ollama at a validated loopback URL with no authorization header. Git replacement objects are disabled, including during tree, archive and blob verification. It never reads hosted data.
+`npm run test:live` is the once-only constrained cloud comparison on the original 24 tasks. Its exclusive marker refuses another invocation after inference starts. It verifies public repository visibility and a published revision, archives only tracked regular files from that revision, then copies the tracker with `cp -a` into a scratch project. Dirty and untracked local records are excluded; symlinks refuse evaluation. Extracted archive paths and bytes must match the verified Git blobs, so export-ignore or export-subst changes refuse evaluation. The copied workspace cannot select the transport: the harness explicitly uses Ollama at a validated loopback URL with no authorization header. Git replacement objects are disabled, including during tree, archive and blob verification. It never reads hosted data.
 
 ```sh
-PM_RLM_LIVE_MODEL=gemma4-local:e2b-q3km PM_RLM_LIVE_BASE_URL=http://127.0.0.1:11434 npm run test:live
+PM_RLM_LIVE_MODEL=glm-5.3:cloud PM_RLM_LIVE_BASE_URL=http://127.0.0.1:11434 npm run test:live
 ```
 
 The seeded v2 design computes truth exactly through the SDK before inference. Its twenty-four questions include counts, UTF-8 field-length sums and id-valued argmax aggregations. Selection uses tracker truth and a fixed seed, with no model-output tuning. Each twelve-question source spans numeric ranges 1–9, 10–99, 100–999 and 1000+, includes id answers, and caps any answer at two occurrences. Both arms use the same local model, context allocation and output allowance. Stuffing selects complete items that fit and supplies a valid JSON array; its JSON answer envelope is parsed before exact scoring. Refusals and endpoint failures count as incorrect. Defaults are calibrated independently on synthetic long context to fit the protocol, two partitions and two child calls.
@@ -130,7 +130,7 @@ The seeded v2 design computes truth exactly through the SDK before inference. It
 | Numeric range | 0–12196 |
 | Most-common answer frequency and constant baseline | 2/24 (8.33%) |
 | Zero frequency and constant baseline | 1/24 (4.17%) |
-| Model measurements on v2 | Historical cloud invocation invalidated by conflicting format instructions; remeasurement pending |
+| Model measurements on v2 | Completed 24-question [v2 measurement](#v2-measurement): RLM 1/24, stuffing 1/24 |
 
 Histogram: `4`, `pm-lint-8kis`, `pm-lint-trap` occur twice each; `0`, `1`, `32`, `68`, `167`, `208`, `277`, `1436`, `3154`, `3355`, `12196`, `pm-vcs-5m22`, `pm-vcs-6qva`, `pm-vcs-ag8y`, `pm-vcs-1v6x`, `pm-vcs-b7cb`, `pm-lint-1c6j`, `pm-lint-epic` occur once each. See [the design audit](docs/EVAL-DESIGN.md) and [exact questions and histogram](docs/eval-design.json). Run `node test/eval-design.ts` to audit public copies without inference. `PM_RLM_LIVE_MODEL` is passed unchanged to Ollama.
 
@@ -160,7 +160,7 @@ npm test
 npm run coverage
 node test/revert.ts
 npm run test:install
-npm run test:live
+PM_RLM_LIVE_MODEL=glm-5.3:cloud nice -n 10 npm run test:live
 npm run release:check
 bun run release:check
 ```
@@ -170,3 +170,33 @@ Coverage includes every authored source, script, entry point and ESLint configur
 Exit codes: `0` success; `2` invalid command, scope, model, integrity, replay or executor-conflict failure; `3` exhausted token, depth or call budget. Tool-level refusals can be recovered within a run; an exhausted outer budget ends the command. `test:live` counts refused answers rather than presenting them as successes.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the ledger schema and resume invariants. The design follows the environment-and-recursion approach of [Recursive Language Models](https://arxiv.org/abs/2512.24601) by Alex L. Zhang, Tim Kraska and Omar Khattab (2025); the tracker ledger, reservations and recovery protocol are this package's implementation.
+
+## v2 measurement
+
+<!-- eval-v2:start -->
+RLM v2 was not better than stuffing on this single fixed set.
+
+| Arm | Correct | Tokens / question | Seconds / question | Requests / question |
+| --- | ---: | ---: | ---: | ---: |
+| RLM v2 | 1/24 | 231491.58 | 204.60 | 32.00 |
+| Complete-item stuffing | 1/24 | 23623.29 | 6.70 | 1.00 |
+
+Child reach: 0/24. Delivered reads: 0; delivered aggregates: 13. Delivered responses requiring envelope extraction: 10. Successful read-only replays: 1. Tool refusals: `{"invalid":754}`. Outer failures: RLM `{"budget":23}`; stuffing `{}`.
+
+Most-common constant guess: 2/24; constant zero: 1/24. Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests. See [the v2 report](docs/EVAL-V2.md).
+<!-- eval-v2:end -->
+
+## constrained measurement
+
+<!-- eval-constrained:start -->
+RLM constrained request scored higher on this single fixed set.
+
+| Arm | Correct | Tokens / question | Seconds / question | Requests / question |
+| --- | ---: | ---: | ---: | ---: |
+| RLM constrained request | 2/24 | 237461.75 | 131.26 | 37.46 |
+| Complete-item stuffing | 1/24 | 23630.46 | 8.94 | 1.00 |
+
+Child reach: 0/24. Delivered reads: 1; delivered aggregates: 13. Delivered responses requiring envelope extraction: 8. Successful read-only replays: 2. Tool refusals: `{"invalid":883}`. Outer failures: RLM `{"budget":22}`; stuffing `{}`.
+
+Most-common constant guess: 2/24; constant zero: 1/24. Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests. See [the constrained report](docs/EVAL-CONSTRAINED.md).
+<!-- eval-constrained:end -->

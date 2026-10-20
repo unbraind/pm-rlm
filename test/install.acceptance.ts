@@ -22,7 +22,7 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
   const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
-  const allowed = /^(dist\/|manifest\.json$|eval-results\.json$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|CHANGELOG\.md$)/;
+  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|ACTION-DIAGNOSIS)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/eval-design\.json$|CHANGELOG\.md$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
     const consumer = join(scratch, manager); mkdirSync(consumer);
@@ -38,7 +38,9 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
     writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm } from 'pm-rlm';
-const result = await runRlm('Packed tree fixture', { workspace: process.env.PM_PATH!, author: 'rlm-consumer', model: { name: 'packed-test-only', complete: async () => ({ text: '{"action":"finish","answer":"packed result"}', tokens_in: 20, tokens_out: 10 }) } });
+import assert from 'node:assert/strict';
+let step = 0;
+const result = await runRlm('Packed tree fixture', { workspace: process.env.PM_PATH!, author: 'rlm-consumer', model: { name: 'packed-test-only', complete: async request => { if (step++ === 0) return { text: '{"action":"count","filter":{}}', tokens_in: 20, tokens_out: 10 }; assert.ok(request.prompt.includes('"data":0')); return { text: 'Answer: {"action":"finish","answer":"packed result"}', tokens_in: 20, tokens_out: 10 }; } } });
 console.log(JSON.stringify(result));
 `);
     const run = JSON.parse(execute(consumer, ['create-run.ts'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as { run: string; answer: string };
@@ -48,7 +50,7 @@ console.log(JSON.stringify(result));
     assert.equal(tree.run, run.run); assert.equal(tree.calls.length, 1);
     assert.equal(tree.calls[0].id, run.run); assert.equal(tree.calls[0].depth, 0);
     assert.equal(tree.calls[0].status, 'closed'); assert.equal(tree.calls[0].result, 'packed result');
-    assert.equal(tree.calls[0].reserved_tokens, 30); assert.equal(tree.calls[0].used_tokens, 30);
+    assert.equal(tree.calls[0].reserved_tokens, 60); assert.equal(tree.calls[0].used_tokens, 60);
     assert.match(tree.calls[0].parent, /^rlm-consumer-/);
 
 });

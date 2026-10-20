@@ -48,6 +48,8 @@ export interface ModelRequest {
   prompt: string;
   max_output_tokens: number;
   context_tokens: number;
+  response_kind?: 'action' | 'answer';
+  parser_version?: 1 | 2 | 3;
 }
 /** Model response counters use provider reports when available and conservative estimates otherwise. */
 export interface ModelResponse {
@@ -60,8 +62,17 @@ export interface RlmModel {
   name: string;
   complete(request: ModelRequest): Promise<ModelResponse>;
 }
+/** Scalar grouping values; absent values are represented as null. */
+export type RlmScalar = string | number | boolean | null;
+/** Deterministic aggregate requests; expression syntax is validated without executing code. */
+export type RlmAggregate =
+  | { action: 'count'; filter: RlmFilter }
+  | { action: 'sum'; filter: RlmFilter; field_expr: string }
+  | { action: 'distinct' | 'group_count'; filter: RlmFilter; field: string }
+  | { action: 'argmax' | 'argmin'; filter: RlmFilter; numeric_expr: string };
 /** Supported bounded JSON actions. */
 export type RlmAction =
+  | RlmAggregate
   | { action: 'list'; filter: RlmFilter }
   | { action: 'search'; query: string; limit: number }
   | { action: 'get'; id: string; fields: string[] }
@@ -88,11 +99,16 @@ export interface RlmCall {
   digest: string;
   steps: RlmStep[];
   result?: string;
-  failure?: { code: RlmErrorCode };
+  failure?: { code: RlmErrorCode; reason?: string };
+  /** Typed completion-hook refusal after a durable result; later result reuse does not repeat the hook. */
+  completion_refusal?: { code: RlmErrorCode; reason: string };
 }
 /** Durable run checkpoint stored through the SDK in the root call's registered field. */
 export interface RlmState {
   version: 1;
+  /** Missing/v1 keeps JSON-key ordering; v2 uses scalar type then value ordering. */
+  aggregate_version?: 1 | 2;
+  parser_version?: 1 | 2 | 3;
   run: string;
   question: string;
   settings: RlmSettings;

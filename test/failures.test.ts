@@ -50,7 +50,7 @@ test('history transport failure and unfinished tree state retain their real SDK 
   const model = new ScriptedModel((_request, index) => JSON.stringify(index === 0 ? { action: 'history', id: item.id, start: 0, end: 1 } : { action: 'finish', answer: 'recovered' }));
   const result = await runRlm('history failure', { workspace, model });
   assert.equal(result.answer, 'recovered');
-  assert.deepEqual((await new RlmLedger(workspace).load(result.run)).calls[0].steps[0].observation, { refused: 'incomplete' });
+  assert.partialDeepStrictEqual((await new RlmLedger(workspace).load(result.run)).calls[0].steps[0].observation, { refused: 'incomplete' });
   const roots = (await client.listAllComplete()).items.filter(item => typeof item.rlm_state === 'string');
   const tree = await treeRlm(workspace, roots[0].id) as { calls: { status: string; result: string }[] };
   assert.equal(tree.calls[0].status, 'closed'); assert.equal(tree.calls[0].result, 'recovered');

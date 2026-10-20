@@ -13,9 +13,10 @@ import { HttpModel } from '../src/adapters.ts';
 import { runRlm } from '../src/engine.ts';
 import { readCorpus } from '../src/environment.ts';
 import { RlmError } from '../src/errors.ts';
+import { extractObject } from '../src/protocol.ts';
 import { RlmLedger } from '../src/ledger.ts';
 import { readRlmSettings } from '../src/settings.ts';
-import type { RlmItem, RlmSettings } from '../src/types.ts';
+import type { RlmItem, RlmSettings, RlmModel, RlmFilter } from '../src/types.ts';
 
 export { questions } from './eval-questions.ts';
 import { questions, EVAL_SEED } from './eval-questions.ts';
@@ -31,7 +32,7 @@ export function stuffing(question: string, items: RlmItem[], config: RlmSettings
 }
 /** Score the same explicit JSON answer envelope for both numeric and id answers. */
 export function stuffingAnswer(output: string): string {
-  try { const parsed = JSON.parse(output) as { answer?: unknown }; return typeof parsed?.answer === 'string' ? parsed.answer : ''; }
+  try { const parsed = JSON.parse(extractObject(output)) as { answer?: unknown }; return typeof parsed?.answer === 'string' ? parsed.answer : ''; }
   catch { return ''; }
 }
 /** Pin the evaluation to local Ollama, overriding every copied transport setting. */
@@ -41,13 +42,17 @@ export async function liveSettings(workspace: string): Promise<RlmSettings> {
   if (!['http:', 'https:'].includes(url.protocol) || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || url.username || url.password || url.search || url.hash || url.pathname !== '/') throw new RlmError('invalid', 'Live evaluation requires a loopback Ollama endpoint');
   return readRlmSettings(workspace, { model: process.env.PM_RLM_LIVE_MODEL ?? 'gemma4-local:e2b-q3km', adapter: 'ollama', endpoint, key_env: 'PM_RLM_LIVE_UNUSED_KEY', context_tokens: 131072, output_tokens: 512, budget_tokens: 300000, max_depth: 2, max_calls: 8, timeout_ms: 60000 });
 }
+/** Resolve sibling public sources with URL decoding, including escaped checkout names. */
+export function publicSource(repo: string, base = import.meta.url): string {
+  return fileURLToPath(new URL(`../../../fleet/${repo}/`, base));
+}
 /** Copy only committed tracker data from a revision independently verified as public. */
 export async function copyPublicTracker(repo: string, base: string): Promise<{ workspace: string; revision: string }> {
   const visibility = JSON.parse(execFileSync('gh', ['repo', 'view', `unbraind/${repo}`, '--json', 'visibility'], { encoding: 'utf8' })) as { visibility: string };
   if (visibility.visibility !== 'PUBLIC') throw new RlmError('invalid', 'Eval source must be verified public');
   const revision = execFileSync('gh', ['api', `repos/unbraind/${repo}/commits/HEAD`, '--jq', '.sha'], { encoding: 'utf8' }).trim();
   if (!/^[a-f0-9]{40}$/.test(revision)) throw new RlmError('invalid', 'Public revision is invalid');
-  const source = fileURLToPath(new URL(`../../../fleet/${repo}/`, import.meta.url));
+  const source = publicSource(repo);
   return copyVerifiedRevision(source, revision, base);
 }
 /** Archive the verified revision without incorporating local, untracked or symlinked records. */
@@ -91,6 +96,28 @@ export async function rootIds(workspace: string): Promise<string[]> {
 export function newRoot(before: string[], after: string[]): string | undefined { return after.find(id => !before.includes(id)); }
 /** Retain response digests instead of model text in publishable measurement artifacts. */
 function digest(value: string): string { return createHash('sha256').update(value).digest('hex'); }
+/** Measure one stuffing request, retaining model failures in the denominator. */
+export async function measureStuffing(question: string, items: RlmItem[], config: RlmSettings, model: RlmModel, expected: string) {
+  const start = performance.now();
+  let baseline = { text: '', tokens_in: 0, tokens_out: 0 };
+  let error = '';
+  try { baseline = await model.complete({ prompt: stuffing(question, items, config), response_kind: 'answer', max_output_tokens: config.output_tokens, context_tokens: config.context_tokens }); }
+  catch { error = 'model'; }
+  return { correct: stuffingAnswer(baseline.text).trim() === expected, answer_sha256: digest(baseline.text), tokens: baseline.tokens_in + baseline.tokens_out, calls: 1, ms: Math.round(performance.now() - start), error };
+}
+/** Attribute one run, including a checkpoint created before an eventual failure. */
+export async function attemptRun(question: string, workspace: string, model: RlmModel, scope: RlmFilter, settings: RlmSettings) {
+  const before = await rootIds(workspace);
+  let answer = ''; let error = ''; let runId = '';
+  try {
+    const result = await runRlm(question, { workspace, model, scope, settings, author: 'rlm-eval' });
+    runId = result.run; answer = result.answer;
+  } catch (failure) {
+    error = failure instanceof RlmError ? failure.code : 'sdk';
+    runId = newRoot(before, await rootIds(workspace)) ?? '';
+  }
+  return { answer, error, runId };
+}
 /** Run both measured arms sequentially and retain only public aggregate results. */
 export async function liveEval(): Promise<void> {
   const root = await mkdtemp(join(tmpdir(), 'rlm-public-eval-'));
@@ -102,24 +129,12 @@ export async function liveEval(): Promise<void> {
       const config = await liveSettings(workspace);
       const model = new HttpModel(config);
       for (const [index, task] of questions(corpus.items).entries()) {
-        let start = performance.now();
-        let baseline = { text: '', tokens_in: 0, tokens_out: 0 };
-        let baselineError = '';
-        try { baseline = await model.complete({ prompt: stuffing(task.question, corpus.items, config), max_output_tokens: config.output_tokens, context_tokens: config.context_tokens }); }
-        catch { baselineError = 'model'; }
-        const stuffingMs = Math.round(performance.now() - start);
-        start = performance.now();
-        const before = await rootIds(workspace);
-        let answer = ''; let error = ''; let calls = 0; let tokens = 0; let reserved = 0; let runId = ''; let modelCalls = 0;
+        const baseline = await measureStuffing(task.question, corpus.items, config, model, task.answer);
+        const start = performance.now();
+        const { answer, error, runId } = await attemptRun(task.question, workspace, model, task.scope, config);
+        let calls = 0; let tokens = 0; let reserved = 0; let modelCalls = 0;
         let pending = 0; let readTokens = 0;
         const refusals: Record<string, number> = {};
-        try {
-          const result = await runRlm(task.question, { workspace, model, scope: task.scope, settings: config, author: 'rlm-eval' });
-          runId = result.run; answer = result.answer;
-        } catch (failure) {
-          error = failure instanceof RlmError ? failure.code : 'sdk';
-          runId = newRoot(before, await rootIds(workspace)) ?? '';
-        }
         if (runId !== '') {
           const state = await new RlmLedger(workspace).load(runId);
           calls = state.calls.length; reserved = state.reserved_tokens;
@@ -132,7 +147,7 @@ export async function liveEval(): Promise<void> {
             if (typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation && typeof step.observation.refused === 'string') refusals[step.observation.refused] = (refusals[step.observation.refused] ?? 0) + 1;
           }
         }
-        const row = { repo, revision, index, question: task.question, expected: task.answer, corpus_items: corpus.items.length, corpus_bytes: Buffer.byteLength(JSON.stringify(corpus.items)), rlm: { correct: answer.trim() === task.answer, answer_sha256: digest(answer), reached_child: calls > 1, tokens, reserved, pending, read_tokens: readTokens, refusals, calls, model_calls: modelCalls, ms: Math.round(performance.now() - start), error }, stuffing: { correct: stuffingAnswer(baseline.text).trim() === task.answer, answer_sha256: digest(baseline.text), tokens: baseline.tokens_in + baseline.tokens_out, calls: 1, ms: stuffingMs, error: baselineError } };
+        const row = { repo, revision, index, question: task.question, expected: task.answer, corpus_items: corpus.items.length, corpus_bytes: Buffer.byteLength(JSON.stringify(corpus.items)), rlm: { correct: answer.trim() === task.answer, answer_sha256: digest(answer), reached_child: calls > 1, tokens, reserved, pending, read_tokens: readTokens, refusals, calls, model_calls: modelCalls, ms: Math.round(performance.now() - start), error }, stuffing: baseline };
         rows.push(row);
         await writeFile('eval-results.local.json', JSON.stringify({ design: EVAL_SEED, model: modelName, measured_at_utc: new Date().toISOString(), context_tokens: config.context_tokens, output_tokens: config.output_tokens, budget_tokens: config.budget_tokens, max_depth: config.max_depth, max_calls: config.max_calls, temperature: 0, metric_provenance: METRIC_PROVENANCE, rows }, null, 2) + '\n');
         console.log(JSON.stringify({ metric_provenance: METRIC_PROVENANCE, ...row }));
