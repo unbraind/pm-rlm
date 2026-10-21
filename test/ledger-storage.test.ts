@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { createExtensionCommandSdk } from '@unbrained/pm-cli/sdk';
 import { blobDigest, RlmBlobs } from '../src/blobs.ts';
@@ -147,7 +147,7 @@ test('GC empty store and unreadable blob directory are handled explicitly', asyn
 /** Child runs with no git executable and a discovery ceiling, using only the real SDK. */
 test('storage run resume replay and GC work in a non-git tracker with no git on PATH', async t => {
   const { workspace, root } = await tracker(t);
-  const child = fork(join(import.meta.dirname, 'ledger-storage-worker.ts'), [workspace, 'no-git'], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: { ...testEnvironment(process.env), PATH: root, GIT_CEILING_DIRECTORIES: root } });
+  const child = fork(join(import.meta.dirname, 'ledger-storage-worker.ts'), [workspace, 'no-git'], { cwd: root, stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: { ...testEnvironment(process.env), PATH: root, GIT_CEILING_DIRECTORIES: dirname(root) } });
   t.after(() => child.kill('SIGKILL'));
   const exited = once(child, 'exit');
   const [reply] = await Promise.race([once(child, 'message'), exited.then(() => [null])]);

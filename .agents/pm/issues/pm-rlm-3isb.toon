@@ -6,17 +6,18 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:54:28.820Z"
-updated_at: "2026-10-21T16:05:23.149Z"
+updated_at: "2026-10-21T16:14:33.674Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 estimated_minutes: 180
 acceptance_criteria: Measure storage and scan amplification on a public synthetic corpus; preserve byte-identical replay and all crash/reservation proofs; document scale limits independently of correctness gates.
 parent: pm-rlm-a1ih
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-21T15:42:51.467Z",codex-agent,"Plan: versioned content-addressed snapshot and transcript payloads with digest verification; retain one atomic root reservation coordinate and transparent legacy reads. Serialize publication and reachability GC under one tracker lock. Verify non-git recovery, corruption refusals, behavioral reverts, SIGKILL publication windows, and public-corpus storage/read measurements at 10/100/500 runs. Preserve pinned SDK and unchanged release thresholds."
   "2026-10-21T15:52:55.894Z",codex-agent,"Implemented v2 digest manifests and immutable per-payload storage, preserving the public hydrated state and atomic reservation total. GC marks current and verified historical references before sweeping; legacy reads remain observational and save migrates lazily. Existing recovery/settlement suite: 10/10 passed. Added non-git execution with no Git executable, corruption checks, and SIGKILL at actual blob/root temporary-file creation. The pinned SDK retains a killed item writer TTL lock until expiry; the root drill waits without forcing it. Scale measurement uses the original public eval revisions and captured real engine checkpoints, with native SDK serialization/history and certified complete reads; it isolates storage format from inference throughput."
   "2026-10-21T16:05:23.141Z",codex-agent,"Focused storage suite passed 9/9 through the linked pm test runner, including real SIGKILL during blob and root temporary-file writes, successful resume/replay, and no-git PATH execution. Four behavioral reverts each produced an assertion failure: original inline publication, disabled digest validation, disabled orphan removal, and non-git inline publication. Exact source bytes were restored in the isolated proof copy. Correction to the earlier lock note: native SDK item locks follow configured TTL/stale-lock policy, not a fixed minute; crash fixtures use one-second TTL with automatic stale recovery. Production recovery follows tracker policy. Public scale measurement and final unchanged release gates remain in progress."
+  "2026-10-21T16:14:33.659Z",codex-agent,"Benchmark refinement: retain every native SDK checkpoint history transition and materialize final item rows once, since final disk state and certified read latency are measured, not write throughput. Advance complete-corpus certificate counts, embedded prompt receipts, reservation totals and input usage as roots accumulate, preventing artificial cross-run prompt deduplication. The no-git worker now also runs inside the plain tracker with the Git discovery ceiling at its temporary parent, alongside a PATH without Git."
 files[7]{path,scope}:
   src/blobs.ts,project
   src/ledger.ts,project

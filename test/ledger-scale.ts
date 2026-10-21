@@ -42,9 +42,32 @@ async function latency(workspace: string, runs: number) {
   return { complete_read_ms: milliseconds.sort((a, b) => a - b)[1], samples_ms: milliseconds };
 }
 
+/** Advance complete-corpus receipts as roots accumulate, including exact changed prompt accounting. */
+function repeatedState(captured: RlmState, run: number): RlmState {
+  const state = structuredClone(captured);
+  state.run = `scale-run-${run}`;
+  state.certificate.item_count += run;
+  state.certificate.unique_item_id_count += run;
+  for (const call of state.calls) {
+    call.id = state.run;
+    for (const step of call.steps) {
+      const previous = Buffer.byteLength(step.prompt);
+      for (const field of ['item_count', 'unique_item_id_count'] as const) {
+        step.prompt = step.prompt.replaceAll(`"${field}":${captured.certificate[field]},`, `"${field}":${state.certificate[field]},`);
+      }
+      const delta = Buffer.byteLength(step.prompt) - previous;
+      step.reserved += delta; state.reserved_tokens += delta;
+      if (step.response !== undefined) step.response.tokens_in += delta;
+      const observation = step.observation as { complete_list?: typeof state.certificate } | undefined;
+      if (observation?.complete_list !== undefined) observation.complete_list = structuredClone(state.certificate);
+    }
+  }
+  return state;
+}
+
 const scratch = await mkdtemp(join(tmpdir(), 'rlm-storage-scale-'));
 const design = JSON.parse(await readFile('docs/eval-design.json', 'utf8')) as { sources: { repo: string; revision: string }[] };
-const report = { methodology: 'Storage-format microbenchmark: captured real two-step aggregate/finish engine checkpoints, repeated with distinct run ids through native SDK TOON serialization and sealed history diffs. Both arms use identical checkpoint transitions. Each source uses its existing eval-design revision in independent plain-directory trackers. No inference, full-engine throughput, provider quality, cold-cache latency or power-loss durability claim. Logical/allocated file bytes include the entire tracker. Complete reads are SDK-certified full-item reads; median of three warm samples after one warm-up.', sources: [] as { repo: string; revision: string; checkpoints_per_run: number; source_bytes: number; measurements: Record<string, unknown>[] }[] };
+const report = { methodology: 'Storage-format microbenchmark: captured real two-step aggregate/finish engine checkpoints, repeated with distinct run ids through native SDK TOON serialization and sealed history diffs. Corpus receipt counts and embedded prompts advance with accumulated roots, including exact prompt-byte accounting. Both arms retain identical checkpoint transitions in history and materialize each final item once; intermediate item flushes and write throughput are excluded. Each source uses its existing eval-design revision in independent plain-directory trackers. No inference, full-engine throughput, provider quality, cold-cache latency or power-loss durability claim. Logical/allocated file bytes include the entire tracker. Complete reads are SDK-certified full-item reads; median of three warm samples after one warm-up.', sources: [] as { repo: string; revision: string; checkpoints_per_run: number; source_bytes: number; measurements: Record<string, unknown>[] }[] };
 try {
   for (const source of design.sources) {
     const visibility = JSON.parse(execFileSync('gh', ['repo', 'view', `unbraind/${source.repo}`, '--json', 'visibility'], { encoding: 'utf8' })) as { visibility: string };
@@ -73,14 +96,14 @@ try {
         let before = emptyImportedDocument();
         const history = [];
         for (const [index, captured] of captures.entries()) {
-          const state = { ...captured, run: id, calls: captured.calls.map(call => ({ ...call, id })) };
+          const state = repeatedState(captured, run);
           const checkpoint = format === 'before' ? JSON.stringify(state) : await blobs.encode(state);
           const after = { ...template, metadata: { ...template.metadata, id, rlm_run: id, rlm_state: checkpoint } };
           history.push(createHistoryEntry({ nowIso: new Date(1800000000000 + run * 100 + index).toISOString(), author: 'scale-fixture', op: index === 0 ? 'create' : 'update', before, after, message: 'Checkpoint recursive run' }));
-          // Exercise the same atomic item serialization at every checkpoint in both arms.
-          await writeFileAtomic(join(workspace, 'tasks', `${id}.toon`), serializeItemDocument(after));
           before = after;
         }
+        // Only final items contribute to disk/read measurements; retain every native history transition.
+        await writeFileAtomic(join(workspace, 'tasks', `${id}.toon`), serializeItemDocument(before));
         await writeFile(join(workspace, 'history', `${id}.jsonl`), history.map(entry => JSON.stringify(entry) + '\n').join(''));
         if ([10, 100, 500].includes(run)) {
           const measured = { format, runs: run, ...await sizes(workspace), ...await latency(workspace, run) };
