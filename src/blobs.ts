@@ -65,7 +65,8 @@ export class RlmBlobs {
   /** Hydrate v2 references, or pass v1 JSON through unchanged for the existing checkpoint validator. */
   async decode(raw: string): Promise<Record<string, unknown>> {
     const manifest = record(JSON.parse(raw));
-    if (manifest.version !== 2) return manifest;
+    if (manifest.version === 1) return manifest;
+    if (manifest.version !== 2) throw new RlmError('incomplete', 'Unsupported ledger storage version');
     const transcript = record(await this.get(manifest.transcript));
     if (transcript.version !== 1 || transcript.run !== manifest.run || !Array.isArray(transcript.calls)) throw new RlmError('incomplete', 'Invalid ledger transcript');
     const calls = [];

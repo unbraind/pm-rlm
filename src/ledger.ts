@@ -67,10 +67,8 @@ export class RlmLedger {
   }
   /** Read a certified full corpus to recover the root checkpoint without compact projections. */
   async load(run: string): Promise<RlmState> {
-    return this.storage(async blobs => this.loadCheckpoint(run, blobs));
-  }
-  /** Hold the shared publication/GC lock while resolving a certified root. */
-  private async loadCheckpoint(run: string, blobs: RlmBlobs): Promise<RlmState> {
+    // Historical manifests pin every committed version, including one read before a concurrent save.
+    const blobs = new RlmBlobs(this.workspace);
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
     const root = corpus.items.find(item => item.id === run);
     if (root === undefined || typeof root.rlm_state !== 'string') throw new RlmError('invalid', 'Run checkpoint was not found');
@@ -149,7 +147,7 @@ export class RlmLedger {
     }
     await this.client.release(call.id);
   }
-  /** Serialize blob reads, publication and collection across all runs in this non-git tracker. */
+  /** Serialize publication and collection across all runs in this non-git tracker. */
   private async storage<T>(operation: (blobs: RlmBlobs) => Promise<T>): Promise<T> {
     const deadline = Date.now() + 60000;
     for (;;) {

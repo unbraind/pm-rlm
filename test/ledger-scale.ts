@@ -1,6 +1,6 @@
 /** Offline storage-format benchmark on the exact public evaluation revisions; no model endpoint. */
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { cp, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -28,18 +28,31 @@ async function sizes(workspace: string) {
   return { bytes, allocated_bytes, history_bytes, blob_bytes };
 }
 
-/** Median warm certified complete-list latency, verifying full ledger row counts every time. */
+/** Certified complete-list latency with bounded sampling, verifying full ledger row counts every time. */
 async function latency(workspace: string, runs: number) {
   const client = new PmClient({ pmRoot: workspace, noExtensions: true });
   const milliseconds = [];
-  for (let index = 0; index < 4; index++) {
+  for (let index = 0; index < (runs === 500 ? 1 : 4); index++) {
     const start = performance.now();
     const result = certifyCompleteListResult(await client.listAllComplete({ includeBody: true }));
     const elapsed = performance.now() - start;
     assert.equal(result.items.filter(item => typeof item.rlm_state === 'string').length, runs);
-    if (index > 0) milliseconds.push(elapsed);
+    if (index > 0 || runs === 500) milliseconds.push(elapsed);
   }
-  return { complete_read_ms: milliseconds.sort((a, b) => a - b)[1], samples_ms: milliseconds };
+  return { complete_read_ms: milliseconds.sort((a, b) => a - b)[Math.floor(milliseconds.length / 2)], samples_ms: milliseconds, latency_method: runs === 500 ? 'single_fresh_process_read' : 'median_three_warm_reads' };
+}
+
+/** Bound each milestone's read process identically, retaining explicit failed-read evidence. */
+function measureRead(workspace: string, runs: number): Record<string, unknown> {
+  const start = performance.now();
+  const child = spawnSync(process.execPath, ['--max-old-space-size=4096', process.argv[1], '--read', workspace, String(runs)], { encoding: 'utf8', timeout: 300000, maxBuffer: 1024 * 1024 });
+  if (child.status === 0) return JSON.parse(child.stdout) as Record<string, unknown>;
+  return { complete_read_ms: null, samples_ms: [], read_failed: true, exit_code: child.status, signal: child.signal, timed_out: child.error?.message.includes('ETIMEDOUT') === true, attempt_ms: performance.now() - start };
+}
+
+if (process.argv[2] === '--read') {
+  console.log(JSON.stringify(await latency(process.argv[3], Number(process.argv[4]))));
+  process.exit(0);
 }
 
 /** Advance complete-corpus receipts as roots accumulate, including exact changed prompt accounting. */
@@ -67,7 +80,7 @@ function repeatedState(captured: RlmState, run: number): RlmState {
 
 const scratch = await mkdtemp(join(tmpdir(), 'rlm-storage-scale-'));
 const design = JSON.parse(await readFile('docs/eval-design.json', 'utf8')) as { sources: { repo: string; revision: string }[] };
-const report = { methodology: 'Storage-format microbenchmark: captured real two-step aggregate/finish engine checkpoints, repeated with distinct run ids through native SDK TOON serialization and sealed history diffs. Corpus receipt counts and embedded prompts advance with accumulated roots, including exact prompt-byte accounting. Both arms retain identical checkpoint transitions in history and materialize each final item once; intermediate item flushes and write throughput are excluded. Each source uses its existing eval-design revision in independent plain-directory trackers. No inference, full-engine throughput, provider quality, cold-cache latency or power-loss durability claim. Logical/allocated file bytes include the entire tracker. Complete reads are SDK-certified full-item reads; median of three warm samples after one warm-up.', sources: [] as { repo: string; revision: string; checkpoints_per_run: number; source_bytes: number; measurements: Record<string, unknown>[] }[] };
+const report = { methodology: 'Storage-format microbenchmark: captured real two-step aggregate/finish engine checkpoints, repeated with distinct run ids through native SDK TOON serialization and sealed history diffs. Corpus receipt counts and embedded prompts advance with accumulated roots, including exact prompt-byte accounting. Both arms retain identical checkpoint transitions in history and materialize each final item once; intermediate item flushes and write throughput are excluded. Each source uses its existing eval-design revision in independent plain-directory trackers. No inference, full-engine throughput, provider quality, cold-cache latency or power-loss durability claim. Logical/allocated file bytes include the entire tracker. Timed reads use a separate process per milestone with a 4096 MiB old-space limit and 300000 ms timeout; failures retain null latency and explicit exit/signal/timing evidence. Complete reads are SDK-certified full-item reads; at 10/100 runs, median of three warm samples after one warm-up; at 500 runs, one fresh-process read to keep the same bounded read attempt feasible for both formats.', sources: [] as { repo: string; revision: string; checkpoints_per_run: number; source_bytes: number; measurements: Record<string, unknown>[] }[] };
 try {
   for (const source of design.sources) {
     const visibility = JSON.parse(execFileSync('gh', ['repo', 'view', `unbraind/${source.repo}`, '--json', 'visibility'], { encoding: 'utf8' })) as { visibility: string };
@@ -106,7 +119,7 @@ try {
         await writeFileAtomic(join(workspace, 'tasks', `${id}.toon`), serializeItemDocument(before));
         await writeFile(join(workspace, 'history', `${id}.jsonl`), history.map(entry => JSON.stringify(entry) + '\n').join(''));
         if ([10, 100, 500].includes(run)) {
-          const measured = { format, runs: run, ...await sizes(workspace), ...await latency(workspace, run) };
+          const measured = { format, runs: run, ...await sizes(workspace), ...measureRead(workspace, run) };
           result.measurements.push(measured);
           console.log(JSON.stringify({ repo: source.repo, ...measured }));
         }

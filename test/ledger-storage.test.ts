@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
+import { watch } from 'node:fs';
 import { mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
@@ -175,8 +176,8 @@ for (const mode of ['blob', 'root']) test(`SIGKILL during ${mode} write leaves t
   await ledger.gc();
 });
 
-/** A live collector cannot race publication; waiting readers recover only after that owner releases. */
-test('storage lease serializes concurrent readers and bounds busy waits', async t => {
+/** A live collector cannot race publication; waiting collectors recover only after that owner releases. */
+test('storage lease serializes collectors and bounds busy waits', async t => {
   const { workspace } = await tracker(t);
   const ledger = new RlmLedger(workspace);
   const release = await ledger.lease('__blob_store');
@@ -191,4 +192,36 @@ test('storage lease serializes concurrent readers and bounds busy waits', async 
   t.mock.restoreAll(); await releaseAgain();
   await writeFile(join(workspace, 'runtime', 'rlm-__blob_store.json'), '{');
   await assert.rejects(ledger.gc(), { code: 'incomplete' });
+});
+
+/** Immutable historical reachability permits hydration without runtime lease-file writes. */
+test('load and replay preserve lease-free reads of new and legacy checkpoints', async t => {
+  const { workspace, ledger, result, client } = await fixture(t);
+  const state = await ledger.load(result.run);
+  for (const raw of [undefined, JSON.stringify(state)]) {
+    if (raw !== undefined) await client.run('update', { id: result.run, options: { rlmState: raw } });
+    const directory = join(workspace, 'runtime');
+    await mkdir(directory, { recursive: true });
+    const events: string[] = [];
+    const watcher = watch(directory, (_event, name) => { if (name?.includes('rlm-')) events.push(name); });
+    try {
+      await assert.doesNotReject(async () => {
+        assert.deepEqual(await ledger.load(result.run), state);
+        assert.equal((await replayRlm(workspace, result.run)).answer, '1');
+      });
+      await new Promise<void>(resolve => { setImmediate(resolve); });
+      assert.deepEqual(events, []);
+    } finally { watcher.close(); }
+  }
+});
+
+/** Unknown schemas may carry unrecognized references, so GC must preserve all data and refuse. */
+test('GC refuses unknown storage versions before removing future payloads', async t => {
+  const { workspace, client } = await tracker(t);
+  const ledger = new RlmLedger(workspace);
+  await ledger.registerFields();
+  const reference = await new RlmBlobs(workspace).put('future payload');
+  await client.run('create', { options: { id: 'future-run', title: 'Future storage fixture', rlmState: JSON.stringify({ version: 3, payload: reference }) } });
+  await assert.rejects(ledger.gc(), { code: 'incomplete' });
+  assert.equal(await readFile(join(workspace, 'rlm-blobs', `${reference}.json`), 'utf8'), JSON.stringify('future payload'));
 });
