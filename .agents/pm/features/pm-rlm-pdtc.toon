@@ -6,16 +6,17 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-21T21:11:52.137Z"
-updated_at: "2026-10-21T21:23:12.641Z"
+updated_at: "2026-10-21T21:26:14.433Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 parent: pm-rlm-a1ih
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-21T21:12:22.094Z",codex-agent,"Overlap checked against the pinned CLI SDK query/aggregate contract, pm-context context-pack/context-handoff and receipt APIs, and pm-rlm aggregate/replay code. Core owns arithmetic, pm-context assembles context bundles and usage receipts, and existing RLM replay certifies execution. None requires evidence coverage per declared question component. Plan: opt-in immutable component declarations, bounded source-witness observations, component-only final answers with supported/unsupported/unknown statuses, deterministic replay and read-only coverage CLI. Builds on PR #13; merge after it. Run targeted local tests/typecheck/lint and use unchanged CI npm/Bun release gates for full evidence."
   "2026-10-21T21:19:34.179Z",codex-agent,"Implemented opt-in component contracts and bounded source-witness/answer actions, typed evidence refusals with remedies, deterministic read-only evidence inspection, and a separate read-only source tracker SDK option. First 8 focused regressions passed. Public acceptance used verified public pm-lint revision f2c20efa78139f4071f3dd08d317bea05337fe28: 12 real items, 54941 JSON bytes, 30 read-only source files unchanged; 5 components (3 supported, 1 unsupported, 1 unknown), 3 witnesses of 64/42/89 bytes, 1172-byte JSON report, 4 protocol-fixture steps, zero external inference calls and zero validation model calls. Digest tampering and omitted observation both refused. No provider quality claim."
   "2026-10-21T21:23:12.641Z",codex-agent,"Local focused validation: pm test --run --progress executed node --test --test-concurrency=1 test/evidence.test.ts test/core.test.ts test/commands.test.ts with 20/20 passing. Real HTTP command acceptance counted exactly 2 visible provider-fixture requests through run, evidence, replay and completed resume. Behavioral revert proof: node test/evidence-revert.ts passed 3/3; disabling witness admission, trusting persisted witnesses without rehashing, or dropping component completeness each caused the targeted regression to fail by assertion. Authored bytes restored exactly. Typecheck, lint, build, docstring and zero-duplication checks passed; full npm/Bun release checks remain delegated to CI because the shared CPU is saturated."
-files[11]{path,scope}:
+  "2026-10-21T21:26:14.433Z",codex-agent,"CI first pass exercised 186 tests: 185 passed, with the sole failure in the shallow-clone proof inventory because the new evidence proof adds an eighth script to a fixed seven-script assertion. Updated the inventory to eight. CI reported 100/100/100/100 source coverage, but that failed run is not accepted as a release gate. Also hardened resume so completed evidence checkpoints with no final component-answer step or an omitted unused witness are refused; the updated 13-test evidence suite passes, including legitimate pending-response recovery."
+files[12]{path,scope}:
   index.ts,project
   src/action-schema.ts,project
   src/commands.ts,project
@@ -27,6 +28,7 @@ files[11]{path,scope}:
   test/evidence-public.ts,project
   test/evidence-revert.ts,project
   test/evidence.test.ts,project
+  test/revert-shallow.test.ts,project
 tests[3]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=1 test/evidence.test.ts test/core.test.ts test/commands.test.ts,project,300,codex-agent,"2026-10-21T21:21:10.395Z",local_mutation,feat/answer-evidence-coverage
   node test/evidence-revert.ts,project,300,codex-agent,"2026-10-21T21:23:10.322Z",local_mutation,feat/answer-evidence-coverage

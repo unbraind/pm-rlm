@@ -107,6 +107,7 @@ test('replay verifies every witness digest including uncited source witnesses', 
     (copy: RlmState) => { copy.calls[0].steps[0].observation = null; },
     (copy: RlmState) => { copy.calls[0].steps[0].observation = 'invalid'; },
     (copy: RlmState) => { copy.calls[0].steps[1].observation = {}; },
+    (copy: RlmState) => { copy.calls[0].steps = []; },
     (copy: RlmState) => { copy.calls[0].steps[1].response!.text = JSON.stringify({ action: 'answer', components: [] }); },
     (copy: RlmState) => { copy.calls[0].result = 'unchecked prose'; },
   ]) {
@@ -121,6 +122,9 @@ test('replay verifies every witness digest including uncited source witnesses', 
   (uncited.calls[0].steps[0].observation as { data: { text: string } }).data.text = 'changed';
   await ledger.save(uncited);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
+  delete uncited.calls[0].steps[0].observation;
+  await ledger.save(uncited);
+  await assert.rejects(resumeRlm(workspace, run.run, new ScriptedModel(() => { throw new Error('Must not infer'); })), { code: 'replay' });
 });
 
 test('coverage bounds refuse malformed declarations and source ranges with remedies', () => {

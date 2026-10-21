@@ -175,6 +175,7 @@ export class RlmEngine {
     const visit = async (call: RlmCall): Promise<void> => {
       if (visited.has(call.id)) return;
       visited.add(call.id);
+      let completed = false;
       for (const [index, step] of call.steps.entries()) {
         state.reserved_tokens += step.response !== undefined && step.settled !== true
           ? step.response.tokens_in + step.response.tokens_out
@@ -190,9 +191,10 @@ export class RlmEngine {
           try { answer = completion(state, call, action, index); } catch (error) { refusal = error as RlmError; }
           const recorded = step.observation as { refused?: string; reason?: string } | undefined;
           if (refusal !== undefined ? recorded?.refused !== refusal.code || recorded.reason !== refusal.message : recorded !== undefined || call.result !== answer) throw new RlmError('replay', 'Recorded component completion differs');
+          if (refusal === undefined) completed = true;
           continue;
         }
-        if (action.action === 'witness' && step.observation !== undefined && !(typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation)) {
+        if (action.action === 'witness' && (step.observation !== undefined || call.result !== undefined) && !(typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation)) {
           if (JSON.stringify(witnessRead(state, call, action)) !== JSON.stringify(step.observation)) throw new RlmError('replay', 'Recorded source witness differs');
         }
         const prefix = { ...call, steps: call.steps.slice(0, index + 1) };
@@ -231,6 +233,7 @@ export class RlmEngine {
           state.reserved_tokens += observation.estimated_tokens;
         }
       }
+      if (state.components !== undefined && call.result !== undefined && !completed) throw new RlmError('replay', 'Completed evidence call has no verified component answer');
     };
     await visit(state.calls[0]);
   }
