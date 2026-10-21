@@ -161,18 +161,48 @@ test('storage run resume replay and GC work in a non-git tracker with no git on 
   assert.equal(code, 0); assert.deepEqual(reply, { answer: 'without git' });
 });
 
-/** Stop inside real atomic temporary-file creation, then kill the writer before it can publish. */
+/** Confirm Linux has stopped the writer before inspecting its actual pending atomic write. */
+async function waitForStoppedWriter(pid: number): Promise<void> {
+  for (let attempt = 0; attempt < 200; attempt++) {
+    if (/^State:\s+T/m.test(await readFile(join('/proc', String(pid), 'status'), 'utf8'))) return;
+    await new Promise(resolve => { setTimeout(resolve, 5); });
+  }
+  assert.fail('Writer did not enter the stopped state');
+}
+
+/** Kill only a confirmed partial native write; queued events after publication are not crash evidence. */
 for (const mode of ['blob', 'root']) test(`SIGKILL during ${mode} write leaves the previous budget and transcript intact`, async t => {
   const { workspace, client, ledger, result, model } = await fixture(t);
   const sdk = createExtensionCommandSdk(workspace, client, 'storage-crash-fixture');
   await sdk.mutateWorkspaceSettings({ operationId: 'crash-fixture-lock-policy', mutate: current => ({ ...current, locks: { ...current.locks, ttl_seconds: 1 }, governance: { ...current.governance, force_required_for_stale_lock: false } }) });
   const before = await ledger.load(result.run);
-  const child = fork(join(import.meta.dirname, 'ledger-storage-worker.ts'), [workspace, mode, result.run], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: testEnvironment(process.env) });
-  t.after(() => child.kill('SIGKILL'));
-  const [message] = await once(child, 'message') as [{ temporary: string }];
-  assert.match(message.temporary, /\.tmp$/);
-  const exit = once(child, 'exit'); child.kill('SIGKILL');
-  assert.deepEqual(await exit, [null, 'SIGKILL']);
+  const writeBytes = 32 * 1024 * 1024;
+  // The digest manifest is deliberately tiny. Pad an unrelated item field to widen real root I/O.
+  if (mode === 'root') await client.run('update', { id: result.run, options: { description: 'x'.repeat(writeBytes) } });
+  const rootPath = join(workspace, 'tasks', `${result.run}.toon`);
+  let killed = false;
+  for (let attempt = 0; attempt < 8 && !killed; attempt++) {
+    await ledger.save(before);
+    const originalRow = await readFile(rootPath);
+    const child = fork(join(import.meta.dirname, 'ledger-storage-worker.ts'), [workspace, mode, result.run, String(attempt)], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: testEnvironment(process.env) });
+    t.after(() => child.kill('SIGKILL'));
+    const exit = once(child, 'exit');
+    const [message] = await Promise.race([once(child, 'message'), exit.then(() => [null])]) as [{ temporary?: string; missed?: boolean } | null];
+    if (message === null || message.missed === true) { assert.equal((await exit)[0], 0); continue; }
+    assert.ok(message.temporary); assert.match(message.temporary, /\.tmp$/);
+    await waitForStoppedWriter(child.pid!);
+    const temporary = await stat(join(workspace, mode === 'blob' ? 'rlm-blobs' : 'tasks', message.temporary)).catch((error: unknown) => {
+      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (temporary === null || temporary.size === 0 || temporary.size >= writeBytes) {
+      child.kill('SIGCONT'); assert.equal((await exit)[0], 0); continue;
+    }
+    assert.ok((await readFile(rootPath)).equals(originalRow), 'Root must remain unpublished while the actual temporary file is partial');
+    t.diagnostic(`${mode}: stopped writer with ${temporary.size} bytes of an incomplete write; root unchanged before SIGKILL`);
+    child.kill('SIGKILL'); assert.deepEqual(await exit, [null, 'SIGKILL']); killed = true;
+  }
+  assert.ok(killed, 'A real stopped partial write must be killed; missed windows cannot satisfy the drill');
   assert.deepEqual(await ledger.load(result.run), before);
   // The real SDK item lock uses the fixture's short TTL and automatic stale recovery policy.
   if (mode === 'root') await new Promise(resolve => { setTimeout(resolve, 1100); });

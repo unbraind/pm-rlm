@@ -99,3 +99,7 @@ jobs:
       - name: Bun release gates
         if: matrix.node-version == 26
         run: bun run release:check
+
+      - name: Full npm release gates on manual verification
+        if: github.event_name == 'workflow_dispatch' && matrix.node-version == 26
+        run: npm run release:check

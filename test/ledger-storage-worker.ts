@@ -1,11 +1,12 @@
-import { watch } from 'node:fs';
+import { statSync, watch } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { RlmLedger } from '../src/ledger.ts';
+import { blobDigest } from '../src/blobs.ts';
 import { runRlm, replayRlm, resumeRlm } from '../src/engine.ts';
 import { ScriptedModel } from './helpers.ts';
 
-const [workspace, mode, run] = process.argv.slice(2);
+const [workspace, mode, run, attempt = '0'] = process.argv.slice(2);
 const ledger = new RlmLedger(workspace);
 if (mode === 'no-git') {
   const model = new ScriptedModel(() => '{"action":"finish","answer":"without git"}');
@@ -17,17 +18,22 @@ if (mode === 'no-git') {
   process.send!({ answer: (await replayRlm(workspace, result.run)).answer });
 } else {
   const state = await ledger.load(run);
-  state.calls[0].steps.push({ prompt: 'x'.repeat(32 * 1024 * 1024), reserved: 17 });
+  const prompt = 'x'.repeat(32 * 1024 * 1024) + attempt;
+  state.calls[0].steps.push({ prompt, reserved: 17 });
   state.reserved_tokens += 17;
   const directory = join(workspace, mode === 'blob' ? 'rlm-blobs' : 'tasks');
   await mkdir(directory, { recursive: true });
+  const prefix = mode === 'blob' ? `.${blobDigest(JSON.stringify(prompt))}.json.` : `.${run}.toon.`;
+  let signaled = false;
   const watcher = watch(directory, (_event, name) => {
-    if (name?.endsWith('.tmp')) {
+    const temporary = !signaled && name?.startsWith(prefix) && name.endsWith('.tmp') ? statSync(join(directory, name), { throwIfNoEntry: false }) : undefined;
+    if (temporary !== undefined && temporary.size > 0 && temporary.size < 32 * 1024 * 1024) {
+      signaled = true;
       process.send!({ run, temporary: name });
       process.kill(process.pid, 'SIGSTOP');
     }
   });
   await ledger.save(state);
   watcher.close();
-  throw new Error('Crash window was not reached');
+  process.send!({ missed: true });
 }
