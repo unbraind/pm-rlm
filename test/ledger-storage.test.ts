@@ -171,7 +171,7 @@ async function waitForStoppedWriter(pid: number): Promise<void> {
 }
 
 /** Kill only a confirmed partial native write; queued events after publication are not crash evidence. */
-for (const mode of ['blob', 'root']) test(`SIGKILL during ${mode} write leaves the previous budget and transcript intact`, async t => {
+for (const mode of ['blob', 'root']) test(`SIGKILL during ${mode} write leaves the previous budget and transcript intact`, { skip: process.platform !== 'linux' && 'requires /proc and SIGSTOP' }, async t => {
   const { workspace, client, ledger, result, model } = await fixture(t);
   const sdk = createExtensionCommandSdk(workspace, client, 'storage-crash-fixture');
   await sdk.mutateWorkspaceSettings({ operationId: 'crash-fixture-lock-policy', mutate: current => ({ ...current, locks: { ...current.locks, ttl_seconds: 1 }, governance: { ...current.governance, force_required_for_stale_lock: false } }) });

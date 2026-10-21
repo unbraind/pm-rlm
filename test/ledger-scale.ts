@@ -11,6 +11,7 @@ import { RlmLedger } from '../src/ledger.ts';
 import { runRlm } from '../src/engine.ts';
 import { copyVerifiedRevision, publicSource } from './live.ts';
 import { ScriptedModel } from './helpers.ts';
+import { verifyScaleCollection } from './ledger-scale-check.ts';
 import type { RlmState } from '../src/types.ts';
 
 /** Sum logical file lengths and allocated file blocks in this isolated tracker only. */
@@ -124,8 +125,8 @@ try {
           console.log(JSON.stringify({ repo: source.repo, ...measured }));
         }
       }
-      // Every historical reference remains readable after a full mark/sweep.
-      if (format === 'after') await new RlmLedger(workspace).gc();
+      // No orphan exists; verify collection and hydrate sampled runs after the sweep.
+      if (format === 'after') await verifyScaleCollection(new RlmLedger(workspace));
       await rm(workspace, { recursive: true, force: true });
     }
     report.sources.push(result);
