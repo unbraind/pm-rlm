@@ -1,6 +1,6 @@
 # Ledger storage v2
 
-Root manifests atomically bind one reservation total to SHA-256 snapshot and transcript references. Immutable payloads live in the tracker `rlm-blobs/` directory. Snapshot bytes deduplicate across runs; prompts, responses, observations, slices and call records deduplicate across revisions. Hydration checks every digest, runs the existing checkpoint validator, and preserves independent JSON values across logical steps even when their payload digests match.
+Root manifests atomically bind one reservation total to SHA-256 snapshot and transcript references. Immutable payloads live in the tracker `rlm-blobs/` directory. Snapshot bytes deduplicate across runs; prompts, responses, observations, slices and call records deduplicate across revisions. Hydration hashes raw bytes before strict UTF-8 decoding, checks every digest, runs the existing checkpoint validator, and preserves independent JSON values across logical steps even when their payload digests match.
 
 Legacy inline checkpoints remain readable without writes. The next save migrates the active root. Existing append-only history stays unchanged, so migration reduces future amplification and does not shrink existing inline history. Earlier v1-only package builds cannot read v2 roots; rollback requires a complete tracker backup.
 

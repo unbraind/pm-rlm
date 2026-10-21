@@ -110,7 +110,7 @@ test('GC removes orphans and abandoned partial files but retains verified histor
   const orphan = await blobs.put('unreachable payload');
   const directory = join(workspace, 'rlm-blobs');
   const temporary = `.${orphan}.json.123.456.abcdef.tmp`;
-  await writeFile(join(directory, temporary), 'partial');
+  await writeFile(join(directory, temporary), Buffer.from([112, 97, 114, 116, 105, 97, 255]));
   await writeFile(join(directory, 'unrelated.txt'), 'preserve');
   await writeFile(join(workspace, 'history', 'readme.txt'), 'preserve');
   const collected = await ledger.gc();
@@ -253,4 +253,25 @@ test('hydrated transcript payloads preserve independent JSON values', async t =>
   assert.equal((second.observation as { data: number }).data, 1);
   assert.equal((await ledger.load(result.run)).calls[0].steps[0].response!.tokens_in, 20);
   assert.equal((await replayRlm(workspace, result.run)).answer, '1');
+});
+
+/** Raw-byte hashing must detect damage that permissive UTF-8 decoding would normalize away. */
+test('raw UTF-8 integrity refuses normalized corruption in reads and reuse', async t => {
+  const { workspace } = await tracker(t);
+  const blobs = new RlmBlobs(workspace);
+  const value = { description: 'replacement \uFFFD' };
+  const reference = await blobs.put(value);
+  const path = join(workspace, 'rlm-blobs', `${reference}.json`);
+  const original = await readFile(path);
+  const offset = original.indexOf(Buffer.from('\uFFFD'));
+  assert.ok(offset >= 0);
+  const corrupt = Buffer.concat([original.subarray(0, offset), Buffer.from([0xff]), original.subarray(offset + 3)]);
+  assert.equal(corrupt.toString('utf8'), original.toString('utf8'));
+  await writeFile(path, corrupt);
+  await assert.rejects(blobs.get(reference), { code: 'incomplete' });
+  await assert.rejects(new RlmBlobs(workspace).put(value), { code: 'incomplete' });
+  const invalidReference = blobDigest(corrupt);
+  assert.notEqual(invalidReference, reference);
+  await writeFile(join(workspace, 'rlm-blobs', `${invalidReference}.json`), corrupt);
+  await assert.rejects(new RlmBlobs(workspace).get(invalidReference), TypeError);
 });

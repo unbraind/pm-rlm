@@ -1,12 +1,12 @@
 import { createHash } from 'node:crypto';
-import { readdir } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readFileIfExists, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
+import { removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
 import { record, RlmError, sdkRead, text } from './errors.ts';
 import type { RlmState } from './types.ts';
 
 /** SHA-256 over the exact UTF-8 JSON bytes stored on disk. */
-export function blobDigest(bytes: string): string { return createHash('sha256').update(bytes).digest('hex'); }
+export function blobDigest(bytes: string | Uint8Array): string { return createHash('sha256').update(bytes).digest('hex'); }
 
 /** Immutable payload store; callers hold the ledger storage lock across publication or collection. */
 export class RlmBlobs {
@@ -21,25 +21,30 @@ export class RlmBlobs {
     if (!/^[a-f0-9]{64}$/.test(digest)) throw new RlmError('incomplete', 'Invalid ledger blob digest');
     return join(this.directory, `${digest}.json`);
   }
+  /** Preserve raw bytes; permissive UTF-8 decoding must never conceal storage corruption. */
+  private async read(path: string): Promise<Buffer | null> {
+    try { return await readFile(path); }
+    catch (error) { if (record(error).code === 'ENOENT') return null; throw error; }
+  }
   /** Verify existing bytes before reuse; a corrupt immutable blob must never be silently repaired. */
   async put(value: unknown): Promise<string> {
     const bytes = JSON.stringify(value);
     const digest = blobDigest(bytes);
     const path = this.path(digest);
-    const previous = await sdkRead(() => readFileIfExists(path));
+    const previous = await sdkRead(() => this.read(path));
     if (previous === null) await writeFileAtomic(path, bytes);
-    else if (previous !== bytes) throw new RlmError('incomplete', 'Ledger blob digest mismatch');
+    else if (!previous.equals(Buffer.from(bytes))) throw new RlmError('incomplete', 'Ledger blob digest mismatch');
     return digest;
   }
-  /** Read and hash before parsing; cache only verified bytes for this locked operation. */
+  /** Read and hash before parsing; cache only verified data for this operation. */
   async get(reference: unknown): Promise<unknown> {
     const digest = text(reference);
     const path = this.path(digest);
     this.reachable.add(digest);
     if (this.cache.has(digest)) return this.cache.get(digest);
-    const bytes = await sdkRead(() => readFileIfExists(path));
+    const bytes = await sdkRead(() => this.read(path));
     if (bytes === null || blobDigest(bytes) !== digest) throw new RlmError('incomplete', 'Ledger blob is missing or corrupt');
-    const value: unknown = JSON.parse(bytes);
+    const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
     this.cache.set(digest, value);
     return value;
   }
@@ -96,9 +101,9 @@ export class RlmBlobs {
       const temporary = /^\.[a-f0-9]{64}\.json\.\d+\.\d+\.[a-f0-9]+\.tmp$/.test(name);
       if ((blob !== null && !this.reachable.has(blob[1])) || temporary) {
         const path = join(this.directory, name);
-        const bytes = await sdkRead(() => readFileIfExists(path));
+        const bytes = await sdkRead(() => this.read(path));
         await removeFileIfExists(path);
-        result.removed++; result.bytes += Buffer.byteLength(bytes ?? '');
+        result.removed++; result.bytes += bytes?.length ?? 0;
       }
     }
     return result;
