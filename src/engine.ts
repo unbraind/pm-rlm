@@ -10,7 +10,7 @@ import type { RlmAction, RlmAnswerComponent, RlmEvidenceReport, RlmCall, RlmFilt
 /** Run creation parameters for third-party loops. Workspace is an explicit pm tracker root. */
 export interface RlmRunOptions {
   workspace: string;
-  /** Optional read-only source tracker; ledger writes remain in workspace. */
+  /** Optional read-only source snapshot; history actions and ledger writes use workspace. */
   source_workspace?: string;
   scope?: RlmFilter;
   /** Require each recursive answer to cover these caller-declared components. */

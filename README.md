@@ -270,5 +270,6 @@ declared every part of the natural-language question. See the
 Run, resume, replay, tree and evidence inspection work with plain-directory
 trackers and require no git executable. The SDK's optional `source_workspace`
 reads a separate source tracker without writing it; `workspace` receives the
-ledger. Git is used only by development workflows that select committed public
+ledger. This captures source items only; history actions use the ledger tracker.
+Git is used only by development workflows that select committed public
 revisions for reproducible validation.
