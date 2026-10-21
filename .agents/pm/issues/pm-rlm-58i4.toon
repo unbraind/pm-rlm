@@ -2,19 +2,22 @@ id: pm-rlm-58i4
 title: Investigate cloud JSON action compliance with synthetic holdouts
 description: "The single glm-5.3:cloud measurement recorded 451 invalid-action refusals, no delivered reads and no child calls. Both arms scored 0/24. RLM outer refusals were budget 15 and model/transport 9; stuffing had 8 model/transport refusals. Investigate strict action/answer formatting, output allocation and provider behavior with unrelated synthetic holdouts. These observations do not establish recursive aggregation quality or an RLM advantage. Further model calls require separate owner quota authorization; do not tune on the recorded evaluation answers."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-19T02:14:44.023Z"
-updated_at: "2026-10-19T07:32:41.928Z"
+updated_at: "2026-10-21T18:54:25.179Z"
+closed_at: "2026-10-21T18:54:18.019Z"
+completed_at: "2026-10-21T18:54:18.019Z"
 author: codex-agent
 estimated_minutes: 90
 acceptance_criteria: Reproduce and classify strict JSON failures with independent synthetic prompts; distinguish provider transport and formatting failures; establish valid action and answer envelopes before another comparative eval; use no additional model quota without owner authorization.
 parent: pm-rlm-a1ih
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-19T05:34:09.355Z",codex-agent,"Round 6 identified an evaluation instruction conflict: shared question text demanded a bare integer or id while each arm required JSON. The historical cloud scores are invalidated and retained unchanged, including all 24 original rows and source fingerprints. Corrected questions are format-neutral; arm protocols continue to own their JSON formats. Independent follow-up remeasurement is required; no live model calls were made this round."
   "2026-10-19T06:06:55.604Z",codex-agent,"The new authorized v2 run has exposed an exact transport/model shape: reasoning appears in the response text with no opening think delimiter, repeated JSON examples and a closing think tag before another action object. An exact text fixture and negative regression are now retained. Historical cloud strings remain unavailable, so this is new evidence rather than a reconstruction of the old 451 failures. Investigation of a transport-level reasoning boundary remains open; no additional live calls are authorized beyond the single running comparison."
   "2026-10-19T07:28:29.499Z",codex-agent,"Final v2 diagnosis: historical 451 raw strings remain unavailable. New retained responses show unmatched reasoning ends with prose or repeated JSON examples, truncation, and malformed envelopes. Complete new shape counts: closing-tag excess 340, unclosed explicit reasoning 1, other prose/malformed JSON 413. Specific parser reasons: unterminated reasoning 294, ambiguous trailing objects 292, unterminated object 61, no object 26, ambiguous envelope 76, invalid JSON 4, unknown action 1. Exact positive and negative fixtures are committed; inference code remained frozen. Continued provider/model protocol compliance is an open risk despite 13 delivered aggregates and one exact result. No extra live calls were made."
+  "2026-10-21T18:53:28.733Z",codex-agent,"author=codex-agent,\"text=Authorized tracker reconciliation, audit 2026-10-21. Reverified current main ef32c4cad9ad: merged #8 (780c03f); source tree exactly matches the audited snapshot. **Investigate cloud JSON action compliance with synthetic holdouts.** [PR #8](https://github.com/unbraind/pm-rlm/pull/8) commits retained positive/negative protocol fixtures and measured refusal classification; the investigation is delivered even though provider compliance remains poor. No new live calls are needed for this audit.\""
 files[3]{path,scope}:
   src/adapters.ts,project
   src/protocol.ts,project
@@ -24,4 +27,5 @@ docs[4]{path,scope}:
   docs/EVAL-CLOUD.md,project
   docs/EVAL-V2.md,project
   README.md,project
+close_reason: "Reverified current main ef32c4cad9ad: merged #8 (780c03f); source tree exactly matches the audited snapshot. **Investigate cloud JSON action compliance with synthetic holdouts.** [PR #8](https://github.com/unbraind/pm-rlm/pull/8) commits retained positive/negative protocol fixtures and measured refusal classification; the investigation is delivered even though provider compliance remains poor. No new live calls are needed for this audit."
 body: ""

@@ -3,15 +3,17 @@ title: Typed snapshot aggregation and one measured cloud comparison
 description: "Budgeted count, sum, distinct, group_count and extrema; frozen-snapshot replay; one pinned seeded cloud evaluation."
 type: Feature
 pm_format_version: 2
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-19T05:53:47.468Z"
-updated_at: "2026-10-19T23:07:19.834Z"
+updated_at: "2026-10-21T19:41:04.445Z"
+closed_at: "2026-10-21T18:48:37.353Z"
+completed_at: "2026-10-21T18:48:37.353Z"
 author: codex-agent
 acceptance_criteria: Six aggregate revert proofs; npm and Bun release gates; one honest 24-question comparison
 parent: pm-rlm-a1ih
-comments[43]{created_at,author,text}:
+comments[45]{created_at,author,text}:
   "2026-10-19T05:54:26.312Z",codex-agent,"Plan fixed before live inference: six deterministic snapshot aggregates with no evaluation or code execution; len(field) means UTF-8 bytes, numeric fields must be finite, extrema return sorted tied ids, missing text is empty. Reuse existing budget, projection, ledger and replay paths. Pin both public source revisions and verify the same 24 selected questions. One invocation only, no answer tuning; include cheap generic precomputed-tool context arm if it fits."
   "2026-10-19T06:00:47.940Z",codex-agent,"Optional third arm omitted before inference to conserve owner quota: it requires 24 additional full cloud requests. The new harness verifies public visibility, exact historical revisions, complete corpus counts/bytes and all 24 seeded questions/truths before its exclusive once-only marker. Successful new runs are replayed. New raw response evidence stays in ignored local artifacts."
   "2026-10-19T06:01:38.699Z",codex-agent,"Revert proof receipt: count, sum, distinct, group_count, argmax and argmin each independently fail the exact scoped observation regression when only that operation is removed. All six passed behavioral revert verification in node test/v2-revert.ts; source bytes restored. Starting the only authorized cloud invocation with the implementation frozen."
@@ -55,7 +57,10 @@ comments[43]{created_at,author,text}:
   "2026-10-19T22:43:16.882Z",codex-agent,"CI at 86c6d49 passes all 166/166 tests and all 94/94 behavioral proofs in both Node versions. Unchanged 100-percent branch gate correctly rejects one remaining gap (99.91 overall): earlier integrity validation now rejects the former missing-child-failure fixture before the completed-root/unfinished-call guard. Added a distinct orphaned unfinished-call corruption fixture that reaches and asserts that guard. No production code, thresholds or pins changed. This unsuccessful gate remains excluded from final receipts."
   "2026-10-19T23:06:13.872Z",codex-agent,"Local npm gate receipt at source head 66ca24edc505e5533ffd0060a821b72e54aca3b7: npm run release:check exits 0 with 166/166 suite tests, 94/94 behavioral reversions across six scripts, and 2/2 actual packed npm/npx and Bun/bunx consumers. Zero failed, skipped, canceled or todo tests. Coverage is 100/100/100/100 over all 23 required sources; 89 documented declarations; zero duplication. Identity, production audit, 67-file pack allowlist, changelog and publish attestation pass. Node 26 with isolated HOME/Git settings and warm npm cache. Both Node 22/26 CI jobs and CodeQL also pass on this source head: https://github.com/unbraind/pm-rlm/actions/runs/39336942126 . The local Bun release command remains in final packed acceptance; no receipt is claimed until it exits."
   "2026-10-19T23:07:16.698Z",codex-agent,"Final local receipts at source head 66ca24edc505e5533ffd0060a821b72e54aca3b7: npm run release:check and bun run release:check both exit 0. Each passes 166/166 suite tests, all 94/94 independent behavioral reversions across six scripts (8+51+5+7+13+10), and 2/2 real packed npm/npx and forced Bun/bunx consumers, with zero fail/skip/cancel/todo. Unchanged coverage is 100/100/100/100 across all 23 required sources; 89 documented declarations and 0-percent duplication. Production audit, identity, 67-file package allowlist, changelog and publish attestation pass. Both Node 26 runs used isolated HOME/Git settings and the same locked graph in separate checkouts; tarball SHA-1 is d54cc61ae6046efbaae82e32ca358757f5cf5558 in both. Thirteen spawn-refusal kinds reject forged code/reason/missing modern reasons before inference or ledger-history writes in replay and resume; v1 code-only recovery, repeated child failures, hook reuse and nested integrity are covered. All three unresolved review findings are valid and fixed; final complete review read finds the same three threads and no outside-diff findings. Existing history remains an unchanged byte prefix; fresh no-local clone strict health passes all ten checks with CI-style isolation and one nonblocking telemetry advisory. Main is already contained. No new pm CLI/SDK defect reproduced; linked-result persistence is disabled by project policy. Existing development advisory remains in pm-rlm-wiav; unverifiable historical child messages fail closed. Releasing this claim with the item still in progress for orchestrator verification. No thread replies/resolutions, merge, release or additional live-model measurement."
-files[26]{path,scope}:
+  "2026-10-21T18:45:09.081Z",codex-agent,"author=codex-agent,\"text=Authorized tracker reconciliation, audit 2026-10-21. Reverified current main ef32c4cad9ad: merged #8 (780c03f); source tree exactly matches the audited snapshot. **Typed snapshot aggregation and one measured cloud comparison.** [PR #8](https://github.com/unbraind/pm-rlm/pull/8) (780c03f), src/aggregates.ts and versioned src/protocol.ts deliver typed aggregates, tolerant action envelopes and corrective feedback; the measured comparison is committed, with its limitations explicit.\""
+  "2026-10-21T19:41:04.084Z",codex-agent,"Tracker-only reconciliation applied to the authorized audit candidates. Linked git diff --check passed. After this final pm write, regenerate with npm run changelog:full; npm run changelog:check and npx pm health are the remaining local gates. Full release gates are delegated to CI; no implementation functions changed, so behavioral revert proof does not apply."
+files[27]{path,scope}:
+  .agents/pm/features/pm-rlm-v2agg.toon,project
   eval-results-constrained.json,project
   index.ts,project
   package.json,project
@@ -82,7 +87,7 @@ files[26]{path,scope}:
   test/review.test.ts,project
   test/v2-revert.ts,project
   test/v2.test.ts,project
-tests[11]:
+tests[12]:
   - command: node --test test/v2.test.ts
     scope: project
     provenance:
@@ -177,11 +182,20 @@ tests[11]:
       source_ref: feat/protocol-and-aggregates
     updated_by: codex-agent
     updated_at: "2026-10-19T22:24:01.223Z"
-docs[6]{path,scope}:
+  - command: git diff --check
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-21T19:39:14.763Z"
+      source_kind: local_mutation
+      source_ref: chore/reconcile-tracker-1021
+docs[7]{path,scope}:
   ARCHITECTURE.md,project
+  CHANGELOG.md,project
   docs/EVAL-CLOUD.md,project
   docs/EVAL-CONSTRAINED.md,project
   docs/EVAL-V2.md,project
   docs/REVERT-PROOFS.md,project
   eval-results-v2.json,project
+close_reason: "Reverified current main ef32c4cad9ad: merged #8 (780c03f); source tree exactly matches the audited snapshot. **Typed snapshot aggregation and one measured cloud comparison.** [PR #8](https://github.com/unbraind/pm-rlm/pull/8) (780c03f), src/aggregates.ts and versioned src/protocol.ts deliver typed aggregates, tolerant action envelopes and corrective feedback; the measured comparison is committed, with its limitations explicit."
 body: ""
