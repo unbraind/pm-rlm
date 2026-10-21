@@ -28,7 +28,9 @@
     "docs/ACTION-DIAGNOSIS.md",
     "docs/EVAL-DESIGN.md",
     "docs/eval-design.json",
-    "docs/EVAL-CLOUD.md"
+    "docs/EVAL-CLOUD.md",
+    "docs/LEDGER-STORAGE.md",
+    "docs/ledger-scale.json"
   ],
   "scripts": {
     "build": "tsc",

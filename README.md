@@ -35,6 +35,30 @@ The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are
 | `resume` | `pm rlm resume run-id` | Recovered answer; completed digests and recorded model responses are reused |
 | `replay` | `pm rlm replay run-id --json` | Re-executed recorded actions and verified byte-identical answer, without inference or writes |
 
+## Ledger storage
+
+New root checkpoints contain a v2 manifest: run id, the single `reserved_tokens` coordinate, and SHA-256 references to snapshot and transcript blobs. Durable JSON payloads live in `rlm-blobs/` inside the tracker. Snapshots deduplicate across runs with identical scoped source bytes. Prompts, responses, observations, slices and call records are immutable separate payloads; unchanged strings are reused across checkpoint revisions. Every referenced blob is digest-checked before use. Missing, corrupt or invalid payloads refuse with `incomplete`.
+
+Back up or transport the **whole tracker**, including `rlm-blobs/`. Copying only item rows and history is insufficient for v2 runs. Full tree, resume and replay hydrate the same public `RlmState` shape. Existing v1 checkpoints read without writes; the next explicit save migrates the active checkpoint, leaving append-only history unchanged. Parser and aggregate versions keep their original semantics.
+
+For explicit garbage collection:
+
+```ts
+import { RlmLedger } from 'pm-rlm';
+const collected = await new RlmLedger('.agents/pm').gc();
+console.log(collected.removed, collected.bytes);
+```
+
+Collection shares a process-owned storage lease with publication and reads. It verifies current and historical references before sweeping orphan blobs and abandoned blob temporary files. Verified history retains old payloads, so ordinary GC does not erase audit evidence or reclaim reachable historical transcripts. Invalid history or missing referenced data aborts collection before deletion. No background collector runs. Writers publish complete blobs before the atomic SDK manifest update; an interrupted prepublication write leaves the preceding coordinate intact. SIGKILL recovery does not establish power-loss durability. The pinned SDK retains killed item writers' TTL locks; resume must follow the tracker's existing stale-lock recovery policy. Crash fixtures use a one-second item-lock TTL with automatic stale recovery, without forcing locks.
+
+See [the storage measurements](docs/LEDGER-STORAGE.md) for the public eval corpora at 10, 100 and 500 runs, methodology and remaining scale limits.
+
+## Without git
+
+Environment reads, recursive run, tree, resume, replay, lazy storage migration and blob GC work in a plain-directory tracker without a Git executable. They need no Git repository. The public-corpus evaluation harness needs Git and GitHub to verify published source revisions; repository changelog and release tooling also use Git.
+
+## Environment and execution
+
 Every command uses the host's TOON renderer by default and supports `--json`. `--model` overrides the saved default on `run`. Scope is a JSON object supporting exact `type`, `status`, `parent`, `tag` and `ids` predicates plus a case-insensitive `text` substring over the complete item. Predicates intersect; omitted predicates match all. Ledger call and generated question items are excluded from source context.
 
 CLI numeric operands use unsigned decimal digits and must fit the settings bounds; signs, exponent/hex forms, fractions, surrounding whitespace and unsafe integers are input errors. All string operands must contain non-whitespace text. Nonblank questions, model names and scope JSON are preserved verbatim; JSON may contain its normal surrounding whitespace.

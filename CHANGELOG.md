@@ -15,6 +15,7 @@
 
 ### Fixed
 
+- Reduce full-snapshot ledger storage amplification for large repeated runs ([pm-rlm-3isb](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-3isb.toon))
 - Investigate cloud JSON action compliance with synthetic holdouts ([pm-rlm-58i4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-58i4.toon))
 - Checkpoint validation rejects engine-generated empty response steps and blocks recovery ([pm-rlm-github-dfe63798395a-5](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-5.toon))
 - Failed recursive child leaves successful runs unreplayable and unrecovered ([pm-rlm-github-dfe63798395a-4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-4.toon))
