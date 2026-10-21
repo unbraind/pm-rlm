@@ -28,6 +28,8 @@ const filter = object({ ...Object.fromEntries(['type', 'status', 'parent', 'tag'
 const slice = { anyOf: [object({ partition_step: integer, index: integer }), object({ fragments: { type: 'array', items: object({ id: nonempty, start: integer, end: integer, text: nonempty }) }, estimated_tokens: integer })] };
 /** One discriminated action definition drives both the schema and its validator. */
 const alternatives: Record<string, Record<string, ActionSchema>> = {
+  witness: { id: nonempty, start: integer, end: integer },
+  answer: { components: { type: 'array', items: object({ component: nonempty, status: { type: 'string', enum: ['supported', 'unsupported', 'unknown'] }, answer: { type: 'string' }, reason: { type: 'string' }, witnesses: { type: 'array', items: object({ step: integer, digest: { type: 'string', pattern: '^[a-f0-9]{64}$' } }) } }) } },
   list: { filter }, search: { query: nonempty, limit: { ...integer, minimum: 1 } }, get: { id: nonempty, fields: { type: 'array', items: nonempty } },
   history: { id: nonempty, start: integer, end: integer }, peek: { id: nonempty, field: nonempty, start: integer, end: integer },
   partition: { filter, maxTokens: { ...integer, minimum: 1 } }, spawn: { subgoal: nonempty, slice }, finish: { answer: { type: 'string' } },

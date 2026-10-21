@@ -1,0 +1,7 @@
+/** Behavioral proofs restore exact authored bytes after each targeted failure. */
+import { proveRevert } from './revert-source.ts';
+const file = 'test/evidence.test.ts';
+proveRevert({ name: 'required source witnesses', file: 'src/evidence.ts', before: "    requireEvidence(entry.answer.trim().length > 0 && entry.reason === '' && entry.witnesses.length > 0, 'Supported answer requires source witnesses', 'Request a witness, then cite its prior step and digest');", after: '    void entry;', pattern: 'omitted witnesses and legacy finish' }, file);
+proveRevert({ name: 'all witness digests', file: 'src/engine.ts', before: "  const data = sourceWitness(callItems(state, call), action.id, action.start, action.end);", after: "  if (call.steps[0]?.observation !== undefined) return call.steps[0].observation as { data: ReturnType<typeof sourceWitness>; estimated_tokens: number; complete_list: RlmState['certificate'] };\n  const data = sourceWitness(callItems(state, call), action.id, action.start, action.end);", pattern: 'replay verifies every witness digest' }, file);
+proveRevert({ name: 'complete component coverage', file: 'src/evidence.ts', before: "  requireEvidence(estimateTokens(components) <= 32768 && components.length === declared.length && components.every((entry, index) => entry.component === declared[index]), 'Answer does not cover the declared components', 'Return each declared component exactly once in declaration order');", after: '  void declared;', pattern: 'component validator rejects' }, file);
+console.log('3/3 evidence revert proofs passed');

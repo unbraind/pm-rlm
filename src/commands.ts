@@ -1,8 +1,9 @@
+import { parseComponents, RlmEvidenceError } from './evidence.ts';
 import { createPmCliExpectedError } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi } from '@unbrained/pm-cli/sdk/authoring';
 import { parseFilter } from './environment.ts';
-import { resumeRlm, replayRlm, runRlm, treeRlm } from './engine.ts';
+import { evidenceRlm, resumeRlm, replayRlm, runRlm, treeRlm } from './engine.ts';
 import { integer, RlmError, text } from './errors.ts';
 import { RLM_FIELDS } from './ledger.ts';
 import type { RlmSettings } from './types.ts';
@@ -20,10 +21,19 @@ function numericOperand(value: unknown): number {
   return integer(Number(result), 0);
 }
 
+/** Decode component declarations with a typed remedy for invalid CLI JSON. */
+function componentOperand(value: unknown): string[] {
+  let decoded: unknown;
+  try { decoded = JSON.parse(operand(value)); }
+  catch { throw new RlmEvidenceError('Invalid --components JSON', 'Supply a JSON array of unique nonblank component names'); }
+  return parseComponents(decoded);
+}
+
 /** Dispatch commands through the same SDK engine used by embedded clients. */
 export async function runCommand(command: string, ctx: CommandHandlerContext): Promise<Record<string, unknown>> {
   try {
     const argument = operand(ctx.args[0]);
+    if (command === 'evidence') return { ...await evidenceRlm(ctx.pm_root, argument) };
     if (command === 'tree') return await treeRlm(ctx.pm_root, argument, ctx.options.full === true);
     if (command === 'resume') return { ...await resumeRlm(ctx.pm_root, argument, undefined, ctx.global.author) };
     if (command === 'replay') return { ...await replayRlm(ctx.pm_root, argument) };
@@ -40,17 +50,17 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
       catch (error) { if (error instanceof SyntaxError) throw new RlmError('invalid', 'Invalid --scope JSON'); throw error; }
       scope = parseFilter(decoded);
     }
-    return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, author: ctx.global.author }) };
+    return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';
-    throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
+    throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (error instanceof RlmEvidenceError ? '; remedy: ' + error.remedy : '') : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
   }
 }
 /** Register ledger fields and native commands, preserving host TOON and JSON rendering. */
 export function register(api: ExtensionApi): void {
   api.registerItemFields(RLM_FIELDS);
-  for (const name of ['run', 'tree', 'resume', 'replay']) {
-    const options = name === 'run' ? ['scope', 'model', 'max-depth', 'max-calls', 'budget-tokens'] : [];
+  for (const name of ['run', 'tree', 'resume', 'replay', 'evidence']) {
+    const options = name === 'run' ? ['scope', 'components', 'model', 'max-depth', 'max-calls', 'budget-tokens'] : [];
     api.registerCommand(defineCommand({
       name: `rlm ${name}`, description: `${name} a durable recursive language model run`,
       intent: 'Project management = context management for recursive agents',

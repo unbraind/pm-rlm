@@ -1,3 +1,4 @@
+import { parseComponents } from './evidence.ts';
 import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { readdir } from 'node:fs/promises';
@@ -78,6 +79,7 @@ export class RlmLedger {
       if (decoded.parser_version !== undefined && ![1, 2, 3].includes(decoded.parser_version as number)) throw new Error('Invalid parser version');
       if (decoded.aggregate_version !== undefined && ![1, 2].includes(decoded.aggregate_version as number)) throw new Error('Invalid aggregate version');
       validateRlmSettings(decoded.settings);
+      if (decoded.components !== undefined) parseComponents(decoded.components);
       text(decoded.question); parseFilter(decoded.scope); record(decoded.certificate);
       integer(decoded.reserved_tokens, 0);
       if (!Array.isArray(decoded.snapshot)) throw new Error('Invalid snapshot');
@@ -87,11 +89,11 @@ export class RlmLedger {
         text(call.id); integer(call.depth, 0, 32); text(call.subgoal); text(call.digest); parseSlice(call.slice);
         if (call.parent !== undefined) text(call.parent);
         if (call.result !== undefined && typeof call.result !== 'string') throw new Error('Invalid result');
-        if (call.failure !== undefined && !['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay'].includes(text(record(call.failure).code))) throw new Error('Invalid refusal');
+        if (call.failure !== undefined && !['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay', 'evidence'].includes(text(record(call.failure).code))) throw new Error('Invalid refusal');
         if (call.failure !== undefined && record(call.failure).reason !== undefined) text(record(call.failure).reason);
         if (call.completion_refusal !== undefined) {
           const refusal = record(call.completion_refusal);
-          if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay'].includes(text(refusal.code))) throw new Error('Invalid completion refusal');
+          if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay', 'evidence'].includes(text(refusal.code))) throw new Error('Invalid completion refusal');
           text(refusal.reason);
         }
         if (!Array.isArray(call.steps)) throw new Error('Invalid steps');

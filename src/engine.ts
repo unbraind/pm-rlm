@@ -1,15 +1,20 @@
+import { EVIDENCE_PROTOCOL, parseComponents, sourceWitness, validateAnswer, RlmEvidenceError } from './evidence.ts';
 import { assertLedgerPrivacy, estimateTokens, RlmError, text } from './errors.ts';
 import { matches, parseFilter, partitionItems, readCorpus, RlmContext } from './environment.ts';
 import { HttpModel } from './adapters.ts';
 import { promptDigest, reserveStep, settleStep, RlmLedger } from './ledger.ts';
 import { parseAction, parseSlice, PROTOCOL } from './protocol.ts';
 import { readRlmSettings } from './settings.ts';
-import type { RlmAction, RlmCall, RlmFilter, RlmItem, RlmModel, RlmResult, RlmSettings, RlmSlice, RlmState, RlmStep } from './types.ts';
+import type { RlmAction, RlmAnswerComponent, RlmEvidenceReport, RlmCall, RlmFilter, RlmItem, RlmModel, RlmResult, RlmSettings, RlmSlice, RlmState, RlmStep } from './types.ts';
 
 /** Run creation parameters for third-party loops. Workspace is an explicit pm tracker root. */
 export interface RlmRunOptions {
   workspace: string;
+  /** Optional read-only source tracker; ledger writes remain in workspace. */
+  source_workspace?: string;
   scope?: RlmFilter;
+  /** Require each recursive answer to cover these caller-declared components. */
+  components?: string[];
   settings?: Partial<RlmSettings>;
   model?: RlmModel;
   author?: string;
@@ -21,7 +26,18 @@ const EMPTY_SLICE: RlmSlice = { fragments: [], estimated_tokens: 2 };
 /** Summarize exact call counts and label model usage that can contain byte-based estimates. */
 function result(state: RlmState): RlmResult {
   const responses = state.calls.flatMap(call => call.steps.flatMap(step => step.response === undefined ? [] : [step.response]));
-  return { token_usage: 'reported_or_estimated', run: state.run, answer: state.calls[0].result!, calls: state.calls.length, reserved_tokens: state.reserved_tokens, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0) };
+  return { ...(state.components === undefined ? {} : { components: JSON.parse(state.calls[0].result!) as RlmAnswerComponent[] }), token_usage: 'reported_or_estimated', run: state.run, answer: state.calls[0].result!, calls: state.calls.length, reserved_tokens: state.reserved_tokens, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0) };
+}
+/** Complete answers use one deterministic representation with no unchecked free-text summary. */
+function completion(state: RlmState, call: RlmCall, action: Extract<RlmAction, { action: 'finish' | 'answer' }>, before: number): string {
+  if (action.action === 'answer') return validateAnswer(state, call, action.components, before);
+  if (state.components !== undefined) throw new RlmEvidenceError('Evidence contract requires component answers', 'Use the answer action with every declared component and source witnesses');
+  return action.answer;
+}
+/** Recompute the exact bounded source read shared by live execution and replay. */
+function witnessRead(state: RlmState, call: RlmCall, action: Extract<RlmAction, { action: 'witness' }>) {
+  const data = sourceWitness(callItems(state, call), action.id, action.start, action.end);
+  return { data, estimated_tokens: estimateTokens(data), complete_list: state.certificate };
 }
 /** Return full items only when the child received their complete serialized representation. */
 function callItems(state: RlmState, call: RlmCall): RlmItem[] {
@@ -65,7 +81,7 @@ function resolveSlice(state: RlmState, call: RlmCall, slice: RlmSlice | { partit
   return result;
 }
 /** Execute the read protocol identically for live runs and read-only replay. */
-async function readAction(context: RlmContext, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'partition' }>) {
+async function readAction(context: RlmContext, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'answer' | 'witness' | 'partition' }>) {
   switch (action.action) {
     case 'list': return context.list(action.filter);
     default: return context.aggregate(action);
@@ -123,10 +139,10 @@ export class RlmEngine {
   }
   /** Construct the exact prompt used by projection checks and the next inference. */
   private prompt(call: RlmCall, observation?: unknown): string {
-    return `${PROTOCOL}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
+    return `${PROTOCOL}${this.state.components === undefined ? '' : '\n' + EVIDENCE_PROTOCOL + JSON.stringify(this.state.components)}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
   }
   /** Execute one action, refusing oversized observations before charging or retaining data. */
-  private async observe(action: Exclude<RlmAction, { action: 'finish' }>, call: RlmCall, state = this.state, spawn = (subgoal: string, slice: RlmSlice) => this.spawn(call.id, subgoal, slice)): Promise<unknown> {
+  private async observe(action: Exclude<RlmAction, { action: 'finish' | 'answer' }>, call: RlmCall, state = this.state, spawn = (subgoal: string, slice: RlmSlice) => this.spawn(call.id, subgoal, slice)): Promise<unknown> {
     let observation: unknown;
     let charge = 0;
     if (action.action === 'spawn') observation = { result: await spawn(action.subgoal, resolveSlice(state, call, action.slice)) };
@@ -136,6 +152,10 @@ export class RlmEngine {
       charge = estimateTokens(data);
       if (charge > state.settings.budget_tokens - state.reserved_tokens) throw new RlmError('budget', 'Partition index exceeds remaining budget');
       observation = { data, estimated_tokens: charge, complete_list: state.certificate };
+    } else if (action.action === 'witness') {
+      observation = witnessRead(state, call, action);
+      charge = estimateTokens((observation as { data: unknown }).data);
+      if (charge > state.settings.budget_tokens - state.reserved_tokens) throw new RlmError('budget', 'Witness exceeds remaining budget');
     } else {
       const context = new RlmContext(this.ledger.workspace, callItems(state, call), state.certificate, state.settings.budget_tokens - state.reserved_tokens, state.aggregate_version ?? 1);
       const read = await readAction(context, action);
@@ -162,7 +182,19 @@ export class RlmEngine {
         if (step.response === undefined) continue;
         let action: RlmAction;
         try { action = parseAction(step.response.text, state.parser_version ?? 1); } catch { continue; }
-        if (action.action === 'finish') continue;
+        if (action.action === 'finish' && state.components === undefined) continue;
+        if (action.action === 'finish' || action.action === 'answer') {
+          if (step.observation === undefined && call.result === undefined) continue;
+          let refusal: RlmError | undefined;
+          let answer: string | undefined;
+          try { answer = completion(state, call, action, index); } catch (error) { refusal = error as RlmError; }
+          const recorded = step.observation as { refused?: string; reason?: string } | undefined;
+          if (refusal !== undefined ? recorded?.refused !== refusal.code || recorded.reason !== refusal.message : recorded !== undefined || call.result !== answer) throw new RlmError('replay', 'Recorded component completion differs');
+          continue;
+        }
+        if (action.action === 'witness' && step.observation !== undefined && !(typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation)) {
+          if (JSON.stringify(witnessRead(state, call, action)) !== JSON.stringify(step.observation)) throw new RlmError('replay', 'Recorded source witness differs');
+        }
         const prefix = { ...call, steps: call.steps.slice(0, index + 1) };
         let spawnRefusal: RlmError | undefined;
         let validatingChild = false;
@@ -226,17 +258,20 @@ export class RlmEngine {
         let action: RlmAction | undefined;
         try {
           action = parseAction(step.response!.text, state.parser_version ?? 1);
-          if (action.action !== 'finish') step.observation = await this.observe(action, call);
+          if (action.action === 'finish' || action.action === 'answer') completion(state, call, action, index);
+          else step.observation = await this.observe(action, call);
         } catch (error) {
           if (!(error instanceof RlmError)) throw error;
-          step.observation = { refused: error.code, reason: error.message };
+          step.observation = { refused: error.code, reason: error.message, ...(error instanceof RlmEvidenceError ? { remedy: error.remedy } : {}) };
+          action = undefined;
         }
-        if (action?.action === 'finish') {
-          Object.assign(call, { result: action.answer });
+        if (action?.action === 'finish' || action?.action === 'answer') {
+          const answer = completion(state, call, action, index);
+          Object.assign(call, { result: answer });
           await this.ledger.save(state);
           await this.ledger.complete(state, call);
           await this.onComplete?.(structuredClone(call));
-          return action.answer;
+          return answer;
         }
         await this.ledger.save(state);
       }
@@ -263,17 +298,18 @@ export class RlmEngine {
 /** Create and execute a new SDK ledger; the root links to a separate question item. */
 export async function runRlm(question: string, options: RlmRunOptions): Promise<RlmResult> {
   text(question);
+  const components = options.components === undefined ? undefined : parseComponents(options.components);
   const settings = await readRlmSettings(options.workspace, options.settings);
   if (options.model !== undefined) settings.model = options.model.name;
   const scope = parseFilter(options.scope ?? {});
-  const corpus = await readCorpus(options.workspace);
+  const corpus = await readCorpus(options.source_workspace ?? options.workspace);
   const snapshot = corpus.items.filter(item => matches(item, scope));
   assertLedgerPrivacy({ question, items: snapshot, settings }, options.workspace, settings.key_env);
   const ledger = new RlmLedger(options.workspace, options.author);
   await ledger.registerFields();
   const run = await ledger.newRunId();
   const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
-  const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0 };
+  const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
   await ledger.materialize(state, state.calls[0]);
   return new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete).run();
@@ -314,18 +350,19 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
         const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, resolveSlice(state, call, action.slice), state.settings));
         if (child === undefined || await replay(child) !== (step.observation as { result: string }).result) throw new RlmError('replay', 'Recorded child result differs');
       }
-      if (action.action !== 'finish' && action.action !== 'spawn') {
+      if (action.action !== 'finish' && action.action !== 'answer' && action.action !== 'spawn') {
         const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, state.aggregate_version ?? 1);
         const read = action.action === 'partition'
           ? (() => { const data = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens).map((slice, index) => ({ partition_step: call.steps.indexOf(step), index, estimated_tokens: slice.estimated_tokens })); return { data, estimated_tokens: estimateTokens(data), complete_list: state.certificate }; })()
-          : await readAction(context, action);
+          : action.action === 'witness' ? witnessRead(state, call, action) : await readAction(context, action);
         if (JSON.stringify(read) !== JSON.stringify(step.observation)) {
           if (action.action !== 'partition' || JSON.stringify(await context.partition(action.filter, action.maxTokens)) !== JSON.stringify(step.observation)) throw new RlmError('replay', 'Recorded environment observation differs');
         }
       }
-      if (action.action === 'finish') {
-        if (action.answer !== call.result) throw new RlmError('replay', 'Recorded answer differs');
-        return action.answer;
+      if (action.action === 'finish' || action.action === 'answer') {
+        const answer = completion(state, call, action, call.steps.indexOf(step));
+        if (answer !== call.result) throw new RlmError('replay', 'Recorded answer differs');
+        return answer;
       }
     }
     if (call.failure !== undefined) return undefined;
@@ -339,4 +376,11 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
 export async function treeRlm(workspace: string, run: string, full = false): Promise<Record<string, unknown>> {
   const state = await new RlmLedger(workspace).load(run);
   return full ? { state, token_usage: 'reported_or_estimated' } : { run, token_usage: 'reported_or_estimated', calls: state.calls.map(call => ({ id: call.id, parent: call.parent, depth: call.depth, status: call.failure !== undefined ? 'failed' : call.result === undefined ? 'in_progress' : 'closed', reserved_tokens: call.steps.reduce((sum, step) => sum + step.reserved, 0), used_tokens: call.steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0) + (step.response?.tokens_out ?? 0), 0), result: (call.result ?? '').replace(/\s+/g, ' ').slice(0, 100) })) };
+}
+
+/** Read-only certified component report; validation performs zero model calls and no tracker writes. */
+export async function evidenceRlm(workspace: string, run: string): Promise<RlmEvidenceReport> {
+  const result = await replayRlm(workspace, run);
+  if (result.components === undefined) throw new RlmEvidenceError('Run has no declared components', 'Start a new run with --components to obtain evidence coverage');
+  return { run, verified: true, total: result.components.length, supported: result.components.filter(entry => entry.status === 'supported').length, unsupported: result.components.filter(entry => entry.status === 'unsupported').length, unknown: result.components.filter(entry => entry.status === 'unknown').length, components: result.components };
 }

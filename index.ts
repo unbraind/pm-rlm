@@ -3,7 +3,7 @@ import { register } from './src/commands.ts';
 /** Expose the certified token-budgeted environment for independent RLM loops. */
 export { createRlmContext, RlmContext, partitionItems, parseFilter } from './src/environment.ts';
 /** Expose durable recursive execution, recovery, replay and tree inspection. */
-export { runRlm, resumeRlm, replayRlm, treeRlm, RlmEngine } from './src/engine.ts';
+export { runRlm, resumeRlm, replayRlm, evidenceRlm, treeRlm, RlmEngine } from './src/engine.ts';
 /** Expose the SDK ledger and logical reservation primitive. */
 export { RlmLedger, reserveStep, promptDigest } from './src/ledger.ts';
 /** Expose typed errors and conservative token estimation. */
@@ -12,8 +12,10 @@ export { RlmError, estimateTokens } from './src/errors.ts';
 export { HttpModel } from './src/adapters.ts';
 /** Expose settings resolution with flag precedence. */
 export { readRlmSettings, writeRlmSettings } from './src/settings.ts';
+/** Expose bounded evidence contracts and deterministic source witness creation. */
+export { parseComponents, sourceWitness, RlmEvidenceError } from './src/evidence.ts';
 /** Expose public environment, ledger and model contracts. */
-export type { RlmAggregate, RlmScalar, RlmItem, RlmFilter, RlmRead, RlmSlice, RlmFragment, RlmSettings, RlmModel, ModelRequest, ModelResponse, RlmAction, RlmState, RlmCall, RlmStep, RlmResult } from './src/types.ts';
+export type { RlmEvidenceReport, RlmWitness, RlmAnswerComponent, RlmAggregate, RlmScalar, RlmItem, RlmFilter, RlmRead, RlmSlice, RlmFragment, RlmSettings, RlmModel, ModelRequest, ModelResponse, RlmAction, RlmState, RlmCall, RlmStep, RlmResult } from './src/types.ts';
 /** Expose explicit run and environment creation parameters. */
 export type { RlmRunOptions } from './src/engine.ts';
 /** Expose independent environment options. */

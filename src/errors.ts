@@ -1,6 +1,6 @@
 import path, { win32 } from 'node:path';
 /** Stable refusal codes usable by embedded loops and host commands. */
-export type RlmErrorCode = 'budget' | 'depth' | 'calls' | 'scope' | 'invalid' | 'incomplete' | 'model' | 'busy' | 'replay';
+export type RlmErrorCode = 'budget' | 'depth' | 'calls' | 'scope' | 'invalid' | 'incomplete' | 'model' | 'busy' | 'replay' | 'evidence';
 /** Expected failure without raw transport errors, local paths or credentials. */
 export class RlmError extends Error {
   /** Stable machine-readable refusal category. */
