@@ -1,8 +1,8 @@
 # Ledger storage v2
 
-Root manifests atomically bind one reservation total to SHA-256 snapshot and transcript references. Immutable payloads live in the tracker `rlm-blobs/` directory. Snapshot bytes deduplicate across runs; prompts, responses, observations, slices and call records deduplicate across revisions. Hydration checks every digest and then runs the existing checkpoint validator.
+Root manifests atomically bind one reservation total to SHA-256 snapshot and transcript references. Immutable payloads live in the tracker `rlm-blobs/` directory. Snapshot bytes deduplicate across runs; prompts, responses, observations, slices and call records deduplicate across revisions. Hydration checks every digest, runs the existing checkpoint validator, and preserves independent JSON values across logical steps even when their payload digests match.
 
-Legacy inline checkpoints remain readable without writes. The next save migrates the active root. Existing append-only history stays unchanged, so migration reduces future amplification and does not shrink existing inline history.
+Legacy inline checkpoints remain readable without writes. The next save migrates the active root. Existing append-only history stays unchanged, so migration reduces future amplification and does not shrink existing inline history. Earlier v1-only package builds cannot read v2 roots; rollback requires a complete tracker backup.
 
 `RlmLedger.gc()` marks current roots and verified historical manifests before deleting orphan blobs and abandoned blob temporary files. It retains audit evidence, including histories of deleted roots. Corruption or an unknown storage version aborts collection before deletion. Publication and collection share a process-owned storage lease. Current and append-only historical manifests pin committed versions, so hydration and replay require no read-side lease writes, including when a save publishes a newer version. Per-run inference leases remain independent.
 
@@ -10,6 +10,25 @@ The crash drill stops in actual atomic temporary-file creation and sends SIGKILL
 
 The reproducible storage-format measurement is `node test/ledger-scale.ts`. It verifies the exact public source revisions in `docs/eval-design.json`, copies only committed regular tracker files, captures a real two-step aggregate/finish run's checkpoint transitions, and repeats identical transitions with distinct ids in two independent non-git trackers. The inline arm uses the original JSON layout; the content-addressed arm uses the production blob encoder. Complete-corpus certificate counts and embedded prompt receipts advance with each additional root, adjusting prompt-byte reservations and usage so changing prompts are not artificially deduplicated across runs. Both use native SDK TOON serialization, atomic final item writes and sealed history diffs for every checkpoint. Intermediate item flushes are omitted because only final disk state and complete reads are measured; this is not a write-throughput benchmark. Each read milestone runs in a separate process with a 4096 MiB old-space ceiling and a 300000 ms timeout, identically for both formats. At 10/100 runs, a certified full SDK item read warms the process before three timed samples. At 500 runs, one fresh-process read per format fits the fixed attempt budget; failures retain null latency and explicit exit/signal/timing evidence. Disk and history measurements survive a failed read. It measures storage format and scan amplification, excluding model inference, full-engine throughput and cold-cache latency.
 
-The source trackers are the existing pm-vcs and pm-lint evaluation corpora. No hosted data or credentials are used. The generated measurement artifact records source revisions, logical/allocated tracker file bytes, history bytes, blob bytes and read latency at 10, 100 and 500 runs. Measurements will be included with the completed evidence commit.
+The source trackers are the existing pm-vcs and pm-lint evaluation corpora. No hosted data or credentials are used. The generated measurement artifact records source revisions, logical/allocated tracker file bytes, history bytes, blob bytes and read latency at 10, 100 and 500 runs. The complete before/after measurements are below.
+
+## Measured results
+
+All sizes below are decimal MB (1,000,000 bytes), shown as inline before -> content-addressed after. Logical bytes and allocated file blocks cover the entire tracker, including original public data and history, schema and new ledger payloads. Allocated bytes use file `stat.blocks * 512`; directories and filesystem metadata are excluded. Exact byte counts and all samples are in [the measurement artifact](ledger-scale.json).
+
+| Corpus | Runs | Logical MB | Allocated MB | History MB | Complete read ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| pm-vcs | 10 | 71.78 -> 4.71 | 72.45 -> 5.94 | 62.46 -> 2.98 | 5,167.5 -> 211.5 |
+| pm-vcs | 100 | 703.30 -> 8.21 | 704.68 -> 14.72 | 598.37 -> 3.61 | 33,579.1 -> 281.8 |
+| pm-vcs | 500 | 3,580.13 -> 16.18 | 3,585.17 -> 46.08 | 2,980.21 -> 6.39 | SIGABRT -> 1,909.0 |
+| pm-lint | 10 | 5.45 -> 0.57 | 5.59 -> 1.24 | 4.73 -> 0.33 | 58.8 -> 50.0 |
+| pm-lint | 100 | 53.11 -> 2.45 | 53.88 -> 8.41 | 44.94 -> 0.95 | 440.5 -> 63.3 |
+| pm-lint | 500 | 270.48 -> 10.43 | 274.01 -> 39.78 | 223.67 -> 3.74 | 21,077.0 -> 1,759.7 |
+
+At 500 VCS runs, logical tracker bytes fell 99.548%, allocated file bytes 98.715%, and history bytes 99.786%. The inline complete-read process aborted with SIGABRT after 179.826 seconds under the 4096 MiB old-space bound, so no completed-read latency is reported. The content-addressed read succeeded in 1.909 seconds. The signal alone does not establish the abort's cause. At 500 lint runs, logical bytes fell 96.145%, allocated file bytes 85.481%, and history bytes 98.330%; the fresh-process read fell from 21.077 to 1.760 seconds.
+
+At 10/100 runs, latency is the median of three warm reads after one warm-up. At 500 runs, latency is one fresh-process read for each format. These sampling modes are compared only at the same run count; fresh process does not imply cold filesystem cache. Host load varied, and this is one invocation with no confidence interval. The 500-run inline failure is retained rather than retried with a larger heap. Small content-addressed files incur allocation overhead, visible in the difference between logical and allocated bytes. Both 500-run content-addressed trackers also completed a full historical reachability GC traversal after measurement.
+
+The exact existing evaluation sources were pm-vcs at `f9283201108919939d0e1cfb489358c87ea8822b` (145 items, 814268 snapshot bytes) and pm-lint at `f2c20efa78139f4071f3dd08d317bea05337fe28` (12 items, 54941 snapshot bytes). Both traces contained seven captured checkpoints per run. Repository visibility and revision publication were verified before copying; the copies contained no Git repository.
 
 Remaining limits: item scans and historical manifests still grow with run count. Hydrating a run still reads its entire selected snapshot and transcript. Different growing prompts have different digests. GC cannot reclaim reachable historical evidence. Whole-tracker backups must include blobs alongside item rows and history. Storage correctness, provider quality, inference throughput and scale readiness are separate claims.

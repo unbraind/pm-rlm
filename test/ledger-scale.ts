@@ -47,7 +47,7 @@ function measureRead(workspace: string, runs: number): Record<string, unknown> {
   const start = performance.now();
   const child = spawnSync(process.execPath, ['--max-old-space-size=4096', process.argv[1], '--read', workspace, String(runs)], { encoding: 'utf8', timeout: 300000, maxBuffer: 1024 * 1024 });
   if (child.status === 0) return JSON.parse(child.stdout) as Record<string, unknown>;
-  return { complete_read_ms: null, samples_ms: [], read_failed: true, exit_code: child.status, signal: child.signal, timed_out: child.error?.message.includes('ETIMEDOUT') === true, attempt_ms: performance.now() - start };
+  return { complete_read_ms: null, samples_ms: [], read_failed: true, exit_code: child.status, signal: child.signal, timed_out: child.error?.message.includes('ETIMEDOUT') === true, attempt_ms: performance.now() - start, latency_method: runs === 500 ? 'single_fresh_process_read' : 'median_three_warm_reads' };
 }
 
 if (process.argv[2] === '--read') {

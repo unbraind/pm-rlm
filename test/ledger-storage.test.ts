@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
 import { watch } from 'node:fs';
-import { mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { test } from 'node:test';
 import { createExtensionCommandSdk } from '@unbrained/pm-cli/sdk';
@@ -33,8 +33,13 @@ test('content addressed manifests deduplicate snapshots and transcript payloads'
   assert.equal(state.reserved_tokens, result.reserved_tokens);
   const directory = join(workspace, 'rlm-blobs');
   const before = await readdir(directory);
+  const snapshotPath = join(directory, `${String(manifest.snapshot)}.json`);
+  const snapshotBefore = await stat(snapshotPath, { bigint: true });
   await ledger.save(state);
   assert.deepEqual(await readdir(directory), before);
+  const snapshotAfter = await stat(snapshotPath, { bigint: true });
+  assert.equal(snapshotAfter.ino, snapshotBefore.ino);
+  assert.equal(snapshotAfter.mtimeNs, snapshotBefore.mtimeNs);
   const next = structuredClone(state); next.run = 'another-run'; next.calls[0].id = next.run;
   await ledger.materialize(next, next.calls[0]);
   const other = JSON.parse(String((await client.get(next.run, { depth: 'full' })).item.rlm_state)) as Record<string, unknown>;
@@ -224,4 +229,28 @@ test('GC refuses unknown storage versions before removing future payloads', asyn
   await client.run('create', { options: { id: 'future-run', title: 'Future storage fixture', rlmState: JSON.stringify({ version: 3, payload: reference }) } });
   await assert.rejects(ledger.gc(), { code: 'incomplete' });
   assert.equal(await readFile(join(workspace, 'rlm-blobs', `${reference}.json`), 'utf8'), JSON.stringify('future payload'));
+});
+
+/** Identical content references must not introduce aliases between independently mutable logical steps. */
+test('hydrated transcript payloads preserve independent JSON values', async t => {
+  const { workspace, client } = await tracker(t);
+  await client.create({ title: 'Count fixture' });
+  let step = 0;
+  const result = await runRlm('repeat count', { workspace, model: {
+    name: 'identical-payload-test-only',
+    complete: async () => ({ text: JSON.stringify(step++ < 2 ? { action: 'count' } : { action: 'finish', answer: '1' }), tokens_in: 20, tokens_out: 10 }),
+  } });
+  const ledger = new RlmLedger(workspace);
+  const state = await ledger.load(result.run);
+  const [first, second] = state.calls[0].steps;
+  assert.deepEqual(first.response, second.response);
+  assert.deepEqual(first.observation, second.observation);
+  assert.notStrictEqual(first.response, second.response);
+  assert.notStrictEqual(first.observation, second.observation);
+  first.response!.tokens_in = 999;
+  (first.observation as { data: number }).data = 999;
+  assert.equal(second.response!.tokens_in, 20);
+  assert.equal((second.observation as { data: number }).data, 1);
+  assert.equal((await ledger.load(result.run)).calls[0].steps[0].response!.tokens_in, 20);
+  assert.equal((await replayRlm(workspace, result.run)).answer, '1');
 });

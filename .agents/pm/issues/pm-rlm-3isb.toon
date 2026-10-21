@@ -6,19 +6,20 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:54:28.820Z"
-updated_at: "2026-10-21T16:47:55.063Z"
+updated_at: "2026-10-21T17:04:49.016Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
 estimated_minutes: 180
 acceptance_criteria: Measure storage and scan amplification on a public synthetic corpus; preserve byte-identical replay and all crash/reservation proofs; document scale limits independently of correctness gates.
 parent: pm-rlm-a1ih
-comments[5]{created_at,author,text}:
+comments[6]{created_at,author,text}:
   "2026-10-21T15:42:51.467Z",codex-agent,"Plan: versioned content-addressed snapshot and transcript payloads with digest verification; retain one atomic root reservation coordinate and transparent legacy reads. Serialize publication and reachability GC under one tracker lock. Verify non-git recovery, corruption refusals, behavioral reverts, SIGKILL publication windows, and public-corpus storage/read measurements at 10/100/500 runs. Preserve pinned SDK and unchanged release thresholds."
   "2026-10-21T15:52:55.894Z",codex-agent,"Implemented v2 digest manifests and immutable per-payload storage, preserving the public hydrated state and atomic reservation total. GC marks current and verified historical references before sweeping; legacy reads remain observational and save migrates lazily. Existing recovery/settlement suite: 10/10 passed. Added non-git execution with no Git executable, corruption checks, and SIGKILL at actual blob/root temporary-file creation. The pinned SDK retains a killed item writer TTL lock until expiry; the root drill waits without forcing it. Scale measurement uses the original public eval revisions and captured real engine checkpoints, with native SDK serialization/history and certified complete reads; it isolates storage format from inference throughput."
   "2026-10-21T16:05:23.141Z",codex-agent,"Focused storage suite passed 9/9 through the linked pm test runner, including real SIGKILL during blob and root temporary-file writes, successful resume/replay, and no-git PATH execution. Four behavioral reverts each produced an assertion failure: original inline publication, disabled digest validation, disabled orphan removal, and non-git inline publication. Exact source bytes were restored in the isolated proof copy. Correction to the earlier lock note: native SDK item locks follow configured TTL/stale-lock policy, not a fixed minute; crash fixtures use one-second TTL with automatic stale recovery. Production recovery follows tracker policy. Public scale measurement and final unchanged release gates remain in progress."
   "2026-10-21T16:14:33.659Z",codex-agent,"Benchmark refinement: retain every native SDK checkpoint history transition and materialize final item rows once, since final disk state and certified read latency are measured, not write throughput. Advance complete-corpus certificate counts, embedded prompt receipts, reservation totals and input usage as roots accumulate, preventing artificial cross-run prompt deduplication. The no-git worker now also runs inside the plain tracker with the Git discovery ceiling at its temporary parent, alongside a PATH without Git."
   "2026-10-21T16:47:55.063Z",codex-agent,"Final focused acceptance: 11/11 storage tests passed via the linked pm runner; six behavioral reverts each failed targeted assertions and restored exact source bytes. Added lease-free verified hydration (historical reachability pins committed versions) and fail-closed GC for unknown storage versions. Preliminary npm release gate passed 176 tests, 100/100/100/100 coverage over all 24 configured source files, and 2/2 packed npm/Bun consumers; final frozen-commit npm/Bun gates remain pending. The public VCS inline baseline at 100 runs measured 703297986 logical tracker bytes, 598368843 history bytes and 33579.123 ms median complete read. Measurement continues to 500 runs and the content-addressed arm; 500-run sampling uses one fresh-process read per format under the same 4096 MiB old-space and five-minute bounds."
+  "2026-10-21T17:04:49.015Z",codex-agent,"Implementation and measurements complete. Focused suite: 12/12 via pm test; 8/8 behavioral reverts, including immutable inode/mtime reuse and independent by-value transcript hydration. Public eval sources match the existing design exactly: VCS 145 items/814268 snapshot bytes, lint 12 items/54941 bytes, seven checkpoints per run. At 500 VCS runs: logical tracker 3580133178 -> 16178066 bytes, allocated file bytes 3585171456 -> 46084096, history 2980207243 -> 6388499; inline read failed with SIGABRT after 179826.275 ms at the fixed 4096 MiB old-space bound, while v2 completed in 1909.006 ms. At 500 lint runs: logical 270482055 -> 10426412, history 223674579 -> 3735271, read 21077.008 -> 1759.670 ms. Full 10/100/500 table, sampling modes and failed-read evidence are in docs/LEDGER-STORAGE.md and docs/ledger-scale.json. Both 500-run v2 trackers completed historical reachability GC. Freezing the candidate for final npm/Bun release gates; no merge or release."
 files[7]{path,scope}:
   src/blobs.ts,project
   src/ledger.ts,project
@@ -32,8 +33,9 @@ tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node test/ledger-storage-revert.ts,project,codex-agent,"2026-10-21T15:58:02.503Z",local_mutation,feat/content-addressed-ledger
   "npm run release:check",project,codex-agent,"2026-10-21T15:58:17.809Z",local_mutation,feat/content-addressed-ledger
   "bun run release:check",project,codex-agent,"2026-10-21T15:58:27.856Z",local_mutation,feat/content-addressed-ledger
-docs[3]{path,scope}:
+docs[4]{path,scope}:
   ARCHITECTURE.md,project
+  docs/ledger-scale.json,project
   docs/LEDGER-STORAGE.md,project
   README.md,project
 body: ""

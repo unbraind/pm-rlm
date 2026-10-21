@@ -106,7 +106,8 @@ export class RlmLedger {
           }
         }
       }
-      return decoded as unknown as RlmState;
+      // Preserve by-value JSON semantics even when multiple references share a cached payload.
+      return JSON.parse(JSON.stringify(decoded)) as RlmState;
     } catch { throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
   }
   /** Save reservations, model outputs, observations and completed digests in one atomic SDK item update. */
