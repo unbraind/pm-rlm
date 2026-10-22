@@ -70,9 +70,21 @@ export type RlmAggregate =
   | { action: 'sum'; filter: RlmFilter; field_expr: string }
   | { action: 'distinct' | 'group_count'; filter: RlmFilter; field: string }
   | { action: 'argmax' | 'argmin'; filter: RlmFilter; numeric_expr: string };
+/** Bounded exact source excerpt, hashed together with its identity and offsets. */
+export interface RlmWitness { id: string; start: number; end: number; text: string; digest: string }
+/** Component answer; unavailable evidence is represented without an answer or witnesses. */
+export interface RlmAnswerComponent {
+  component: string;
+  status: 'supported' | 'unsupported' | 'unknown';
+  answer: string;
+  reason: string;
+  witnesses: { step: number; digest: string }[];
+}
 /** Supported bounded JSON actions. */
 export type RlmAction =
   | RlmAggregate
+  | { action: 'witness'; id: string; start: number; end: number }
+  | { action: 'answer'; components: RlmAnswerComponent[] }
   | { action: 'list'; filter: RlmFilter }
   | { action: 'search'; query: string; limit: number }
   | { action: 'get'; id: string; fields: string[] }
@@ -99,9 +111,9 @@ export interface RlmCall {
   digest: string;
   steps: RlmStep[];
   result?: string;
-  failure?: { code: RlmErrorCode; reason?: string };
+  failure?: { code: RlmErrorCode; reason?: string; remedy?: string };
   /** Typed completion-hook refusal after a durable result; later result reuse does not repeat the hook. */
-  completion_refusal?: { code: RlmErrorCode; reason: string };
+  completion_refusal?: { code: RlmErrorCode; reason: string; remedy?: string };
 }
 /** Hydrated run checkpoint; v2 storage manifests resolve immutable blobs into this compatible shape. */
 export interface RlmState {
@@ -111,6 +123,8 @@ export interface RlmState {
   parser_version?: 1 | 2 | 3;
   run: string;
   question: string;
+  /** Immutable evidence contract; absent for legacy execution-only runs. */
+  components?: string[];
   settings: RlmSettings;
   scope: RlmFilter;
   snapshot: RlmItem[];
@@ -123,8 +137,21 @@ export interface RlmResult {
   token_usage: 'reported_or_estimated';
   run: string;
   answer: string;
+  /** Verified per-component evidence, absent on execution-only runs. */
+  components?: RlmAnswerComponent[];
   calls: number;
   reserved_tokens: number;
   tokens_in: number;
   tokens_out: number;
+}
+
+/** Compact verified coverage report; source excerpts stay in the durable transcript. */
+export interface RlmEvidenceReport {
+  run: string;
+  verified: true;
+  total: number;
+  supported: number;
+  unsupported: number;
+  unknown: number;
+  components: RlmAnswerComponent[];
 }

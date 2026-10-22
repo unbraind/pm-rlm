@@ -224,3 +224,55 @@ Child reach: 0/24. Delivered reads: 1; delivered aggregates: 13. Delivered respo
 
 Most-common constant guess: 2/24; constant zero: 1/24. Omitted to conserve owner quota: another complete arm requires 24 additional cloud requests. See [the constrained report](docs/EVAL-CONSTRAINED.md).
 <!-- eval-constrained:end -->
+
+## Answer evidence coverage
+
+Declare the parts of a question with `--components` (a JSON array of unique
+names), or `runRlm(question, { workspace, components })`. Every successfully completed recursive call
+returns each declared component exactly once, in declaration order, as
+`supported`, `unsupported`, or `unknown`. Legacy runs without declarations keep
+the execution-only contract; the evidence command refuses to certify them.
+A call that terminates in a typed refusal before producing an answer returns no
+components. A completion-hook refusal preserves an answer already recorded in
+the ledger.
+
+```sh
+pm rlm run 'Give the title and explain its cause' \
+  --components '["title","cause"]' --scope '{"ids":["item-id"]}' --json
+pm rlm evidence run-id --json
+pm rlm evidence run-id
+```
+
+The model requests a `witness` action with an item id and a nonempty UTF-16
+`start`/`end` range in the item's JSON representation. Each witness contains at
+most 1024 UTF-8 bytes and a SHA-256 digest binding its id, offsets, and exact
+text. An `answer` action supplies a nonempty answer and 1–8 distinct prior
+witness step/digest references for each supported component. Unsupported and
+unknown components require an empty answer, no witnesses, and a reason.
+There are at most 16 components (256 bytes per name) and 32768 bytes in the
+complete component answer. Unchecked free-text `finish` actions are refused.
+Children inherit declarations and must acquire their own witnesses from full
+items in their authorized slice; a child result alone cannot support a parent.
+
+Replay verifies every witness, including unused ones, against the frozen
+snapshot. Missing observations, wrong digests, missing components and unsupported
+claims cannot establish coverage. `pm rlm evidence` performs read-only replay
+with **zero model calls**, returning compact counts and component references in
+native TOON or JSON. `RlmEvidenceError` exposes code `evidence` and a `remedy`;
+model refusals carry both reason and remedy. CLI refusals print the remedy and
+exit 2; existing resource-limit refusals retain exit 3.
+
+Coverage certifies declared component coverage and source provenance. It does
+not prove that an excerpt semantically entails the answer, or that the caller
+declared every part of the natural-language question. See the
+[SDK and protocol example](docs/ANSWER-EVIDENCE.md) and
+[measured public-tracker acceptance](docs/answer-evidence-validation.json).
+
+## Without git
+
+Run, resume, replay, tree and evidence inspection work with plain-directory
+trackers and require no git executable. The SDK's optional `source_workspace`
+reads a separate source tracker without writing it; `workspace` receives the
+ledger. This captures source items only; history actions use the ledger tracker.
+Git is used only by development workflows that select committed public
+revisions for reproducible validation.

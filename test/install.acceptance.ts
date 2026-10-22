@@ -6,6 +6,8 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
+import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
+import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
 function execute(cwd: string, args: string[], executable: string, env: NodeJS.ProcessEnv): string {
@@ -22,9 +24,10 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
   const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
-  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|ACTION-DIAGNOSIS|LEDGER-STORAGE)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|ledger-scale)\.json$|CHANGELOG\.md$)/;
+  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|ledger-scale|answer-evidence-validation)\.json$|CHANGELOG\.md$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
+  for (const path of ['docs/ANSWER-EVIDENCE.md', 'docs/answer-evidence-validation.json']) assert.ok(packed[0].files.some(file => file.path === path));
     const consumer = join(scratch, manager); mkdirSync(consumer);
     writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'rlm-consumer-fixture', private: true, type: 'module', dependencies: { 'pm-rlm': `file:${join(scratch, packed[0].filename)}`, '@unbrained/pm-cli': manifest.devDependencies['@unbrained/pm-cli'] } }));
     execute(consumer, manager === 'npm' ? ['install', '--prefer-offline', '--ignore-scripts', '--no-audit', '--no-fund'] : ['install', '--ignore-scripts'], manager, env);
@@ -34,7 +37,7 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
     execute(consumer, [...prefix, 'init', '--prefix', 'rlm-consumer', '--defaults', '--agent-guidance', 'skip'], executable, hostEnv);
     execute(consumer, [...prefix, 'package', 'install', join(scratch, packed[0].filename)], executable, hostEnv);
     const help = execute(consumer, [...prefix, 'rlm', '--help'], executable, hostEnv);
-    for (const command of ['run', 'tree', 'resume', 'replay']) assert.ok(help.includes(command));
+    for (const command of ['run', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
     writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm } from 'pm-rlm';
@@ -52,5 +55,28 @@ console.log(JSON.stringify(result));
     assert.equal(tree.calls[0].status, 'closed'); assert.equal(tree.calls[0].result, 'packed result');
     assert.equal(tree.calls[0].reserved_tokens, 60); assert.equal(tree.calls[0].used_tokens, 60);
     assert.match(tree.calls[0].parent, /^rlm-consumer-/);
+
+    writeFileSync(join(consumer, 'create-evidence.ts'), `import { runRlm, sourceWitness, RlmEvidenceError } from 'pm-rlm';
+import { PmClient } from '@unbrained/pm-cli/sdk';
+import assert from 'node:assert/strict';
+assert.equal(typeof sourceWitness, 'function');
+assert.equal(typeof RlmEvidenceError, 'function');
+const client = new PmClient({ pmRoot: process.env.PM_PATH!, author: 'rlm-consumer', noExtensions: true });
+const item = (await client.create({ title: 'Packed evidence source' })).item;
+let index = 0;
+const result = await runRlm('Witness source', { workspace: process.env.PM_PATH!, components: ['source'], scope: { ids: [item.id] }, model: { name: 'packed-evidence', complete: async request => {
+  const transcript = JSON.parse(request.prompt.slice(request.prompt.lastIndexOf('\\n') + 1)).transcript;
+  const action = index++ === 0 ? { action: 'witness', id: item.id, start: 0, end: 20 } : { action: 'answer', components: [{ component: 'source', status: 'supported', answer: item.id, reason: '', witnesses: [{ step: 0, digest: transcript[0].observation.data.digest }] }] };
+  return { text: JSON.stringify(action), tokens_in: 40, tokens_out: 20 };
+} } });
+assert.equal(index, 2);
+console.log(JSON.stringify(result));
+`);
+    const evidenceRun = JSON.parse(execute(consumer, ['create-evidence.ts'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as { run: string; components: RlmAnswerComponent[] };
+    const expected: RlmEvidenceReport = { run: evidenceRun.run, verified: true, total: 1, supported: 1, unsupported: 0, unknown: 0, components: evidenceRun.components };
+    const evidence = JSON.parse(execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run, '--json'], executable, hostEnv)) as RlmEvidenceReport;
+    assert.deepEqual(evidence, expected);
+    const toon = execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run], executable, hostEnv);
+    assert.deepEqual(decodeToon(toon), expected);
 
 });

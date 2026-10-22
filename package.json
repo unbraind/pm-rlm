@@ -30,6 +30,8 @@
     "docs/eval-design.json",
     "docs/EVAL-CLOUD.md",
     "docs/LEDGER-STORAGE.md",
+    "docs/ANSWER-EVIDENCE.md",
+    "docs/answer-evidence-validation.json",
     "docs/ledger-scale.json"
   ],
   "scripts": {

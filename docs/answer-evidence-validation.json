@@ -1,0 +1,30 @@
+{
+  "source": "unbraind/pm-lint",
+  "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+  "source_items": 12,
+  "source_json_bytes": 54941,
+  "source_files": 30,
+  "source_files_unchanged": true,
+  "source_files_read_only": true,
+  "source_digest": "f1665e589bd722a78ff977019c30edd300b9bd6561f9b25baaa161d6a9c27133",
+  "non_git": true,
+  "git_executable_available_during_run": false,
+  "protocol_fixture": true,
+  "external_inference_calls": 0,
+  "model_steps": 4,
+  "validation_model_calls": 0,
+  "logical_calls": 1,
+  "components": 5,
+  "supported": 3,
+  "unsupported": 1,
+  "unknown": 1,
+  "verified_witnesses": 3,
+  "witness_bytes": [
+    64,
+    42,
+    89
+  ],
+  "report_json_bytes": 1172,
+  "tampering_refused": 2,
+  "elapsed_ms": 23422
+}
