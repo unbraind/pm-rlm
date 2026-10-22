@@ -15,9 +15,10 @@
 
 ### Fixed
 
+- Investigate cloud JSON action compliance with synthetic holdouts ([pm-rlm-58i4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-58i4.toon))
+- Reduce full-snapshot ledger storage amplification for large repeated runs ([pm-rlm-3isb](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-3isb.toon))
 - Record terminal typed failures for child calls ([pm-rlm-k7tv](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-k7tv.toon))
 - Align empty response checkpoint validation with engine recovery ([pm-rlm-sr0b](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-sr0b.toon))
-- Investigate cloud JSON action compliance with synthetic holdouts ([pm-rlm-58i4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-58i4.toon))
 - Checkpoint validation rejects engine-generated empty response steps and blocks recovery ([pm-rlm-github-dfe63798395a-5](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-5.toon))
 - Failed recursive child leaves successful runs unreplayable and unrecovered ([pm-rlm-github-dfe63798395a-4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-4.toon))
 

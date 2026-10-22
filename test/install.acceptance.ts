@@ -22,7 +22,7 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
   const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
-  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|ACTION-DIAGNOSIS)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/eval-design\.json$|CHANGELOG\.md$)/;
+  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|ACTION-DIAGNOSIS|LEDGER-STORAGE)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|ledger-scale)\.json$|CHANGELOG\.md$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
     const consumer = join(scratch, manager); mkdirSync(consumer);

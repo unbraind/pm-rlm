@@ -103,7 +103,7 @@ export interface RlmCall {
   /** Typed completion-hook refusal after a durable result; later result reuse does not repeat the hook. */
   completion_refusal?: { code: RlmErrorCode; reason: string };
 }
-/** Durable run checkpoint stored through the SDK in the root call's registered field. */
+/** Hydrated run checkpoint; v2 storage manifests resolve immutable blobs into this compatible shape. */
 export interface RlmState {
   version: 1;
   /** Missing/v1 keeps JSON-key ordering; v2 uses scalar type then value ordering. */
