@@ -6,12 +6,10 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-21T21:11:52.137Z"
-updated_at: "2026-10-22T15:49:31.422Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-22T16:00:23.515Z"
 author: codex-agent
 parent: pm-rlm-a1ih
-comments[18]:
+comments[19]:
   - created_at: "2026-10-21T21:12:22.094Z"
     author: codex-agent
     text: "Overlap checked against the pinned CLI SDK query/aggregate contract, pm-context context-pack/context-handoff and receipt APIs, and pm-rlm aggregate/replay code. Core owns arithmetic, pm-context assembles context bundles and usage receipts, and existing RLM replay certifies execution. None requires evidence coverage per declared question component. Plan: opt-in immutable component declarations, bounded source-witness observations, component-only final answers with supported/unsupported/unknown statuses, deterministic replay and read-only coverage CLI. Builds on PR #13; merge after it. Run targeted local tests/typecheck/lint and use unchanged CI npm/Bun release gates for full evidence."
@@ -67,6 +65,9 @@ comments[18]:
   - created_at: "2026-10-22T15:49:31.422Z"
     author: codex-agent
     text: "First full gate at e38b4c9 was rejected: CI passed 202/204 cases with the failed legacy terminal-child proof and its parent caused by a stale exact source snippet in test/revert.ts. Source coverage reached 100/100/100/100, but that is not a green release receipt. The local attempt also hit the inherited Linux crash-drill timeout and is excluded. Updated the legacy assignment anchor without weakening its mutation; a direct source-only proof now produces assertion exit 1 and restores bytes. Parsed all eight proof scripts: 125 statically declared source snippets match exactly, zero skipped and zero mismatches. Refined README to distinguish a terminal refusal before an answer from a completion-hook refusal retaining its recorded answer; the three focused documentation/child cases pass. Full final gates will be rerun on the committed correction."
+  - created_at: "2026-10-22T16:00:22.689Z"
+    author: codex-agent
+    text: "Final round 2 gates are green at source 86e20b8e35ca5bc564e0492f86f974d41f46e8ad: manual CI https://github.com/unbraind/pm-rlm/actions/runs/39808447506 passed Node 22 and 26. On Node 26, npm run release:check and bun run release:check each pass all 12 release stages, 204/204 package suite cases, 139/139 behavioral mutations across eight scripts (8+18+15+51+5+7+25+10), and 2/2 real packed npm/Bun consumers. Coverage is 100/100/100/100 over 25 authored files; 106 documented declarations, zero duplication, zero production vulnerabilities, 79-file package allowlist, changelog and publish attestation pass. Zero package-suite failures, skips, cancellations or todo. All three reviewed findings are fixed; the same-class sweep additionally covers parser/plain-tool remedy injection and valid typed child/model/completion-hook receipt replay/reuse. Linked evidence proofs pass 1/1 command and 18/18 mutations; the corrected legacy terminal-child source-only proof also independently fails by assertion when reverted. Earlier failed CI and local attempts remain excluded; the inherited local timeout is covered by the complete successful CI proof run. Final writes only record this receipt and release the claim; no package/test bytes change. No new pm CLI/SDK defect established. The feature stays in_progress for orchestrator verification, with no thread replies/resolutions, PR merge or release."
 files[18]{path,scope}:
   index.ts,project
   README.md,project
