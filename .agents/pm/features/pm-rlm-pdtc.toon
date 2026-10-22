@@ -6,12 +6,10 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-21T21:11:52.137Z"
-updated_at: "2026-10-22T18:39:15.847Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-22T18:54:43.938Z"
 author: codex-agent
 parent: pm-rlm-a1ih
-comments[23]:
+comments[25]:
   - created_at: "2026-10-21T21:12:22.094Z"
     author: codex-agent
     text: "Overlap checked against the pinned CLI SDK query/aggregate contract, pm-context context-pack/context-handoff and receipt APIs, and pm-rlm aggregate/replay code. Core owns arithmetic, pm-context assembles context bundles and usage receipts, and existing RLM replay certifies execution. None requires evidence coverage per declared question component. Plan: opt-in immutable component declarations, bounded source-witness observations, component-only final answers with supported/unsupported/unknown statuses, deterministic replay and read-only coverage CLI. Builds on PR #13; merge after it. Run targeted local tests/typecheck/lint and use unchanged CI npm/Bun release gates for full evidence."
@@ -82,6 +80,12 @@ comments[23]:
   - created_at: "2026-10-22T18:39:15.844Z"
     author: codex-agent
     text: "Revert proof for PRRT_kwDOVOym886vT18W: node test/evidence-revert.ts passed 20/20 independent mutations through the linked pm test command. Removing only value.length <= 16 makes the 17-distinct-name regression fail with AssertionError exit 1. Removing only entry.witnesses.length <= 8 makes the nine-distinct-successful-witness regression fail with AssertionError exit 1. Each mutation restores exact source bytes; the other 18 evidence proofs also pass. Both valid-at-limit controls pass with the authored validators."
+  - created_at: "2026-10-22T18:53:41.581Z"
+    author: codex-agent
+    text: "Full source gate receipt at 5345a5d3c9a565948f6adc9d9f4b4b4785c6d088: manual CI https://github.com/unbraind/pm-rlm/actions/runs/39833322552 passed Node 22 and 26. On Node 26, npm run release:check and bun run release:check EACH passed all 12 stages, 206/206 package tests (zero failed, cancelled or skipped), 141/141 behavioral mutations across eight shallow-clone scripts (8+20+15+51+5+7+25+10), and 2/2 actual packed npm/Bun consumers. Both measured 100/100/100/100 across 25 authored files, 106 documented declarations, zero duplication, zero production vulnerabilities, 79 allowed packed files, valid generated changelog and publish attestation. Thresholds, dependency pins and timeouts are unchanged. No Outside diff range finding was present in the latest review. No review thread was replied to or resolved."
+  - created_at: "2026-10-22T18:54:42.406Z"
+    author: codex-agent
+    text: "Local full npm attempt exited 1 during coverage: 204 passed, 2 failed, zero skipped/cancelled. Both failures are the inherited Linux-only partial-write drills mutation and its parent shallow-clone test: the nested spawnSync hit the unchanged 120-second timeout under host load. This local attempt is excluded from green receipts. The identical mutation passed in the completed Node 22 CI suite and in BOTH full Node 26 npm/Bun gates at 5345a5d; no timeout increase or test skip was applied. Evidence baseline is 22/22, isolated boundary selection 2/2, and direct evidence revert command 20/20. Final review inventory still has only PRRT_kwDOVOym886vT18W, now outdated by the fix; threads remain untouched. Original history is preserved as an exact byte prefix. No new pm CLI/SDK defect was established; the existing dev dependency advisory follow-up remains pm-rlm-wiav."
 files[18]:
   - path: index.ts
     scope: project
@@ -121,13 +125,15 @@ files[18]:
     scope: project
   - path: test/v2-revert.ts
     scope: project
-tests[6]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+tests[8]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=1 test/evidence.test.ts test/core.test.ts test/commands.test.ts,project,300,codex-agent,"2026-10-21T21:21:10.395Z",local_mutation,feat/answer-evidence-coverage
   node test/evidence-revert.ts,project,300,codex-agent,"2026-10-21T21:23:10.322Z",local_mutation,feat/answer-evidence-coverage
   node test/evidence-public.ts,project,300,codex-agent,"2026-10-21T21:23:11.357Z",local_mutation,feat/answer-evidence-coverage
   "npm run test:install",project,300,codex-agent,"2026-10-21T21:33:35.033Z",local_mutation,feat/answer-evidence-coverage
   node --test --test-concurrency=1 test/evidence.test.ts,project,300,codex-agent,"2026-10-22T15:21:38.733Z",local_mutation,feat/answer-evidence-coverage
   "node --test --test-name-pattern=\"upper bound independently\" test/evidence.test.ts",project,120,codex-agent,"2026-10-22T18:36:32.052Z",local_mutation,feat/answer-evidence-coverage
+  "npm run release:check",project,1800,codex-agent,"2026-10-22T18:54:39.245Z",local_mutation,feat/answer-evidence-coverage
+  "bun run release:check",project,1800,codex-agent,"2026-10-22T18:54:40.703Z",local_mutation,feat/answer-evidence-coverage
 docs[3]:
   - path: docs/answer-evidence-validation.json
     scope: project
