@@ -108,7 +108,7 @@ test('successful recursive calls cover components while typed child refusals sta
   assert.equal(model.requests.length, 4);
   const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
   assert.match(readme, /Every successfully completed recursive call\s+returns each declared component exactly once, in declaration order/);
-  assert.match(readme, /Calls ending in typed refusals remain failed calls without component answers/);
+  assert.match(readme, /A call that terminates in a typed refusal before producing an answer returns no\s+components/);
   assert.match(readme, /Legacy runs without declarations keep\s+the execution-only contract/);
 });
 
@@ -164,6 +164,7 @@ for (const hook of [false, true]) test(`child ${hook ? 'completion' : 'model'} e
   const state = await ledger.load(run.run);
   const receipt = hook ? 'completion_refusal' : 'failure';
   assert.deepEqual(state.calls[1][receipt], { code: 'evidence', reason: 'Synthetic child evidence refusal', remedy });
+  assert.equal(state.calls[1].result, hook ? JSON.stringify([component('unknown')]) : undefined);
   assert.equal((state.calls[0].steps[1].observation as { remedy: string }).remedy, remedy);
   if (!hook) assert.equal((state.calls[0].steps[2].observation as { remedy: string }).remedy, remedy);
   await verifyUnknownRun(workspace, run, model);

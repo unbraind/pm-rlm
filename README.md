@@ -232,7 +232,9 @@ names), or `runRlm(question, { workspace, components })`. Every successfully com
 returns each declared component exactly once, in declaration order, as
 `supported`, `unsupported`, or `unknown`. Legacy runs without declarations keep
 the execution-only contract; the evidence command refuses to certify them.
-Calls ending in typed refusals remain failed calls without component answers.
+A call that terminates in a typed refusal before producing an answer returns no
+components. A completion-hook refusal preserves an answer already recorded in
+the ledger.
 
 ```sh
 pm rlm run 'Give the title and explain its cause' \
