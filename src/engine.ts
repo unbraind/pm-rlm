@@ -97,11 +97,16 @@ function recordedAction(state: RlmState, call: RlmCall, step: RlmStep): RlmActio
   catch (error) {
     // parseAction exposes only typed RlmError refusals for recorded string outputs.
     const refusal = error as RlmError;
-    const observation = step.observation as { refused?: unknown; reason?: unknown } | undefined;
+    const observation = step.observation as { refused?: unknown; reason?: unknown; remedy?: unknown } | undefined;
     const legacyCodeOnly = (state.parser_version ?? 1) === 1 && observation?.reason === undefined;
-    if (observation?.refused !== refusal.code || (!legacyCodeOnly && observation?.reason !== refusal.message)) throw new RlmError('replay', `Recorded parse refusal differs at step ${call.id}:${call.steps.indexOf(step)}`);
+    if (observation?.refused !== refusal.code || (!legacyCodeOnly && observation?.reason !== refusal.message) || observation!.remedy !== undefined) throw new RlmError('replay', `Recorded parse refusal differs at step ${call.id}:${call.steps.indexOf(step)}`);
     return undefined;
   }
+}
+/** Rebuild a terminal child refusal with its authenticated corrective text when present. */
+function recordedChildRefusal(failure: NonNullable<RlmCall['failure']>): RlmError {
+  const reason = failure.reason ?? 'Recorded child refusal';
+  return failure.remedy === undefined ? new RlmError(failure.code, reason) : new RlmEvidenceError(reason, failure.remedy);
 }
 /** Bounded recursive loop backed by a durable SDK call graph. */
 export class RlmEngine {
@@ -126,12 +131,13 @@ export class RlmEngine {
     try { return await this.execute(call); }
     catch (error) {
       if (!(error instanceof RlmError)) throw error;
+      const failure = { code: error.code, reason: error.message, ...(error instanceof RlmEvidenceError ? { remedy: error.remedy } : {}) };
       if (call.result === undefined) {
-        call.failure = { code: error.code, reason: error.message };
+        call.failure = failure;
         await this.ledger.save(state);
         await this.ledger.complete(state, call);
       } else {
-        call.completion_refusal = { code: error.code, reason: error.message };
+        call.completion_refusal = failure;
         await this.ledger.save(state);
       }
       throw error;
@@ -189,8 +195,9 @@ export class RlmEngine {
           let refusal: RlmError | undefined;
           let answer: string | undefined;
           try { answer = completion(state, call, action, index); } catch (error) { refusal = error as RlmError; }
-          const recorded = step.observation as { refused?: string; reason?: string } | undefined;
-          if (refusal !== undefined ? recorded?.refused !== refusal.code || recorded.reason !== refusal.message : recorded !== undefined || call.result !== answer) throw new RlmError('replay', 'Recorded component completion differs');
+          const recorded = step.observation as { refused?: string; reason?: string; remedy?: unknown } | undefined;
+          const remedy = refusal instanceof RlmEvidenceError ? refusal.remedy : undefined;
+          if (refusal !== undefined ? recorded?.refused !== refusal.code || recorded.reason !== refusal.message || recorded.remedy !== remedy : recorded !== undefined || call.result !== answer) throw new RlmError('replay', 'Recorded component completion differs');
           if (refusal === undefined) completed = true;
           continue;
         }
@@ -211,7 +218,7 @@ export class RlmEngine {
               await visit(child);
               validatingChild = false;
               const failure = child.failure ?? (reused ? undefined : child.completion_refusal);
-              if (failure !== undefined) throw new RlmError(failure.code, failure.reason ?? 'Recorded child refusal');
+              if (failure !== undefined) throw recordedChildRefusal(failure);
               return child.result ?? '';
             });
           } catch (error) {
@@ -228,7 +235,8 @@ export class RlmEngine {
             catch (error) { refusal = error as RlmError; }
           }
           const legacyCodeOnly = (state.parser_version ?? 1) === 1 && !('reason' in observation);
-          if (refusal === undefined || observation.refused !== refusal.code || (!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message))) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
+          const remedy = refusal instanceof RlmEvidenceError ? refusal.remedy : undefined;
+          if (refusal === undefined || observation.refused !== refusal.code || (!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message)) || (observation as { remedy?: unknown }).remedy !== remedy) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
         } else if ('estimated_tokens' in observation && typeof observation.estimated_tokens === 'number') {
           state.reserved_tokens += observation.estimated_tokens;
         }
@@ -241,7 +249,7 @@ export class RlmEngine {
   private async execute(call: RlmCall): Promise<string> {
     const state = this.state;
     await this.ledger.materialize(state, call);
-    if (call.failure !== undefined) { await this.ledger.complete(state, call); throw new RlmError(call.failure.code, call.failure.reason ?? 'Recorded child refusal'); }
+    if (call.failure !== undefined) { await this.ledger.complete(state, call); throw recordedChildRefusal(call.failure); }
     if (call.result !== undefined) { await this.ledger.complete(state, call); return call.result; }
     let index = 0;
     for (;;) {

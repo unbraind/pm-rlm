@@ -1,16 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
 import { runRlm, replayRlm, resumeRlm, evidenceRlm } from '../src/engine.ts';
 import { RlmLedger } from '../src/ledger.ts';
+import { RlmError } from '../src/errors.ts';
 import { parseComponents, sourceWitness, validateAnswer, RlmEvidenceError } from '../src/evidence.ts';
 import { runCommand } from '../src/commands.ts';
 import { compatibleAction, acceptsSchema, ACTION_SCHEMA } from '../src/action-schema.ts';
 import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
-import type { RlmAnswerComponent, RlmState, RlmItem } from '../src/types.ts';
+import type { RlmAnswerComponent, RlmResult, RlmState, RlmItem } from '../src/types.ts';
 import { httpFixture, requestBody } from './http.ts';
 import { writeRlmSettings } from '../src/settings.ts';
 import { ScriptedModel, tracker } from './helpers.ts';
@@ -29,6 +30,14 @@ async function supportedRun(workspace: string, id: string, source_workspace?: st
   const run = await runRlm('What title is witnessed?', { workspace, source_workspace, components: ['title'], scope: { ids: [id] }, model });
   return { run, model };
 }
+/** Positive validation refusals must become assertion failures in behavioral revert proofs. */
+async function verifyUnknownRun(workspace: string, run: RlmResult, model: ScriptedModel): Promise<void> {
+  await assert.doesNotReject(async () => {
+    assert.deepEqual(await replayRlm(workspace, run.run), run);
+    assert.deepEqual(await evidenceRlm(workspace, run.run), { run: run.run, verified: true, total: 1, supported: 0, unsupported: 0, unknown: 1, components: [component('unknown')] });
+    assert.deepEqual(await resumeRlm(workspace, run.run, model), run);
+  });
+}
 
 test('evidence works in a non-git tracker with no git executable and zero validation inference', async t => {
   const { workspace, root, client } = await tracker(t);
@@ -42,7 +51,7 @@ test('evidence works in a non-git tracker with no git executable and zero valida
   assert.equal(model.requests.length, 2);
   const before = JSON.stringify((await client.listAllComplete({ includeBody: true })).items);
   const report = await evidenceRlm(workspace, run.run);
-  assert.equal(report.verified, true); assert.equal(report.supported, 1); assert.equal(report.unknown, 0); assert.equal(report.unsupported, 0);
+  assert.deepEqual(report, { run: run.run, verified: true, total: 1, supported: 1, unsupported: 0, unknown: 0, components: run.components });
   assert.deepEqual(await replayRlm(workspace, run.run), run);
   assert.equal(JSON.stringify((await client.listAllComplete({ includeBody: true })).items), before);
   assert.deepEqual(await resumeRlm(workspace, run.run, model), run);
@@ -57,8 +66,8 @@ test('evidence works in a non-git tracker with no git executable and zero valida
   for (const json of [false, true]) {
     const execution = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'evidence', run.run, ...(json ? ['--json'] : [])], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace } });
     assert.equal(execution.status, 0, execution.stderr);
-    const decoded = (json ? JSON.parse(execution.stdout) : decodeToon(execution.stdout)) as { supported: number };
-    assert.equal(decoded.supported, 1);
+    const decoded = (json ? JSON.parse(execution.stdout) : decodeToon(execution.stdout)) as typeof report;
+    assert.deepEqual(decoded, report);
     assert.ok(Buffer.byteLength(execution.stdout) < 1500);
   }
 });
@@ -76,6 +85,101 @@ test('omitted witnesses and legacy finish cannot support declared components', a
     assert.ok((step.observation as { remedy: string }).remedy.length > 0);
   }
   assert.deepEqual(await replayRlm(workspace, run.run), run);
+});
+
+/** Failed children retain typed terminal evidence without pretending to return component answers. */
+test('successful recursive calls cover components while typed child refusals stay terminal', async t => {
+  const { workspace, client } = await tracker(t);
+  await client.create({ title: 'Synthetic recursive source' });
+  const model = new ScriptedModel((_request, index) => {
+    if (index === 0) return '{"action":"partition","filter":{},"maxTokens":4096}';
+    if (index === 1) return '{"action":"spawn","subgoal":"Read source","slice":{"partition_step":0,"index":0}}';
+    if (index === 2) throw new RlmError('model', 'Synthetic child model refusal');
+    return JSON.stringify({ action: 'answer', components: [component('unknown')] });
+  });
+  const run = await runRlm('Title?', { workspace, components: ['title'], model });
+  const state = await new RlmLedger(workspace).load(run.run);
+  assert.deepEqual(run.components, [component('unknown')]);
+  assert.equal(state.calls.length, 2);
+  assert.equal(state.calls[1].result, undefined);
+  assert.deepEqual(state.calls[1].failure, { code: 'model', reason: 'Synthetic child model refusal' });
+  assert.deepEqual(await replayRlm(workspace, run.run), run);
+  assert.deepEqual(await resumeRlm(workspace, run.run, model), run);
+  assert.equal(model.requests.length, 4);
+  const readme = await readFile(new URL('../README.md', import.meta.url), 'utf8');
+  assert.match(readme, /Every successfully completed recursive call\s+returns each declared component exactly once, in declaration order/);
+  assert.match(readme, /Calls ending in typed refusals remain failed calls without component answers/);
+  assert.match(readme, /Legacy runs without declarations keep\s+the execution-only contract/);
+});
+
+/** Every refusal path authenticates corrective text before validation can reuse a ledger. */
+for (const scenario of [
+  { name: 'component', output: '{"action":"finish","answer":"unchecked"}', evidence: true },
+  { name: 'witness', output: '{"action":"witness","id":"absent","start":0,"end":1}', evidence: true },
+  { name: 'plain tool', output: '{"action":"get","id":"absent","fields":["title"]}', evidence: false },
+  { name: 'parse', output: 'not a JSON action', evidence: false },
+]) test(`recorded ${scenario.name} refusal remedy integrity`, async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel((_request, index) => index === 0 ? scenario.output : JSON.stringify({ action: 'answer', components: [component('unknown')] }));
+  const run = await runRlm('Title?', { workspace, components: ['title'], model });
+  const ledger = new RlmLedger(workspace);
+  const original = await ledger.load(run.run);
+  const refusal = original.calls[0].steps[0].observation as { remedy?: unknown };
+  assert.equal(typeof refusal.remedy, scenario.evidence ? 'string' : 'undefined');
+  await verifyUnknownRun(workspace, run, model);
+  assert.equal(model.requests.length, 2);
+  const paths = [join(workspace, 'tasks', `${run.run}.toon`), join(workspace, 'history', `${run.run}.jsonl`)];
+  for (const unfinished of [false, true]) for (const remedy of scenario.evidence ? ['forged corrective text', undefined, 42] : ['forged corrective text', null, 42]) {
+    const tampered = structuredClone(original);
+    const observation = tampered.calls[0].steps[0].observation as { remedy?: unknown };
+    if (remedy === undefined) delete observation.remedy;
+    else observation.remedy = remedy;
+    if (unfinished) { delete tampered.calls[0].result; tampered.calls[0].steps.pop(); }
+    await ledger.save(tampered);
+    const before = await Promise.all(paths.map(path => readFile(path)));
+    await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
+    await assert.rejects(evidenceRlm(workspace, run.run), { code: 'replay' });
+    const noInference = new ScriptedModel(() => assert.fail('Tampered remedy must be refused before inference'));
+    await assert.rejects(resumeRlm(workspace, run.run, noInference), { code: 'replay' });
+    assert.equal(noInference.requests.length, 0);
+    assert.deepEqual(await Promise.all(paths.map(path => readFile(path))), before);
+  }
+});
+
+/** Terminal child receipts must preserve remedies for replay and failed-call reuse. */
+for (const hook of [false, true]) test(`child ${hook ? 'completion' : 'model'} evidence remedy survives replay and reuse`, async t => {
+  const { workspace, client } = await tracker(t);
+  await client.create({ title: 'Synthetic terminal receipt source' });
+  const remedy = 'Request a source witness before answering';
+  const model = new ScriptedModel((_request, index) => {
+    if (index === 0) return '{"action":"partition","filter":{},"maxTokens":4096}';
+    if (index === 1 || index === 3) return '{"action":"spawn","subgoal":"Read source","slice":{"partition_step":0,"index":0}}';
+    if (index === 2 && !hook) throw new RlmEvidenceError('Synthetic child evidence refusal', remedy);
+    return JSON.stringify({ action: 'answer', components: [component('unknown')] });
+  });
+  const run = await runRlm('Title?', { workspace, components: ['title'], model, on_call_complete: call => {
+    if (hook && call.depth === 1) throw new RlmEvidenceError('Synthetic child evidence refusal', remedy);
+  } });
+  const ledger = new RlmLedger(workspace);
+  const state = await ledger.load(run.run);
+  const receipt = hook ? 'completion_refusal' : 'failure';
+  assert.deepEqual(state.calls[1][receipt], { code: 'evidence', reason: 'Synthetic child evidence refusal', remedy });
+  assert.equal((state.calls[0].steps[1].observation as { remedy: string }).remedy, remedy);
+  if (!hook) assert.equal((state.calls[0].steps[2].observation as { remedy: string }).remedy, remedy);
+  await verifyUnknownRun(workspace, run, model);
+  assert.equal(model.requests.length, 5);
+  for (const value of [42, null, 'non-evidence code']) {
+    const malformed = structuredClone(state);
+    const refusal = malformed.calls[1][receipt] as unknown as { code: string; remedy: unknown };
+    if (value === 'non-evidence code') refusal.code = 'model';
+    else refusal.remedy = value;
+    await ledger.save(malformed);
+    await assert.rejects(ledger.load(run.run), { code: 'incomplete' });
+  }
+  const tampered = structuredClone(state);
+  (tampered.calls[0].steps[1].observation as { remedy: string }).remedy = 'forged corrective text';
+  await ledger.save(tampered);
+  await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
 });
 
 test('recursive children inherit declarations and cannot lend a parent their witness steps', async t => {

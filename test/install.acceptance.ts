@@ -6,6 +6,8 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
+import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
+import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
 function execute(cwd: string, args: string[], executable: string, env: NodeJS.ProcessEnv): string {
@@ -70,10 +72,11 @@ const result = await runRlm('Witness source', { workspace: process.env.PM_PATH!,
 assert.equal(index, 2);
 console.log(JSON.stringify(result));
 `);
-    const evidenceRun = JSON.parse(execute(consumer, ['create-evidence.ts'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as { run: string };
-    const evidence = JSON.parse(execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run, '--json'], executable, hostEnv)) as { verified: boolean; supported: number; total: number };
-    assert.equal(evidence.verified, true); assert.equal(evidence.supported, 1); assert.equal(evidence.total, 1);
+    const evidenceRun = JSON.parse(execute(consumer, ['create-evidence.ts'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as { run: string; components: RlmAnswerComponent[] };
+    const expected: RlmEvidenceReport = { run: evidenceRun.run, verified: true, total: 1, supported: 1, unsupported: 0, unknown: 0, components: evidenceRun.components };
+    const evidence = JSON.parse(execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run, '--json'], executable, hostEnv)) as RlmEvidenceReport;
+    assert.deepEqual(evidence, expected);
     const toon = execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run], executable, hostEnv);
-    assert.match(toon, /verified: true/); assert.match(toon, /supported: 1/);
+    assert.deepEqual(decodeToon(toon), expected);
 
 });

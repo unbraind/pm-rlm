@@ -111,9 +111,9 @@ export interface RlmCall {
   digest: string;
   steps: RlmStep[];
   result?: string;
-  failure?: { code: RlmErrorCode; reason?: string };
+  failure?: { code: RlmErrorCode; reason?: string; remedy?: string };
   /** Typed completion-hook refusal after a durable result; later result reuse does not repeat the hook. */
-  completion_refusal?: { code: RlmErrorCode; reason: string };
+  completion_refusal?: { code: RlmErrorCode; reason: string; remedy?: string };
 }
 /** Hydrated run checkpoint; v2 storage manifests resolve immutable blobs into this compatible shape. */
 export interface RlmState {

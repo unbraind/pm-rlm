@@ -228,10 +228,11 @@ Most-common constant guess: 2/24; constant zero: 1/24. Omitted to conserve owner
 ## Answer evidence coverage
 
 Declare the parts of a question with `--components` (a JSON array of unique
-names), or `runRlm(question, { workspace, components })`. Every recursive call
-then returns each declared component exactly once, in declaration order, as
+names), or `runRlm(question, { workspace, components })`. Every successfully completed recursive call
+returns each declared component exactly once, in declaration order, as
 `supported`, `unsupported`, or `unknown`. Legacy runs without declarations keep
 the execution-only contract; the evidence command refuses to certify them.
+Calls ending in typed refusals remain failed calls without component answers.
 
 ```sh
 pm rlm run 'Give the title and explain its cause' \

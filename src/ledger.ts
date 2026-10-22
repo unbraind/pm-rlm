@@ -96,6 +96,11 @@ export class RlmLedger {
           if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay', 'evidence'].includes(text(refusal.code))) throw new Error('Invalid completion refusal');
           text(refusal.reason);
         }
+        for (const failure of [call.failure, call.completion_refusal]) {
+          if (failure === undefined) continue;
+          const refusal = record(failure);
+          if (refusal.remedy !== undefined && (refusal.code !== 'evidence' || typeof refusal.remedy !== 'string')) throw new Error('Invalid refusal remedy');
+        }
         if (!Array.isArray(call.steps)) throw new Error('Invalid steps');
         for (const entry of call.steps) {
           const step = record(entry);
