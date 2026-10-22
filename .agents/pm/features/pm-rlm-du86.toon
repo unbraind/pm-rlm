@@ -2,20 +2,23 @@ id: pm-rlm-du86
 title: Bounded local and compatible model adapters
 description: ""
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-18T19:32:52.555Z"
-updated_at: "2026-10-19T02:35:17.265Z"
+updated_at: "2026-10-21T19:23:32.654Z"
+closed_at: "2026-10-21T19:23:20.352Z"
+completed_at: "2026-10-21T19:23:20.352Z"
 author: codex-agent
 estimated_minutes: 60
 acceptance_criteria: "Ollama and compatible transports validate responses, never persist env keys; malformed actions spend reserved budget; scripted double is test only."
 parent: pm-rlm-a1ih
-comments[4]{created_at,author,text}:
+comments[5]{created_at,author,text}:
   "2026-10-18T20:05:18.970Z",codex-agent,"Actual ephemeral HTTP endpoints verified Ollama and compatible payloads, env-only credentials, provider usage, malformed responses and transport failures. Invalid JSON and unknown actions remain billable refused steps. Settings use audited SDK workspace mutation. Production adapters contain no scripted model."
   "2026-10-18T21:34:31.131Z",codex-agent,"Review finding fixed: HttpModel rethrows existing typed RlmError diagnostics unchanged, while network/abort/JSON failures retain the sanitized generic error. Actual local HTTP regressions distinguish endpoint refusal, missing choices, invalid response shapes, output allowance, and bounded usage validation; no response body or credential is surfaced."
   "2026-10-18T23:30:54.172Z",codex-agent,"Review threads WKb and WKl: successful HTTP responses are read incrementally with an 8 MiB hard byte ceiling before JSON parsing, retaining the separate output allowance. A real chunked HTTP fixture covers oversized metadata with tiny model text, missing body and malformed JSON. Complete settings share a validator; remote OpenAI endpoints require HTTPS while localhost, IPv4 and IPv6 loopback HTTP remain supported. Invalid URL and credential-name cases fail with typed diagnostics."
   "2026-10-19T02:14:58.945Z",codex-agent,"All four round-3 review findings were fixed and behaviorally reverted: redirects reject before forwarding prompts in both HTTP protocols; rejected streaming bodies cancel promptly; missing or malformed spawn observations produce typed replay refusals, including the actual SIGKILL checkpoint; public-revision Git reads disable replacement objects. Individual guard removal makes each focused regression fail. The complete runner passed 24/24 proofs and restored source hashes. Model-protocol compliance and transport refusals in the live result remain measured limitations, not SDK correctness claims."
+  "2026-10-21T19:22:02.538Z",codex-agent,"Authorized tracker reconciliation, audit 2026-10-21. Owner-authorized takeover of any historical assignment for this verified terminal transition. Reverified current main ef32c4cad9ad: merged #2 (90b99a0); source tree exactly matches the audited snapshot. **Bounded local and compatible model adapters.** [PR #2](https://github.com/unbraind/pm-rlm/pull/2) (90b99a0), refined in #8, delivers typed complete environment reads, durable call ledger/budgets, crash resume, versioned replay, bounded adapters and terminal child-refusal evidence; corresponding real-SDK and behavioral-revert fixtures are committed."
 files[6]{path,scope}:
   src/adapters.ts,project
   src/protocol.ts,project
@@ -29,4 +32,5 @@ tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   ARCHITECTURE.md,project
   README.md,project
+close_reason: "Reverified current main ef32c4cad9ad: merged #2 (90b99a0); source tree exactly matches the audited snapshot. **Bounded local and compatible model adapters.** [PR #2](https://github.com/unbraind/pm-rlm/pull/2) (90b99a0), refined in #8, delivers typed complete environment reads, durable call ledger/budgets, crash resume, versioned replay, bounded adapters and terminal child-refusal evidence; corresponding real-SDK and behavioral-revert fixtures are committed."
 body: ""

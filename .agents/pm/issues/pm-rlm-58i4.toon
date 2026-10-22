@@ -6,19 +6,38 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-19T02:14:44.023Z"
-updated_at: "2026-10-19T07:32:41.928Z"
+updated_at: "2026-10-22T12:13:22.358Z"
 author: codex-agent
 estimated_minutes: 90
 acceptance_criteria: Reproduce and classify strict JSON failures with independent synthetic prompts; distinguish provider transport and formatting failures; establish valid action and answer envelopes before another comparative eval; use no additional model quota without owner authorization.
 parent: pm-rlm-a1ih
-comments[3]{created_at,author,text}:
-  "2026-10-19T05:34:09.355Z",codex-agent,"Round 6 identified an evaluation instruction conflict: shared question text demanded a bare integer or id while each arm required JSON. The historical cloud scores are invalidated and retained unchanged, including all 24 original rows and source fingerprints. Corrected questions are format-neutral; arm protocols continue to own their JSON formats. Independent follow-up remeasurement is required; no live model calls were made this round."
-  "2026-10-19T06:06:55.604Z",codex-agent,"The new authorized v2 run has exposed an exact transport/model shape: reasoning appears in the response text with no opening think delimiter, repeated JSON examples and a closing think tag before another action object. An exact text fixture and negative regression are now retained. Historical cloud strings remain unavailable, so this is new evidence rather than a reconstruction of the old 451 failures. Investigation of a transport-level reasoning boundary remains open; no additional live calls are authorized beyond the single running comparison."
-  "2026-10-19T07:28:29.499Z",codex-agent,"Final v2 diagnosis: historical 451 raw strings remain unavailable. New retained responses show unmatched reasoning ends with prose or repeated JSON examples, truncation, and malformed envelopes. Complete new shape counts: closing-tag excess 340, unclosed explicit reasoning 1, other prose/malformed JSON 413. Specific parser reasons: unterminated reasoning 294, ambiguous trailing objects 292, unterminated object 61, no object 26, ambiguous envelope 76, invalid JSON 4, unknown action 1. Exact positive and negative fixtures are committed; inference code remained frozen. Continued provider/model protocol compliance is an open risk despite 13 delivered aggregates and one exact result. No extra live calls were made."
-files[3]{path,scope}:
+comments[6]:
+  - created_at: "2026-10-19T05:34:09.355Z"
+    author: codex-agent
+    text: "Round 6 identified an evaluation instruction conflict: shared question text demanded a bare integer or id while each arm required JSON. The historical cloud scores are invalidated and retained unchanged, including all 24 original rows and source fingerprints. Corrected questions are format-neutral; arm protocols continue to own their JSON formats. Independent follow-up remeasurement is required; no live model calls were made this round."
+  - created_at: "2026-10-19T06:06:55.604Z"
+    author: codex-agent
+    text: "The new authorized v2 run has exposed an exact transport/model shape: reasoning appears in the response text with no opening think delimiter, repeated JSON examples and a closing think tag before another action object. An exact text fixture and negative regression are now retained. Historical cloud strings remain unavailable, so this is new evidence rather than a reconstruction of the old 451 failures. Investigation of a transport-level reasoning boundary remains open; no additional live calls are authorized beyond the single running comparison."
+  - created_at: "2026-10-19T07:28:29.499Z"
+    author: codex-agent
+    text: "Final v2 diagnosis: historical 451 raw strings remain unavailable. New retained responses show unmatched reasoning ends with prose or repeated JSON examples, truncation, and malformed envelopes. Complete new shape counts: closing-tag excess 340, unclosed explicit reasoning 1, other prose/malformed JSON 413. Specific parser reasons: unterminated reasoning 294, ambiguous trailing objects 292, unterminated object 61, no object 26, ambiguous envelope 76, invalid JSON 4, unknown action 1. Exact positive and negative fixtures are committed; inference code remained frozen. Continued provider/model protocol compliance is an open risk despite 13 delivered aggregates and one exact result. No extra live calls were made."
+  - created_at: "2026-10-21T18:53:28.733Z"
+    author: codex-agent
+    text: "Authorized tracker reconciliation, audit 2026-10-21. Reverified current main ef32c4cad9ad: merged #8 (780c03f); source tree exactly matches the audited snapshot. **Investigate cloud JSON action compliance with synthetic holdouts.** [PR #8](https://github.com/unbraind/pm-rlm/pull/8) commits retained positive/negative protocol fixtures and measured refusal classification; the investigation is delivered even though provider compliance remains poor. No new live calls are needed for this audit."
+    edited_at: "2026-10-22T12:11:20.589Z"
+  - created_at: "2026-10-22T12:10:50.178Z"
+    author: codex-agent
+    text: "PR #14 review: main a9e3428 contains parser fixtures and measured refusals but no independent synthetic-prompt holdout receipt establishing valid action and answer envelopes before comparison. Restored this investigation to in_progress without making new model calls. Seven malformed audit comments will be corrected with supported comment edits; original history stays an immutable byte prefix. All other reconciliation closures will be checked against main."
+  - created_at: "2026-10-22T12:13:13.646Z"
+    author: codex-agent
+    text: "PR #14 evidence proof: 8/8 malformed current comments corrected through pm comments --edit (the seven reviewed plus v2agg from the full diff sweep). All eight original JSONL streams remain byte-for-byte prefixes with new comment_edit events; seven unaffected closure records retain identical status and close_reason. 58i4 is active and terminal metadata is cleared by the supported update. Rechecked all ten reconciliation records against main a9e3428: the other nine map to committed implementation, fixtures, recovery/revert tests and measured reports. ACTION-DIAGNOSIS and EVAL-V2 do not establish the missing independent holdout prerequisite. Tracker-only evidence replaces function reversion; no source changed. Linked git diff --check passes 1/1. Isolated strict health passes all ten check categories with only nonblocking stale-item and telemetry-queue advisories; normal-home health exposes an unrelated global extension version mismatch. npm ci passes; final changelog generation/check follow claim release."
+files[4]{path,scope}:
+  .agents/pm/issues/pm-rlm-58i4.toon,project
   src/adapters.ts,project
   src/protocol.ts,project
   test/live.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  git diff --check,project,codex-agent,"2026-10-22T12:12:22.862Z",local_mutation,chore/reconcile-tracker-1021
 docs[4]{path,scope}:
   docs/ACTION-DIAGNOSIS.md,project
   docs/EVAL-CLOUD.md,project
