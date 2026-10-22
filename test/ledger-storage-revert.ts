@@ -2,6 +2,7 @@
 import { proveRevert } from './revert-source.ts';
 
 const testFile = 'test/ledger-storage.test.ts';
+if (process.argv[2] !== '--review-only') {
 proveRevert({ name: 'legacy inline writer', file: 'src/blobs.ts', before: "    return JSON.stringify({ version: 2, run: state.run, reserved_tokens, snapshot: snapshotRef, transcript });", after: '    return JSON.stringify(state);', pattern: 'content addressed manifests' }, testFile);
 proveRevert({ name: 'digest verification', file: 'src/blobs.ts', before: "    if (bytes === null || blobDigest(bytes) !== digest) throw new RlmError('incomplete', 'Ledger blob is missing or corrupt');", after: "    if (bytes === null) throw new RlmError('incomplete', 'Ledger blob is missing or corrupt');", pattern: 'blob reads refuse' }, testFile);
 proveRevert({ name: 'reachable blob collection', file: 'src/blobs.ts', before: '        await removeFileIfExists(path);', after: '        void path;', pattern: 'GC removes orphans' }, testFile);
@@ -14,4 +15,10 @@ proveRevert({ name: 'by-value transcript hydration', file: 'src/ledger.ts', befo
 proveRevert({ name: "raw-byte verified reads", file: 'src/blobs.ts', before: "    const bytes = await sdkRead(() => this.read(path));\n    if (bytes === null || blobDigest(bytes) !== digest) throw new RlmError('incomplete', 'Ledger blob is missing or corrupt');\n    const value: unknown = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));", after: "    const bytes = await sdkRead(async () => (await this.read(path))?.toString('utf8') ?? null);\n    if (bytes === null || blobDigest(bytes) !== digest) throw new RlmError('incomplete', 'Ledger blob is missing or corrupt');\n    const value: unknown = JSON.parse(bytes);", pattern: "raw UTF-8 integrity" }, testFile);
 proveRevert({ name: "raw-byte immutable reuse", file: 'src/blobs.ts', before: "    else if (!previous.equals(Buffer.from(bytes))) throw new RlmError('incomplete', 'Ledger blob digest mismatch');", after: "    else if (previous.toString('utf8') !== bytes) throw new RlmError('incomplete', 'Ledger blob digest mismatch');", pattern: "raw UTF-8 integrity" }, testFile);
 proveRevert({ name: "partial-byte GC metrics", file: 'src/blobs.ts', before: "        result.removed++; result.bytes += bytes?.length ?? 0;", after: "        result.removed++; result.bytes += Buffer.byteLength(bytes?.toString('utf8') ?? '');", pattern: "GC removes orphans" }, testFile);
-console.log('11/11 storage revert proofs passed');
+}
+const reviewTests = 'test/ledger-review.test.ts';
+proveRevert({ name: 'scale post-sweep removal assertion', file: 'test/ledger-scale-check.ts', before: "  assert.equal((await ledger.gc()).removed, 0, 'Scale fixture has no orphan blobs');", after: '  await ledger.gc();', pattern: 'scale collection verifies' }, reviewTests);
+proveRevert({ name: 'scale post-sweep hydration', file: 'test/ledger-scale-check.ts', before: '  for (const run of [1, 250, 500]) await ledger.load(`scale-run-${run}`);', after: '  void ledger;', pattern: 'scale collection verifies' }, reviewTests);
+proveRevert({ name: 'Linux-only partial-write drills', file: 'test/ledger-storage.test.ts', before: "{ skip: process.platform !== 'linux' && 'requires /proc and SIGSTOP' }", after: '{}', pattern: 'partial-write drills skip' }, reviewTests);
+proveRevert({ name: 'previously verified digest corruption refusal', file: 'src/blobs.ts', before: '    const previous = await sdkRead(() => this.read(path));', after: '    if (this.reachable.has(digest)) return digest;\n    const previous = await sdkRead(() => this.read(path));', pattern: 'blob reuse rechecks previously verified' }, reviewTests);
+console.log(process.argv[2] === '--review-only' ? '4/4 storage review revert proofs passed' : '15/15 storage revert proofs passed');
