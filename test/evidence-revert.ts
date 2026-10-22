@@ -22,4 +22,6 @@ proveRevert({ name: 'replayed child remedy reconstruction', file: 'src/engine.ts
 const receiptCheck = "          if (refusal.remedy !== undefined && (refusal.code !== 'evidence' || typeof refusal.remedy !== 'string')) throw new Error('Invalid refusal remedy');";
 proveRevert({ name: 'terminal child remedy shape', file: 'src/ledger.ts', before: receiptCheck, after: '', pattern: '^child model evidence remedy survives' }, file);
 proveRevert({ name: 'completion-hook remedy shape', file: 'src/ledger.ts', before: receiptCheck, after: '', pattern: '^child completion evidence remedy survives' }, file);
-console.log('18/18 evidence revert proofs passed');
+proveRevert({ name: 'component count upper bound', file: 'src/evidence.ts', before: ' && value.length <= 16', after: '', pattern: '^component declarations enforce the 16-name upper bound independently$' }, file);
+proveRevert({ name: 'witness count upper bound', file: 'src/evidence.ts', before: ' && entry.witnesses.length <= 8', after: '', pattern: '^component witnesses enforce the eight-reference upper bound independently$' }, file);
+console.log('20/20 evidence revert proofs passed');

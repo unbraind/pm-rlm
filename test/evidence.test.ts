@@ -233,11 +233,35 @@ test('replay verifies every witness digest including uncited source witnesses', 
 });
 
 test('coverage bounds refuse malformed declarations and source ranges with remedies', () => {
-  for (const input of [null, [], Array(17).fill('x'), ['x', 'x'], [' '], [1], ['x'.repeat(257)]]) assert.throws(() => parseComponents(input), RlmEvidenceError);
+  for (const input of [null, [], ['x', 'x'], [' '], [1], ['x'.repeat(257)]]) assert.throws(() => parseComponents(input), RlmEvidenceError);
   assert.deepEqual(parseComponents(['title']), ['title']);
   const items = [{ id: 'source', title: '🙂'.repeat(400) }] as RlmItem[];
   for (const [id, start, end] of [['missing', 0, 1], ['source', -1, 1], ['source', 0.5, 1], ['source', 0, 0], ['source', 2, 1], ['source', 0, 9000], ['source', 0, 800]] as const) assert.throws(() => sourceWitness(items, id, start, end), RlmEvidenceError);
   assert.equal(sourceWitness(items, 'source', 0, 20).text, JSON.stringify(items[0]).slice(0, 20));
+});
+
+test('component declarations enforce the 16-name upper bound independently', () => {
+  const names = Array.from({ length: 17 }, (_, index) => `component-${index}`);
+  assert.deepEqual(parseComponents(names.slice(0, 16)), names.slice(0, 16));
+  assert.throws(() => parseComponents(names), RlmEvidenceError);
+});
+
+test('component witnesses enforce the eight-reference upper bound independently', async t => {
+  const { workspace, client } = await tracker(t);
+  const id = (await client.create({ title: 'Witness count source' })).item.id;
+  let references: RlmAnswerComponent['witnesses'] = [];
+  const model = new ScriptedModel((request, index) => {
+    if (index < 9) return JSON.stringify({ action: 'witness', id, start: index, end: index + 20 });
+    references = promptState(request.prompt).transcript.map((step, index) => ({ step: index, digest: step.observation.data.digest }));
+    return JSON.stringify({ action: 'answer', components: [component('supported', references.slice(0, 8))] });
+  });
+  const run = await runRlm('Witnessed title?', { workspace, components: ['title'], scope: { ids: [id] }, model, settings: { output_tokens: 2048 } });
+  assert.equal(references.length, 9);
+  assert.equal(new Set(references.map(reference => reference.digest)).size, 9);
+  assert.deepEqual(await replayRlm(workspace, run.run), run);
+  const state = await new RlmLedger(workspace).load(run.run);
+  assert.equal(validateAnswer(state, state.calls[0], [component('supported', references.slice(0, 8))], 9), run.answer);
+  assert.throws(() => validateAnswer(state, state.calls[0], [component('supported', references)], 9), RlmEvidenceError);
 });
 
 test('component validator rejects missing, extra, forged, future and malformed evidence', async t => {
@@ -248,7 +272,7 @@ test('component validator rejects missing, extra, forged, future and malformed e
   const valid = run.components!;
   const check = (entries: unknown, current = state, before = 1) => validateAnswer(current, current.calls[0], entries as RlmAnswerComponent[], before);
   assert.equal(check(valid), run.answer);
-  for (const entries of [[], [...valid, ...valid], [{ ...valid[0], component: 'other' }], [{ ...valid[0], answer: 'x'.repeat(32769) }], [{ ...valid[0], status: 'invented' }], [{ ...valid[0], answer: 1 }], [{ ...valid[0], reason: 1 }], [{ ...valid[0], witnesses: null }], [{ ...valid[0], witnesses: Array(9).fill(valid[0].witnesses[0]) }], [component('unknown', valid[0].witnesses)], [{ ...component('unknown'), answer: 'claim' }], [{ ...component('unknown'), reason: ' ' }], [component('supported')], [{ ...valid[0], answer: ' ' }], [{ ...valid[0], reason: 'extra' }]]) assert.throws(() => check(entries), RlmEvidenceError);
+  for (const entries of [[], [...valid, ...valid], [{ ...valid[0], component: 'other' }], [{ ...valid[0], answer: 'x'.repeat(32769) }], [{ ...valid[0], status: 'invented' }], [{ ...valid[0], answer: 1 }], [{ ...valid[0], reason: 1 }], [{ ...valid[0], witnesses: null }], [component('unknown', valid[0].witnesses)], [{ ...component('unknown'), answer: 'claim' }], [{ ...component('unknown'), reason: ' ' }], [component('supported')], [{ ...valid[0], answer: ' ' }], [{ ...valid[0], reason: 'extra' }]]) assert.throws(() => check(entries), RlmEvidenceError);
   for (const witnesses of [[{ step: -1, digest: 'a' }], [{ step: 1, digest: 'a' }], [...valid[0].witnesses, ...valid[0].witnesses], [{ step: 0, digest: 'a' }]]) assert.throws(() => check([{ ...valid[0], witnesses }]), RlmEvidenceError);
   for (const mutate of [
     (copy: RlmState) => { delete copy.components; },

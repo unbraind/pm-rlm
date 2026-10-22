@@ -6,10 +6,12 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-21T21:11:52.137Z"
-updated_at: "2026-10-22T16:00:23.515Z"
+updated_at: "2026-10-22T18:39:15.847Z"
+assignee: codex-agent
+claim_principal: codex-agent
 author: codex-agent
 parent: pm-rlm-a1ih
-comments[19]:
+comments[23]:
   - created_at: "2026-10-21T21:12:22.094Z"
     author: codex-agent
     text: "Overlap checked against the pinned CLI SDK query/aggregate contract, pm-context context-pack/context-handoff and receipt APIs, and pm-rlm aggregate/replay code. Core owns arithmetic, pm-context assembles context bundles and usage receipts, and existing RLM replay certifies execution. None requires evidence coverage per declared question component. Plan: opt-in immutable component declarations, bounded source-witness observations, component-only final answers with supported/unsupported/unknown statuses, deterministic replay and read-only coverage CLI. Builds on PR #13; merge after it. Run targeted local tests/typecheck/lint and use unchanged CI npm/Bun release gates for full evidence."
@@ -68,33 +70,70 @@ comments[19]:
   - created_at: "2026-10-22T16:00:22.689Z"
     author: codex-agent
     text: "Final round 2 gates are green at source 86e20b8e35ca5bc564e0492f86f974d41f46e8ad: manual CI https://github.com/unbraind/pm-rlm/actions/runs/39808447506 passed Node 22 and 26. On Node 26, npm run release:check and bun run release:check each pass all 12 release stages, 204/204 package suite cases, 139/139 behavioral mutations across eight scripts (8+18+15+51+5+7+25+10), and 2/2 real packed npm/Bun consumers. Coverage is 100/100/100/100 over 25 authored files; 106 documented declarations, zero duplication, zero production vulnerabilities, 79-file package allowlist, changelog and publish attestation pass. Zero package-suite failures, skips, cancellations or todo. All three reviewed findings are fixed; the same-class sweep additionally covers parser/plain-tool remedy injection and valid typed child/model/completion-hook receipt replay/reuse. Linked evidence proofs pass 1/1 command and 18/18 mutations; the corrected legacy terminal-child source-only proof also independently fails by assertion when reverted. Earlier failed CI and local attempts remain excluded; the inherited local timeout is covered by the complete successful CI proof run. Final writes only record this receipt and release the claim; no package/test bytes change. No new pm CLI/SDK defect established. The feature stays in_progress for orchestrator verification, with no thread replies/resolutions, PR merge or release."
-files[18]{path,scope}:
-  index.ts,project
-  README.md,project
-  src/action-schema.ts,project
-  src/commands.ts,project
-  src/engine.ts,project
-  src/errors.ts,project
-  src/evidence.ts,project
-  src/ledger.ts,project
-  src/types.ts,project
-  test/evidence-public.ts,project
-  test/evidence-revert.ts,project
-  test/evidence.test.ts,project
-  test/install.acceptance.ts,project
-  test/revert-shallow.test.ts,project
-  test/revert.ts,project
-  test/review-r3-revert.ts,project
-  test/review-r6-revert.ts,project
-  test/v2-revert.ts,project
-tests[5]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  - created_at: "2026-10-22T18:33:40.338Z"
+    author: codex-agent
+    text: "Review round 3: PRRT_kwDOVOym886vT18W is valid. The component and witness upper-bound cases also violate uniqueness. Replace them with otherwise valid boundary fixtures, add independent behavioral reverts for both upper bounds, inspect related boundary cases, and rerun unchanged npm and Bun release gates. Remote head be131be is current and already contains main; previous review fixes remain intact."
+  - created_at: "2026-10-22T18:36:34.904Z"
+    author: codex-agent
+    text: "Self-review of the full main-to-PR diff found no further masked count-boundary fixtures. Remaining name/excerpt/answer size cases otherwise satisfy their validators, and duplicate-reference validation retains its separate case. Added explicit valid-at-limit controls (16 names and eight references); the nine references come from nine successful real witness steps in a non-git tracker, with distinct indices and digests. Static audit found all 127 mutation declarations anchored uniquely with no skipped declarations. npm ci succeeded; the existing three high dev-only advisory findings remain tracked by pm-rlm-wiav."
+  - created_at: "2026-10-22T18:37:17.821Z"
+    author: codex-agent
+    text: "Focused baseline through pm test passed: node --test --test-concurrency=1 test/evidence.test.ts, 22/22 tests, zero failures/skips. Typecheck, lint, duplication (0 percent across 80 files), and docstrings (106 declarations across 25 files) also pass. The evidence mutation command is now running; final revert and release-gate receipts will be recorded only after their actual results."
+  - created_at: "2026-10-22T18:39:15.844Z"
+    author: codex-agent
+    text: "Revert proof for PRRT_kwDOVOym886vT18W: node test/evidence-revert.ts passed 20/20 independent mutations through the linked pm test command. Removing only value.length <= 16 makes the 17-distinct-name regression fail with AssertionError exit 1. Removing only entry.witnesses.length <= 8 makes the nine-distinct-successful-witness regression fail with AssertionError exit 1. Each mutation restores exact source bytes; the other 18 evidence proofs also pass. Both valid-at-limit controls pass with the authored validators."
+files[18]:
+  - path: index.ts
+    scope: project
+  - path: README.md
+    scope: project
+  - path: src/action-schema.ts
+    scope: project
+  - path: src/commands.ts
+    scope: project
+  - path: src/engine.ts
+    scope: project
+  - path: src/errors.ts
+    scope: project
+  - path: src/evidence.ts
+    scope: project
+  - path: src/ledger.ts
+    scope: project
+  - path: src/types.ts
+    scope: project
+  - path: test/evidence-public.ts
+    scope: project
+  - path: test/evidence-revert.ts
+    scope: project
+    note: Independent source-only count-limit regression proofs
+  - path: test/evidence.test.ts
+    scope: project
+    note: Isolated valid 16/17 component and 8/9 witness count boundaries
+  - path: test/install.acceptance.ts
+    scope: project
+  - path: test/revert-shallow.test.ts
+    scope: project
+  - path: test/revert.ts
+    scope: project
+  - path: test/review-r3-revert.ts
+    scope: project
+  - path: test/review-r6-revert.ts
+    scope: project
+  - path: test/v2-revert.ts
+    scope: project
+tests[6]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=1 test/evidence.test.ts test/core.test.ts test/commands.test.ts,project,300,codex-agent,"2026-10-21T21:21:10.395Z",local_mutation,feat/answer-evidence-coverage
   node test/evidence-revert.ts,project,300,codex-agent,"2026-10-21T21:23:10.322Z",local_mutation,feat/answer-evidence-coverage
   node test/evidence-public.ts,project,300,codex-agent,"2026-10-21T21:23:11.357Z",local_mutation,feat/answer-evidence-coverage
   "npm run test:install",project,300,codex-agent,"2026-10-21T21:33:35.033Z",local_mutation,feat/answer-evidence-coverage
   node --test --test-concurrency=1 test/evidence.test.ts,project,300,codex-agent,"2026-10-22T15:21:38.733Z",local_mutation,feat/answer-evidence-coverage
-docs[3]{path,scope}:
-  docs/answer-evidence-validation.json,project
-  docs/ANSWER-EVIDENCE.md,project
-  README.md,project
+  "node --test --test-name-pattern=\"upper bound independently\" test/evidence.test.ts",project,120,codex-agent,"2026-10-22T18:36:32.052Z",local_mutation,feat/answer-evidence-coverage
+docs[3]:
+  - path: docs/answer-evidence-validation.json
+    scope: project
+  - path: docs/ANSWER-EVIDENCE.md
+    scope: project
+  - path: README.md
+    scope: project
+    note: Public component and witness limits checked against validators
 body: ""
