@@ -1,6 +1,8 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
-import { acquireLock, certifyCompleteListResult, PmClient, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
+import { readdir } from 'node:fs/promises';
+import { RlmBlobs } from './blobs.ts';
+import { acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
 import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
@@ -37,7 +39,7 @@ export function settleStep(state: RlmState, step: RlmStep, response: ModelRespon
   step.response = response;
   step.settled = true;
 }
-/** SDK-only ledger writes, single-writer runtime lease and idempotent call materialization. */
+/** Atomic SDK manifests, immutable payloads, process-owned leases and idempotent call materialization. */
 export class RlmLedger {
   /** Native client bound to this tracker. */
   readonly client: PmClient;
@@ -65,11 +67,13 @@ export class RlmLedger {
   }
   /** Read a certified full corpus to recover the root checkpoint without compact projections. */
   async load(run: string): Promise<RlmState> {
+    // Historical manifests pin every committed version, including one read before a concurrent save.
+    const blobs = new RlmBlobs(this.workspace);
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
     const root = corpus.items.find(item => item.id === run);
     if (root === undefined || typeof root.rlm_state !== 'string') throw new RlmError('invalid', 'Run checkpoint was not found');
     try {
-      const decoded = record(JSON.parse(root.rlm_state));
+      const decoded = await blobs.decode(root.rlm_state);
       if (decoded.version !== 1 || decoded.run !== run || !Array.isArray(decoded.calls) || decoded.calls.length === 0) throw new Error('Invalid checkpoint');
       if (decoded.parser_version !== undefined && ![1, 2, 3].includes(decoded.parser_version as number)) throw new Error('Invalid parser version');
       if (decoded.aggregate_version !== undefined && ![1, 2].includes(decoded.aggregate_version as number)) throw new Error('Invalid aggregate version');
@@ -102,24 +106,31 @@ export class RlmLedger {
           }
         }
       }
-      return decoded as unknown as RlmState;
+      // Preserve by-value JSON semantics even when multiple references share a cached payload.
+      return JSON.parse(JSON.stringify(decoded)) as RlmState;
     } catch { throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
   }
   /** Save reservations, model outputs, observations and completed digests in one atomic SDK item update. */
   async save(state: RlmState): Promise<void> {
     assertLedgerPrivacy(state, this.workspace, state.settings.key_env);
-    await this.client.run('update', { id: state.run, options: { rlmState: JSON.stringify(state), message: 'Checkpoint recursive run' } });
+    await this.storage(async blobs => {
+      const checkpoint = await blobs.encode(state);
+      await this.client.run('update', { id: state.run, options: { rlmState: checkpoint, message: 'Checkpoint recursive run' } });
+    });
   }
   /** Create a deterministic call item, or reuse its crash-surviving SDK write. */
   async materialize(state: RlmState, call: RlmCall): Promise<void> {
     assertLedgerPrivacy({ state, call }, this.workspace, state.settings.key_env);
-    const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
-    if (corpus.items.some(item => item.id === call.id)) return;
-    await this.client.run('create', { options: { id: call.id, title: call.depth === 0 ? 'RLM root call' : `RLM sub-call ${call.depth}`, type: 'Task', status: 'in_progress', tags: 'rlm:call', parent: call.parent, description: call.subgoal, allowDuplicate: true,
-      rlmRun: state.run, rlmDepth: call.depth, rlmModel: state.settings.model, rlmPromptDigest: call.digest, rlmTokensIn: 0, rlmTokensOut: 0,
-      ...(call.depth === 0 ? { rlmState: JSON.stringify(state) } : {}),
-    } });
-    await this.client.claim(call.id);
+    await this.storage(async blobs => {
+      const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
+      if (corpus.items.some(item => item.id === call.id)) return;
+      const checkpoint = call.depth === 0 ? await blobs.encode(state) : undefined;
+      await this.client.run('create', { options: { id: call.id, title: call.depth === 0 ? 'RLM root call' : `RLM sub-call ${call.depth}`, type: 'Task', status: 'in_progress', tags: 'rlm:call', parent: call.parent, description: call.subgoal, allowDuplicate: true,
+        rlmRun: state.run, rlmDepth: call.depth, rlmModel: state.settings.model, rlmPromptDigest: call.digest, rlmTokensIn: 0, rlmTokensOut: 0,
+        ...(checkpoint === undefined ? {} : { rlmState: checkpoint }),
+      } });
+      await this.client.claim(call.id);
+    });
   }
   /** Repair completion evidence after a crash without repeating model inference or comments. */
   async complete(state: RlmState, call: RlmCall): Promise<void> {
@@ -136,6 +147,39 @@ export class RlmLedger {
       await this.client.close(call.id, 'Call terminated; evidence recorded', { validateClose: 'off' });
     }
     await this.client.release(call.id);
+  }
+  /** Serialize publication and collection across all runs in this non-git tracker. */
+  private async storage<T>(operation: (blobs: RlmBlobs) => Promise<T>): Promise<T> {
+    const deadline = Date.now() + 60000;
+    for (;;) {
+      let unlock: () => Promise<void>;
+      try { unlock = await this.lease('__blob_store'); }
+      catch (error) {
+        if (!(error instanceof RlmError) || error.code !== 'busy' || Date.now() >= deadline) throw error;
+        await new Promise(resolve => { setTimeout(resolve, 25); });
+        continue;
+      }
+      try { return await operation(new RlmBlobs(this.workspace)); }
+      finally { await unlock(); }
+    }
+  }
+  /** Collect unreachable payloads while retaining current and verified historical checkpoint references. */
+  async gc(): Promise<{ removed: number; bytes: number }> {
+    return this.storage(async blobs => sdkRead(async () => {
+      const corpus = certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true }));
+      for (const item of corpus.items) if (typeof item.rlm_state === 'string') await blobs.decode(item.rlm_state);
+      const streams = await readdir(join(this.workspace, 'history'));
+      for (const name of streams) {
+        if (!name.endsWith('.jsonl')) continue;
+        const id = name.slice(0, -6);
+        const history = await readHistoryEntries(getHistoryPath(this.workspace, id), id);
+        if (!verifyHistoryEntries(history).ok) throw new RlmError('incomplete', 'History chain is invalid; collection refused');
+        for (const entry of history) for (const patch of entry.patch) {
+          if (patch.path === '/metadata/rlm_state' && 'value' in patch && typeof patch.value === 'string') await blobs.decode(patch.value);
+        }
+      }
+      return blobs.sweep();
+    }));
   }
   /** Acquire a process-owned lease under a short SDK lock; dead owners are resumable. */
   async lease(run: string): Promise<() => Promise<void>> {

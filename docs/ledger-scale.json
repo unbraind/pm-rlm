@@ -1,0 +1,200 @@
+{
+  "methodology": "Storage-format microbenchmark: captured real two-step aggregate/finish engine checkpoints, repeated with distinct run ids through native SDK TOON serialization and sealed history diffs. Corpus receipt counts and embedded prompts advance with accumulated roots, including exact prompt-byte accounting. Both arms retain identical checkpoint transitions in history and materialize each final item once; intermediate item flushes and write throughput are excluded. Each source uses its existing eval-design revision in independent plain-directory trackers. No inference, full-engine throughput, provider quality, cold-cache latency or power-loss durability claim. Logical/allocated file bytes include the entire tracker. Timed reads use a separate process per milestone with a 4096 MiB old-space limit and 300000 ms timeout; failures retain null latency and explicit exit/signal/timing evidence. Complete reads are SDK-certified full-item reads; at 10/100 runs, median of three warm samples after one warm-up; at 500 runs, one fresh-process read to keep the same bounded read attempt feasible for both formats.",
+  "sources": [
+    {
+      "repo": "pm-vcs",
+      "revision": "f9283201108919939d0e1cfb489358c87ea8822b",
+      "items": 145,
+      "bytes": 814268,
+      "checkpoints_per_run": 7,
+      "source_bytes": 814268,
+      "measurements": [
+        {
+          "format": "before",
+          "runs": 10,
+          "bytes": 71779635,
+          "allocated_bytes": 72445952,
+          "history_bytes": 62456627,
+          "blob_bytes": 0,
+          "complete_read_ms": 5167.5061639999985,
+          "samples_ms": [
+            4153.867420999999,
+            5167.5061639999985,
+            6946.001045000001
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "before",
+          "runs": 100,
+          "bytes": 703297986,
+          "allocated_bytes": 704684032,
+          "history_bytes": 598368843,
+          "blob_bytes": 0,
+          "complete_read_ms": 33579.122816999996,
+          "samples_ms": [
+            29945.713317999995,
+            33579.122816999996,
+            34120.43680599998
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "before",
+          "runs": 500,
+          "bytes": 3580133178,
+          "allocated_bytes": 3585171456,
+          "history_bytes": 2980207243,
+          "blob_bytes": 0,
+          "complete_read_ms": null,
+          "samples_ms": [],
+          "read_failed": true,
+          "exit_code": null,
+          "signal": "SIGABRT",
+          "timed_out": false,
+          "attempt_ms": 179826.27460000012,
+          "latency_method": "single_fresh_process_read"
+        },
+        {
+          "format": "after",
+          "runs": 10,
+          "bytes": 4710890,
+          "allocated_bytes": 5939200,
+          "history_bytes": 2980370,
+          "blob_bytes": 931443,
+          "complete_read_ms": 211.53617399999985,
+          "samples_ms": [
+            199.638191,
+            211.53617399999985,
+            265.8400870000005
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "after",
+          "runs": 100,
+          "bytes": 8208126,
+          "allocated_bytes": 14716928,
+          "history_bytes": 3605699,
+          "blob_bytes": 1960877,
+          "complete_read_ms": 281.8130000000001,
+          "samples_ms": [
+            183.75790800000004,
+            281.8130000000001,
+            420.99305000000004
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "after",
+          "runs": 500,
+          "bytes": 16178066,
+          "allocated_bytes": 46084096,
+          "history_bytes": 6388499,
+          "blob_bytes": 6541677,
+          "complete_read_ms": 1909.0064459999999,
+          "samples_ms": [
+            1909.0064459999999
+          ],
+          "latency_method": "single_fresh_process_read"
+        }
+      ]
+    },
+    {
+      "repo": "pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "items": 12,
+      "bytes": 54941,
+      "checkpoints_per_run": 7,
+      "source_bytes": 54941,
+      "measurements": [
+        {
+          "format": "before",
+          "runs": 10,
+          "bytes": 5449565,
+          "allocated_bytes": 5591040,
+          "history_bytes": 4725089,
+          "blob_bytes": 0,
+          "complete_read_ms": 58.79325399999993,
+          "samples_ms": [
+            46.68364200000019,
+            58.79325399999993,
+            62.72619200000008
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "before",
+          "runs": 100,
+          "bytes": 53106292,
+          "allocated_bytes": 53878784,
+          "history_bytes": 44937379,
+          "blob_bytes": 0,
+          "complete_read_ms": 440.54754500000035,
+          "samples_ms": [
+            317.6803960000002,
+            440.54754500000035,
+            514.0319330000002
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "before",
+          "runs": 500,
+          "bytes": 270482055,
+          "allocated_bytes": 274014208,
+          "history_bytes": 223674579,
+          "blob_bytes": 0,
+          "complete_read_ms": 21077.007719,
+          "samples_ms": [
+            21077.007719
+          ],
+          "latency_method": "single_fresh_process_read"
+        },
+        {
+          "format": "after",
+          "runs": 10,
+          "bytes": 567473,
+          "allocated_bytes": 1241088,
+          "history_bytes": 326652,
+          "blob_bytes": 171986,
+          "complete_read_ms": 49.98877799999991,
+          "samples_ms": [
+            49.337923999999475,
+            49.98877799999991,
+            67.918948
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "after",
+          "runs": 100,
+          "bytes": 2453551,
+          "allocated_bytes": 8409088,
+          "history_bytes": 952071,
+          "blob_bytes": 1200575,
+          "complete_read_ms": 63.327216000000135,
+          "samples_ms": [
+            49.31018499999982,
+            63.327216000000135,
+            74.41915300000005
+          ],
+          "latency_method": "median_three_warm_reads"
+        },
+        {
+          "format": "after",
+          "runs": 500,
+          "bytes": 10426412,
+          "allocated_bytes": 39784448,
+          "history_bytes": 3735271,
+          "blob_bytes": 5783375,
+          "complete_read_ms": 1759.6698880000001,
+          "samples_ms": [
+            1759.6698880000001
+          ],
+          "latency_method": "single_fresh_process_read"
+        }
+      ]
+    }
+  ]
+}
