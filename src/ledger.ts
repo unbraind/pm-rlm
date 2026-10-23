@@ -21,7 +21,7 @@ export function promptDigest(subgoal: string, slice: RlmSlice, settings: RlmSett
   return createHash('sha256').update(JSON.stringify({ subgoal, slice, settings })).digest('hex');
 }
 /** Atomically charge once per logical model step; callers persist the enclosing checkpoint before inference. */
-export function reserveStep(state: RlmState, call: RlmCall, prompt: string): RlmStep {
+export function reserveStep(state: Pick<RlmState, 'settings' | 'reserved_tokens'>, call: RlmCall, prompt: string): RlmStep {
   const charge = estimateTokens(prompt) + state.settings.output_tokens * 16;
   if (estimateTokens(prompt) + state.settings.output_tokens > state.settings.context_tokens) throw new RlmError('budget', 'Model prompt exceeds configured context');
   if (charge > state.settings.budget_tokens - state.reserved_tokens) throw new RlmError('budget', 'Model step exceeds remaining run budget');

@@ -1,0 +1,48 @@
+id: pm-rlm-b8cs
+title: Adaptive decomposition with declared budgets
+description: "Compare bounded execution-time decomposition strategies from caller-declared question parts and remaining budget. Reuse certified RLM reads, settings, reservations, evidence contracts and durable terminal call records; no training or promotion."
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-23T14:30:16.189Z"
+updated_at: "2026-10-23T15:03:08.111Z"
+author: codex-agent
+acceptance_criteria: Tiny budgets produce typed partial answers; Child failures preserve terminal evidence; Strategy comparisons are deterministic under scripted fixtures
+parent: pm-rlm-a1ih
+comments[8]{created_at,author,text}:
+  "2026-10-23T14:31:03.211Z",codex-agent,"Overlap rechecked against CLI 2026.10.23 and current package sources/docs: pm-rlm recursion follows model actions; pm-rl learns and promotes policies; pm-context packs context under token ceilings; pm-swarm schedules work and resources. No bounded planner comparing caller-declared question decompositions was found. This feature will compare whole/pairs/components deterministically without inference during planning, execute only the selected plan using native RLM runs, preserve each child terminal ledger, and return typed partial components and stop reasons. No training or promotion. The pinned SDK remains unchanged."
+  "2026-10-23T14:39:48.308Z",codex-agent,"Implementation uses the pinned SDK for certified full reads, schema fields, item creation/claims/comments/closure, and native RLM run reservations, settlement, witnessed answers and terminal evidence. Three fixed candidates compare exact first-step admission with stable tie-breaking; only the selected candidate executes. One source snapshot is frozen across children. Public read-only validation: 12 items, 54941 JSON bytes, 30 files unchanged; 3 strategies, 3 supported parts, 3 logical children, 6 fixture steps, 3 successful read-only replays; charge 24481, remainder 275519, receipt 1283 bytes. One-token run: zero calls and 3 deferred parts. Forced failure: 1 closed terminal child. No git executable during execution and no external inference. See docs/adaptive-validation.json."
+  "2026-10-23T14:43:04.120Z",codex-agent,"Targeted SDK and CLI acceptance includes native TOON/JSON dispatch without git, zero/tiny budget partials, deterministic strategy receipts, supported and unknown components, shared accounting, call/context ceilings, malformed declarations with remedies, nested terminal failures and persistence refusal. The existing RLM engine was factored only to share exact initial reservation calculation and native run preparation. Controller interruption is explicitly documented: inspect checkpoints and native child runs; no automatic controller resume or retry."
+  "2026-10-23T14:47:03.792Z",codex-agent,"Local evidence: 12 adaptive cases passed across the 11-case linked run plus the adapter-boundary regression; 7 existing engine/command cases passed. Targeted coverage of src/adaptive.ts is 100% statements, branches, functions and lines. node test/adaptive-revert.ts passed 3/3 proofs: each acceptance regression fails with only its corresponding implementation behavior reverted, and exact source bytes are restored. Linked public validation passed again; all source bytes unchanged. Typecheck, lint, docstrings, duplication (0%) and identity checks pass. Full unchanged release gates are delegated to CI npm and Bun, not run on the saturated local host. PM linked-test result tracking is disabled in this tracker, so results are recorded in these comments instead of changing tracker policy. Controller resume is an explicit documented limitation; child ledgers retain native replay/recovery."
+  "2026-10-23T14:48:15.465Z",codex-agent,"Strict tracker health passed with an isolated home and system/global git configuration disabled, matching clean CI identity. The ordinary local invocation detects a globally installed pm-github host-version skew; that external runtime is outside this change. No tracker history was rewritten. The item remains in_progress and released for orchestrator verification; no merge or release is authorized."
+  "2026-10-23T14:51:16.849Z",codex-agent,"CI first run exposed the shallow-clone proof inventory assertion: adding adaptive-revert.ts makes 9 scripts while the previous assertion expected 8. The other 209 of 210 tests passed, and the report measured 100/100/100/100 coverage. Updated the proof inventory assertion without weakening its checks; all scripts will still execute in an isolated depth-one clone. Full release evidence remains pending until the rerun passes."
+  "2026-10-23T15:00:17.054Z",codex-agent,"Updated the legacy CLI sanitization revert snippet to the remedy-aware expression. The entire legacy proof script now passes locally: 51/51 behavioral reverts with original bytes restored. All other 8 revert scripts passed in the second CI run; only the stale snippet prevented the full gate. Extended packed acceptance to include the adaptive docs, exported SDK entry and native adaptive TOON/JSON commands for npm and Bun consumers. No product source change was needed after the initial implementation."
+  "2026-10-23T15:03:00.237Z",codex-agent,"Expanded packed acceptance passed locally: 2/2 independent npm and Bun consumers installed the actual tarball, discovered adaptive, invoked the exported SDK and exercised native adaptive JSON and TOON. Both new documentation artifacts passed the package allowlist. Typecheck, lint and duplication (0%) pass after the test updates. Legacy behavioral reverts passed 51/51; new adaptive reverts passed 3/3. Full unchanged npm/Bun release gates will be rerun on the final commit."
+files[12]{path,scope}:
+  index.ts,project
+  package.json,project
+  src/adaptive.ts,project
+  src/commands.ts,project
+  src/engine.ts,project
+  src/ledger.ts,project
+  test/adaptive-public.ts,project
+  test/adaptive-revert.ts,project
+  test/adaptive.test.ts,project
+  test/install.acceptance.ts,project
+  test/revert-shallow.test.ts,project
+  test/revert.ts,project
+tests[8]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/adaptive.test.ts,project,codex-agent,"2026-10-23T14:39:21.747Z",local_mutation,feat/adaptive-decomposition
+  npm run typecheck,project,codex-agent,"2026-10-23T14:39:44.078Z",local_mutation,feat/adaptive-decomposition
+  npm run lint,project,codex-agent,"2026-10-23T14:39:57.998Z",local_mutation,feat/adaptive-decomposition
+  node test/adaptive-revert.ts,project,codex-agent,"2026-10-23T14:40:03.195Z",local_mutation,feat/adaptive-decomposition
+  node test/adaptive-public.ts,project,codex-agent,"2026-10-23T14:40:13.602Z",local_mutation,feat/adaptive-decomposition
+  node --test test/core.test.ts test/commands.test.ts,project,codex-agent,"2026-10-23T14:46:11.072Z",local_mutation,feat/adaptive-decomposition
+  node test/revert.ts,project,codex-agent,"2026-10-23T14:56:16.122Z",local_mutation,feat/adaptive-decomposition
+  "npm run test:install",project,codex-agent,"2026-10-23T15:02:54.494Z",local_mutation,feat/adaptive-decomposition
+docs[3]{path,scope}:
+  docs/ADAPTIVE-DECOMPOSITION.md,project
+  docs/adaptive-validation.json,project
+  README.md,project
+body: ""

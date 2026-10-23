@@ -23,6 +23,16 @@ export interface RlmRunOptions {
 }
 /** Empty slice for a root call whose scope lives outside the model prompt. */
 const EMPTY_SLICE: RlmSlice = { fragments: [], estimated_tokens: 2 };
+/** Construct prompts identically for reservation planning and live execution. */
+function modelPrompt(call: RlmCall, components?: string[], observation?: unknown): string {
+  return `${PROTOCOL}${components === undefined ? '' : '\n' + EVIDENCE_PROTOCOL + JSON.stringify(components)}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
+}
+/** Compute exact first-step admission through the engine's native reservation primitive. */
+export function initialRlmCharge(question: string, components: string[], settings: RlmSettings): number {
+  const call: RlmCall = { id: '', depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: '', steps: [] };
+  const state = { settings, reserved_tokens: 0 };
+  return reserveStep(state, call, modelPrompt(call, components)).reserved;
+}
 /** Summarize exact call counts and label model usage that can contain byte-based estimates. */
 function result(state: RlmState): RlmResult {
   const responses = state.calls.flatMap(call => call.steps.flatMap(step => step.response === undefined ? [] : [step.response]));
@@ -145,7 +155,7 @@ export class RlmEngine {
   }
   /** Construct the exact prompt used by projection checks and the next inference. */
   private prompt(call: RlmCall, observation?: unknown): string {
-    return `${PROTOCOL}${this.state.components === undefined ? '' : '\n' + EVIDENCE_PROTOCOL + JSON.stringify(this.state.components)}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
+    return modelPrompt(call, this.state.components, observation);
   }
   /** Execute one action, refusing oversized observations before charging or retaining data. */
   private async observe(action: Exclude<RlmAction, { action: 'finish' | 'answer' }>, call: RlmCall, state = this.state, spawn = (subgoal: string, slice: RlmSlice) => this.spawn(call.id, subgoal, slice)): Promise<unknown> {
@@ -306,14 +316,14 @@ export class RlmEngine {
     } finally { await release(); }
   }
 }
-/** Create and execute a new SDK ledger; the root links to a separate question item. */
-export async function runRlm(question: string, options: RlmRunOptions): Promise<RlmResult> {
+/** Prepare a native run before execution so controllers can retain its terminal id and evidence. */
+export async function prepareRlmRun(question: string, options: RlmRunOptions, corpus?: Awaited<ReturnType<typeof readCorpus>>) {
   text(question);
   const components = options.components === undefined ? undefined : parseComponents(options.components);
   const settings = await readRlmSettings(options.workspace, options.settings);
   if (options.model !== undefined) settings.model = options.model.name;
   const scope = parseFilter(options.scope ?? {});
-  const corpus = await readCorpus(options.source_workspace ?? options.workspace);
+  corpus ??= await readCorpus(options.source_workspace ?? options.workspace);
   const snapshot = corpus.items.filter(item => matches(item, scope));
   assertLedgerPrivacy({ question, items: snapshot, settings }, options.workspace, settings.key_env);
   const ledger = new RlmLedger(options.workspace, options.author);
@@ -323,7 +333,11 @@ export async function runRlm(question: string, options: RlmRunOptions): Promise<
   const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
   await ledger.materialize(state, state.calls[0]);
-  return new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete).run();
+  return { ledger, engine: new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete), run };
+}
+/** Create and execute a new SDK ledger with the native reservation and recovery loop. */
+export async function runRlm(question: string, options: RlmRunOptions): Promise<RlmResult> {
+  return (await prepareRlmRun(question, options)).engine.run();
 }
 /** Recover run state from its ledger and reuse all completed call digests and model steps. */
 export async function resumeRlm(workspace: string, run: string, model?: RlmModel, author?: string): Promise<RlmResult> {

@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
+import type { RlmAdaptiveResult } from '../src/adaptive.ts';
 import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
@@ -24,10 +25,10 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
   const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
-  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|ledger-scale|answer-evidence-validation)\.json$|CHANGELOG\.md$)/;
+  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE|ADAPTIVE-DECOMPOSITION)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|ledger-scale|answer-evidence-validation|adaptive-validation)\.json$|CHANGELOG\.md$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
-  for (const path of ['docs/ANSWER-EVIDENCE.md', 'docs/answer-evidence-validation.json']) assert.ok(packed[0].files.some(file => file.path === path));
+  for (const path of ['docs/ANSWER-EVIDENCE.md', 'docs/answer-evidence-validation.json', 'docs/ADAPTIVE-DECOMPOSITION.md', 'docs/adaptive-validation.json']) assert.ok(packed[0].files.some(file => file.path === path));
     const consumer = join(scratch, manager); mkdirSync(consumer);
     writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'rlm-consumer-fixture', private: true, type: 'module', dependencies: { 'pm-rlm': `file:${join(scratch, packed[0].filename)}`, '@unbrained/pm-cli': manifest.devDependencies['@unbrained/pm-cli'] } }));
     execute(consumer, manager === 'npm' ? ['install', '--prefer-offline', '--ignore-scripts', '--no-audit', '--no-fund'] : ['install', '--ignore-scripts'], manager, env);
@@ -37,7 +38,7 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
     execute(consumer, [...prefix, 'init', '--prefix', 'rlm-consumer', '--defaults', '--agent-guidance', 'skip'], executable, hostEnv);
     execute(consumer, [...prefix, 'package', 'install', join(scratch, packed[0].filename)], executable, hostEnv);
     const help = execute(consumer, [...prefix, 'rlm', '--help'], executable, hostEnv);
-    for (const command of ['run', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
+    for (const command of ['run', 'adaptive', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
     writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm } from 'pm-rlm';
@@ -78,5 +79,25 @@ console.log(JSON.stringify(result));
     assert.deepEqual(evidence, expected);
     const toon = execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run], executable, hostEnv);
     assert.deepEqual(decodeToon(toon), expected);
+
+    writeFileSync(join(consumer, 'create-adaptive.ts'), `import { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from 'pm-rlm';
+import assert from 'node:assert/strict';
+assert.equal(typeof RlmAdaptiveError, 'function');
+const structure = parseQuestionStructure([{ name: 'summary', question: 'What is established?' }]);
+const receipt = await adaptiveRlm('Packed adaptive fixture', { workspace: process.env.PM_PATH!, structure, remaining_tokens: 0 });
+console.log(JSON.stringify(receipt));
+`);
+    const partial = JSON.parse(execute(consumer, ['create-adaptive.ts'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as RlmAdaptiveResult;
+    assert.equal(partial.status, 'partial');
+    assert.equal(partial.calls, 0);
+    assert.equal(partial.components[0].status, 'deferred');
+    const args = [...prefix, 'rlm', 'adaptive', 'Packed adaptive fixture', '--structure', '[{"name":"summary","question":"What is established?"}]', '--budget-tokens', '0'];
+    for (const json of [true, false]) {
+      const rendered = execute(consumer, [...args, ...(json ? ['--json'] : [])], executable, hostEnv);
+      const receipt = (json ? JSON.parse(rendered) : decodeToon(rendered)) as RlmAdaptiveResult;
+      assert.equal(receipt.stop_reason, 'budget');
+      assert.equal(receipt.budget.charged, 0);
+      assert.deepEqual(receipt.components, partial.components);
+    }
 
 });
