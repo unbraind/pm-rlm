@@ -2,14 +2,16 @@ id: pm-rlm-pdtc
 title: Answer evidence coverage for declared question components
 description: "Require recursive answers to carry bounded source witnesses for every declared question component, with explicit unsupported and unknown outcomes. Acceptance: replay verifies every witness digest; omitted evidence cannot support an answer; validation performs no hidden model call. Add typed SDK and CLI surfaces, compact TOON/JSON, typed refusals with remedies, documentation and public-tracker no-git validation."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-21T21:11:52.137Z"
-updated_at: "2026-10-22T18:54:43.938Z"
+updated_at: "2026-10-23T15:24:32.840Z"
+closed_at: "2026-10-23T15:24:31.694Z"
+completed_at: "2026-10-23T15:24:31.694Z"
 author: codex-agent
 parent: pm-rlm-a1ih
-comments[25]:
+comments[26]:
   - created_at: "2026-10-21T21:12:22.094Z"
     author: codex-agent
     text: "Overlap checked against the pinned CLI SDK query/aggregate contract, pm-context context-pack/context-handoff and receipt APIs, and pm-rlm aggregate/replay code. Core owns arithmetic, pm-context assembles context bundles and usage receipts, and existing RLM replay certifies execution. None requires evidence coverage per declared question component. Plan: opt-in immutable component declarations, bounded source-witness observations, component-only final answers with supported/unsupported/unknown statuses, deterministic replay and read-only coverage CLI. Builds on PR #13; merge after it. Run targeted local tests/typecheck/lint and use unchanged CI npm/Bun release gates for full evidence."
@@ -86,6 +88,9 @@ comments[25]:
   - created_at: "2026-10-22T18:54:42.406Z"
     author: codex-agent
     text: "Local full npm attempt exited 1 during coverage: 204 passed, 2 failed, zero skipped/cancelled. Both failures are the inherited Linux-only partial-write drills mutation and its parent shallow-clone test: the nested spawnSync hit the unchanged 120-second timeout under host load. This local attempt is excluded from green receipts. The identical mutation passed in the completed Node 22 CI suite and in BOTH full Node 26 npm/Bun gates at 5345a5d; no timeout increase or test skip was applied. Evidence baseline is 22/22, isolated boundary selection 2/2, and direct evidence revert command 20/20. Final review inventory still has only PRRT_kwDOVOym886vT18W, now outdated by the fix; threads remain untouched. Original history is preserved as an exact byte prefix. No new pm CLI/SDK defect was established; the existing dev dependency advisory follow-up remains pm-rlm-wiav."
+  - created_at: "2026-10-23T15:24:14.240Z"
+    author: codex-agent
+    text: "DELIVERED: merged PR #15 (143f3c9b48a8d15d326f9488350f79f6785f70ce) is an ancestor of audited main 09661846f4c24fd24d8effa2a7c578b3a5c49ed9. Inspected on main: test/evidence.test.ts, docs/ANSWER-EVIDENCE.md, docs/answer-evidence-validation.json. Per-component witnesses are bounded and digest-replayed, omissions cannot support answers, validation performs no hidden model call, and typed gitless SDK/CLI/public-data proof and full npm/Bun CI are recorded. This tracker audit inspected existing tests/files; it does not claim a new full product test run."
 files[18]:
   - path: index.ts
     scope: project
@@ -142,4 +147,5 @@ docs[3]:
   - path: README.md
     scope: project
     note: Public component and witness limits checked against validators
+close_reason: "DELIVERED: merged PR #15 (143f3c9b48a8d15d326f9488350f79f6785f70ce) is an ancestor of audited main 09661846f4c24fd24d8effa2a7c578b3a5c49ed9. Inspected on main: test/evidence.test.ts, docs/ANSWER-EVIDENCE.md, docs/answer-evidence-validation.json. Per-component witnesses are bounded and digest-replayed, omissions cannot support answers, validation performs no hidden model call, and typed gitless SDK/CLI/public-data proof and full npm/Bun CI are recorded. This tracker audit inspected existing tests/files; it does not claim a new full product test run."
 body: ""
