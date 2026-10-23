@@ -4,6 +4,7 @@
 
 ### Added
 
+- Adaptive decomposition with declared budgets ([pm-rlm-b8cs](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-b8cs.toon))
 - Answer evidence coverage for declared question components ([pm-rlm-pdtc](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-pdtc.toon))
 - Bounded local and compatible model adapters ([pm-rlm-du86](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-du86.toon))
 - Typed token-budgeted environment ([pm-rlm-nmny](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-nmny.toon))

@@ -276,3 +276,25 @@ reads a separate source tracker without writing it; `workspace` receives the
 ledger. This captures source items only; history actions use the ledger tracker.
 Git is used only by development workflows that select committed public
 revisions for reproducible validation.
+
+## Adaptive decomposition with declared budgets
+
+`adaptiveRlm(question, { workspace, structure, remaining_tokens })` compares
+whole-question, paired-part and individual-part strategies without model calls,
+then executes the selected plan through the native RLM engine. Each declared
+part is `{name, question}`. Native reservations, one frozen certified source
+snapshot, witnessed component answers and total call limits bound execution.
+There is no automatic training or promotion.
+
+```sh
+pm rlm adaptive 'Explain the issues' \
+  --structure '[{"name":"summary","question":"What do they describe?"},{"name":"cause","question":"Which causes are established?"}]' \
+  --budget-tokens 50000 --max-calls 6 --json
+```
+
+Zero or tiny budgets return typed partial receipts with deferred components,
+stop reasons and remedies, without inference. Failed children retain terminal
+ledger evidence. TOON/JSON output contains compact statuses and child run ids;
+full answers stay in the child ledgers. This command also works without Git.
+See the [SDK example, strategy rules and recovery boundaries](docs/ADAPTIVE-DECOMPOSITION.md)
+and [public-tracker measurements](docs/adaptive-validation.json).

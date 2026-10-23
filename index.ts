@@ -2,6 +2,10 @@ import { defineExtension } from '@unbrained/pm-cli/sdk/authoring';
 import { register } from './src/commands.ts';
 /** Expose the certified token-budgeted environment for independent RLM loops. */
 export { createRlmContext, RlmContext, partitionItems, parseFilter } from './src/environment.ts';
+/** Expose bounded execution-time planning and typed partial receipts. */
+export { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from './src/adaptive.ts';
+/** Expose caller declarations, deterministic comparisons and compact results. */
+export type { RlmQuestionPart, RlmStrategy, RlmStrategyComparison, RlmAdaptiveOptions, RlmAdaptiveResult, RlmAdaptiveComponent } from './src/adaptive.ts';
 /** Expose durable recursive execution, recovery, replay and tree inspection. */
 export { runRlm, resumeRlm, replayRlm, evidenceRlm, treeRlm, RlmEngine } from './src/engine.ts';
 /** Expose the SDK ledger and logical reservation primitive. */

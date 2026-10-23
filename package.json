@@ -32,7 +32,9 @@
     "docs/LEDGER-STORAGE.md",
     "docs/ANSWER-EVIDENCE.md",
     "docs/answer-evidence-validation.json",
-    "docs/ledger-scale.json"
+    "docs/ledger-scale.json",
+    "docs/ADAPTIVE-DECOMPOSITION.md",
+    "docs/adaptive-validation.json"
   ],
   "scripts": {
     "build": "tsc",
