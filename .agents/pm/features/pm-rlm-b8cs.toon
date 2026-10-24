@@ -2,14 +2,19 @@ id: pm-rlm-b8cs
 title: Adaptive decomposition with declared budgets
 description: "Compare bounded execution-time decomposition strategies from caller-declared question parts and remaining budget. Reuse certified RLM reads, settings, reservations, evidence contracts and durable terminal call records; no training or promotion."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-23T14:30:16.189Z"
-updated_at: "2026-10-23T15:03:08.111Z"
+updated_at: "2026-10-24T23:13:50.411Z"
+closed_at: "2026-10-24T21:47:46.876Z"
+completed_at: "2026-10-23T15:19:20.000Z"
 author: codex-agent
 acceptance_criteria: Tiny budgets produce typed partial answers; Child failures preserve terminal evidence; Strategy comparisons are deterministic under scripted fixtures
 parent: pm-rlm-a1ih
+resolution: "Declared decomposition returns typed budget-limited partial answers, preserves child-failure terminal evidence and deterministic scripted comparisons."
+expected_result: Tiny budgets produce typed partial answers; Child failures preserve terminal evidence; Strategy comparisons are deterministic under scripted fixtures
+actual_result: "https://github.com/unbraind/pm-rlm/pull/18, merged 2026-10-23T15:19:20Z, merge c361cba70c9fc3f6f9748219e5be331bcd7b41a7: Declared decomposition returns typed budget-limited partial answers, preserves child-failure terminal evidence and deterministic scripted comparisons."
 comments[8]{created_at,author,text}:
   "2026-10-23T14:31:03.211Z",codex-agent,"Overlap rechecked against CLI 2026.10.23 and current package sources/docs: pm-rlm recursion follows model actions; pm-rl learns and promotes policies; pm-context packs context under token ceilings; pm-swarm schedules work and resources. No bounded planner comparing caller-declared question decompositions was found. This feature will compare whole/pairs/components deterministically without inference during planning, execute only the selected plan using native RLM runs, preserve each child terminal ledger, and return typed partial components and stop reasons. No training or promotion. The pinned SDK remains unchanged."
   "2026-10-23T14:39:48.308Z",codex-agent,"Implementation uses the pinned SDK for certified full reads, schema fields, item creation/claims/comments/closure, and native RLM run reservations, settlement, witnessed answers and terminal evidence. Three fixed candidates compare exact first-step admission with stable tie-breaking; only the selected candidate executes. One source snapshot is frozen across children. Public read-only validation: 12 items, 54941 JSON bytes, 30 files unchanged; 3 strategies, 3 supported parts, 3 logical children, 6 fixture steps, 3 successful read-only replays; charge 24481, remainder 275519, receipt 1283 bytes. One-token run: zero calls and 3 deferred parts. Forced failure: 1 closed terminal child. No git executable during execution and no external inference. See docs/adaptive-validation.json."
@@ -45,4 +50,5 @@ docs[3]{path,scope}:
   docs/ADAPTIVE-DECOMPOSITION.md,project
   docs/adaptive-validation.json,project
   README.md,project
+close_reason: "https://github.com/unbraind/pm-rlm/pull/18, merged 2026-10-23T15:19:20Z, merge c361cba70c9fc3f6f9748219e5be331bcd7b41a7: Declared decomposition returns typed budget-limited partial answers, preserves child-failure terminal evidence and deterministic scripted comparisons."
 body: ""

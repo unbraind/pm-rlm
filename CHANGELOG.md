@@ -25,4 +25,4 @@
 
 ### Other
 
-- Recursive language models use pm as environment and ledger ([pm-rlm-a1ih](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/epics/pm-rlm-a1ih.toon))
+- Reconcile stale in-progress tracker records (2026-10-23) ([pm-rlm-reconcile-1023](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-reconcile-1023.toon))

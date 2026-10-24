@@ -2,15 +2,15 @@ id: pm-rlm-a1ih
 title: Recursive language models use pm as environment and ledger
 description: ""
 type: Epic
-status: in_progress
+status: open
 priority: 2
 tags: []
 created_at: "2026-10-18T19:30:47.797Z"
-updated_at: "2026-10-19T05:40:52.955Z"
+updated_at: "2026-10-24T21:47:47.067Z"
 author: codex-agent
 estimated_minutes: 480
 acceptance_criteria: Typed complete reads; durable atomic budgets; crash resume and replay; honest public tracker evaluation; npm and Bun release gates pass at 100 percent coverage.
-comments[34]{created_at,author,text}:
+comments[35]{created_at,author,text}:
   "2026-10-18T19:32:35.295Z",codex-agent,"Companion specification: pm-cli-website-y3xy. Read-only reference; implementation and all evidence belong to this package. Plan: certified environment, SDK ledger, atomic reservations and digest resume, bounded adapters and commands, measured local eval, full fleet gates. No agents, publication or remote writes."
   "2026-10-18T19:51:35.483Z",codex-agent,"Behavioral revert proofs: node test/revert.ts passed 3/3. Removing only the reservation budget guard made the exact-boundary regression fail (exit 1). Replacing only completed-digest lookup with no reuse made the real SIGKILL resume regression fail (exit 1). Removing only the partition fit check made slice-budget reconstruction regression fail (exit 1). Original source SHA-256 bytes were restored after each mutation; tests import authored TypeScript directly."
   "2026-10-18T20:05:10.957Z",codex-agent,"Implementation preflight passed: frozen-source coverage is 100 percent statements/branches/functions/lines across all 19 authored source and tooling files; 71 unit tests passed with zero failures, skips, cancellation or TODO. Packed npm/npx and Bun/bunx acceptance passed 1/1. Docstrings: 57/57 declarations; jscpd zero clones at unchanged zero threshold; eslint clean. Three behavioral revert proofs passed. Strict tracker health and separate validation pass with zero warnings. Final committed-head npm and Bun release gates follow. Known SDK integration gaps: --field needs active registration despite persisted schema; pm-changelog needs canonical full output controls; package describe uses the full package name. Snapshot storage scale follow-up: pm-rlm-3isb."
@@ -45,6 +45,7 @@ comments[34]{created_at,author,text}:
   "2026-10-19T04:52:43.308Z",codex-agent,"Final round-5 validation on the narrowed read/write boundary: npm run release:check and bun run release:check each passed 12/12 gates, 113/113 unit tests and 2/2 independent packed consumers; zero skipped/canceled/todo tests. Coverage is 100% statements/branches/functions/lines across all 20 authored source files; docstrings 65/65, zero clones across 50 TypeScript files, zero production vulnerabilities and 47/47 allowlisted package files. Behavioral revert proofs passed 48/48. Linked PM execution passed 1/1 commands with 3/3 SDK corruption/recovery tests. All historical eval numbers and fingerprint are unchanged; zero new model eval calls. Exact-head clone and CI receipts will follow in the PR and final handoff."
   "2026-10-19T05:32:21.755Z",codex-agent,"Round 6: rechecked clean feat/rlm at 7f705e1 and existing items. Will guard every tool observation before it enters the ledger, add real-history privacy recovery coverage, remove response-format instructions from evaluation questions, and invalidate the historical cloud scores without another model invocation. Both unchanged release gates and behavioral revert proofs will run before delivery."
   "2026-10-19T05:40:52.134Z",codex-agent,"Round 6 complete: both review findings fixed with real SDK regressions. npm run release:check and bun run release:check each passed 12/12 unchanged gates, 116/116 unit tests and 2/2 packed consumers under isolated identity. Coverage 100/100/100/100 across 20 source files: 1650 statements/lines, 781 branches, 87 functions. Docstrings 65/65, zero clones across 51 TypeScript files, zero production vulnerabilities, 47 allowlisted package files. Behavioral revert proofs 51/51. Cloud scores explicitly invalidated without changing historical values or using model quota. PM-linked tests passed 3/3 privacy and 12/12 evaluation/tooling tests. Will verify an independent no-local clone of the committed head before push, then poll exact-head CI every 60 seconds; final CI receipts will be recorded in the PR body. Existing follow-up covers corrected evaluation remeasurement; no new SDK gaps were encountered."
+  "2026-10-24T21:47:47.067Z",codex-agent,"Returned to open in the 2026-10-24 sweep: The parent requires an honest public-tracker comparison, but retained evaluation scores were invalidated by prompt-format asymmetry and the comparison follow-up remains open."
 files[13]{path,scope}:
   index.ts,project
   LICENSE,project
