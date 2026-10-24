@@ -2,14 +2,19 @@ id: pm-rlm-disagreement
 title: Compare recursive answers with shared-source evidence and reserved budgets
 description: Expose typed SDK and compact native CLI reconciliation of two explicitly budgeted decompositions. Preserve conflicting answers without treating agreement as truth.
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags[1]: "gh:unbraind/pm-rlm#20"
 created_at: "2026-10-24T07:13:01.833Z"
-updated_at: "2026-10-24T08:52:21.045Z"
+updated_at: "2026-10-24T21:47:46.709Z"
+closed_at: "2026-10-24T21:47:46.637Z"
+completed_at: "2026-10-24T21:47:46.637Z"
 author: codex-agent
 acceptance_criteria: Both arms share one immutable input boundary; Disagreement receipts preserve citations and costs; Reconciliation cannot exceed the caller reserved budget
 parent: pm-rlm-a1ih
+resolution: "Both recursive arms share immutable inputs; disagreement witnesses preserve citations and costs, and reconciliation stays inside caller-reserved budgets."
+expected_result: Both arms share one immutable input boundary; Disagreement receipts preserve citations and costs; Reconciliation cannot exceed the caller reserved budget
+actual_result: "https://github.com/unbraind/pm-rlm/pull/20, merged 2026-10-24T09:31:46Z, merge 71bc3ea12e05d94bdc15ea1c8a059d2b6ac48e92: Both recursive arms share immutable inputs; disagreement witnesses preserve citations and costs, and reconciliation stays inside caller-reserved budgets."
 comments[10]{created_at,author,text}:
   "2026-10-24T07:13:05.170Z",codex-agent,"Overlap recheck: host CLI has no recursive multi-answer reconciliation surface; pm-rlm replay certifies one execution, adaptive selects one decomposition, evidence verifies witness provenance; pm-rl evaluates labeled outcomes and candidate disagreement; pm-jev owns typed local decisions and policy replay. This feature owns caller-declared paired decompositions, one captured complete-list boundary, fixed arm reservations and non-truth answer comparisons. Use native PmClient complete reads, claims/comments and RLM run/ledger/evidence accounting."
   "2026-10-24T07:20:58.565Z",codex-agent,"Implementation: paired caller partitions share one certified captured corpus and boundary digest; live history is refused in snapshot-only runs. Native RLM ledgers own recursion, witness verification/replay and accounting. Fixed arm budgets reserve later group first-step floors and global call slots. Exact text comparisons preserve both answers and citations without a truth claim. Typed admission refusals include remedies; operational failures preserve pending costs in partial receipts. Local targeted tests: 11/11 pass. Behavioral revert proof: 4/4 targeted regressions fail with the changed function protection reverted and exact bytes restored (reservation admission, immutable snapshot, disagreement labels, history boundary). Public read-only validation: 12 items, 54941 JSON bytes, 30 unchanged source files, 4 native runs, 10 model steps, 6 witnesses, 4 verified replays, 1 intentional disagreement and 2 equal strings; 44180 of 300000 accounting tokens charged; 2627-byte JSON result. Deterministic protocol fixture only, zero external inference, Git absent during execution. Existing development audit advisory is tracked by pm-rlm-wiav; production audit remains a CI gate."
@@ -48,4 +53,5 @@ docs[6]{path,scope}:
   docs/REVERT-PROOFS.md,project
   examples/reconciliation-plan.json,project
   README.md,project
+close_reason: "https://github.com/unbraind/pm-rlm/pull/20, merged 2026-10-24T09:31:46Z, merge 71bc3ea12e05d94bdc15ea1c8a059d2b6ac48e92: Both recursive arms share immutable inputs; disagreement witnesses preserve citations and costs, and reconciliation stays inside caller-reserved budgets."
 body: ""
