@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { access, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import type { TestContext } from 'node:test';
@@ -218,4 +218,34 @@ test('ledger verifies current lease token and keeps newer lease ownership on rep
     uncreated.run = 'uncreated-run'; uncreated.calls[0].id = uncreated.run;
     await assert.rejects(ledger.materialize(uncreated, uncreated.calls[0]), { code: 'busy' });
   } finally { await second(); }
+});
+
+/** Native write failures must retain their cause rather than being mislabeled as stale-state refusals. */
+test('checkpoint publication propagates native non-conflict failures without replacing current state', async t => {
+  for (const broken of ['history-json', 'history-directory']) await t.test(broken, async () => {
+    const { workspace, run, ledger, client } = await completedLedger(t);
+    const unlock = await ledger.lease(run.run);
+    const history = join(workspace, 'history', `${run.run}.jsonl`);
+    const originalHistory = await readFile(history);
+    const raw = (await client.get(run.run, { depth: 'full' })).item.rlm_state;
+    try {
+      const state = await ledger.load(run.run);
+      const encode = RlmBlobs.prototype.encode;
+      t.mock.method(RlmBlobs.prototype, 'encode', async function (this: RlmBlobs, input: RlmState) {
+        const encoded = await encode.call(this, input);
+        if (broken === 'history-json') await writeFile(history, 'invalid history');
+        else { await rm(history); await mkdir(history); }
+        return encoded;
+      });
+      state.reserved_tokens++;
+      await assert.rejects(ledger.save(state), error => {
+        assert.notEqual((error as { code?: string }).code, 'busy');
+        return true;
+      });
+      t.mock.restoreAll();
+      if (broken === 'history-directory') await rm(history, { recursive: true });
+      await writeFile(history, originalHistory);
+      assert.equal((await client.get(run.run, { depth: 'full' })).item.rlm_state, raw);
+    } finally { await unlock(); }
+  });
 });
