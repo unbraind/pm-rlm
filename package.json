@@ -34,7 +34,10 @@
     "docs/answer-evidence-validation.json",
     "docs/ledger-scale.json",
     "docs/ADAPTIVE-DECOMPOSITION.md",
-    "docs/adaptive-validation.json"
+    "docs/adaptive-validation.json",
+    "docs/RECONCILIATION.md",
+    "docs/reconciliation-validation.json",
+    "examples/reconciliation-plan.json"
   ],
   "scripts": {
     "build": "tsc",

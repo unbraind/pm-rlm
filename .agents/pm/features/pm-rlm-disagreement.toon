@@ -1,0 +1,36 @@
+id: pm-rlm-disagreement
+title: Compare recursive answers with shared-source evidence and reserved budgets
+description: Expose typed SDK and compact native CLI reconciliation of two explicitly budgeted decompositions. Preserve conflicting answers without treating agreement as truth.
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-24T07:13:01.833Z"
+updated_at: "2026-10-24T07:22:41.112Z"
+author: codex-agent
+acceptance_criteria: Both arms share one immutable input boundary; Disagreement receipts preserve citations and costs; Reconciliation cannot exceed the caller reserved budget
+parent: pm-rlm-a1ih
+comments[3]{created_at,author,text}:
+  "2026-10-24T07:13:05.170Z",codex-agent,"Overlap recheck: host CLI has no recursive multi-answer reconciliation surface; pm-rlm replay certifies one execution, adaptive selects one decomposition, evidence verifies witness provenance; pm-rl evaluates labeled outcomes and candidate disagreement; pm-jev owns typed local decisions and policy replay. This feature owns caller-declared paired decompositions, one captured complete-list boundary, fixed arm reservations and non-truth answer comparisons. Use native PmClient complete reads, claims/comments and RLM run/ledger/evidence accounting."
+  "2026-10-24T07:20:58.565Z",codex-agent,"Implementation: paired caller partitions share one certified captured corpus and boundary digest; live history is refused in snapshot-only runs. Native RLM ledgers own recursion, witness verification/replay and accounting. Fixed arm budgets reserve later group first-step floors and global call slots. Exact text comparisons preserve both answers and citations without a truth claim. Typed admission refusals include remedies; operational failures preserve pending costs in partial receipts. Local targeted tests: 11/11 pass. Behavioral revert proof: 4/4 targeted regressions fail with the changed function protection reverted and exact bytes restored (reservation admission, immutable snapshot, disagreement labels, history boundary). Public read-only validation: 12 items, 54941 JSON bytes, 30 unchanged source files, 4 native runs, 10 model steps, 6 witnesses, 4 verified replays, 1 intentional disagreement and 2 equal strings; 44180 of 300000 accounting tokens charged; 2627-byte JSON result. Deterministic protocol fixture only, zero external inference, Git absent during execution. Existing development audit advisory is tracked by pm-rlm-wiav; production audit remains a CI gate."
+  "2026-10-24T07:22:40.069Z",codex-agent,"Verification: pm test --run --progress ran both linked commands successfully (11 targeted tests plus 4 behavioral revert proofs); test result tracking is disabled by project policy, so the explicit summary is recorded here. Typecheck, lint, docstring and unchanged zero-duplication gates pass. Full npm and Bun release gates will run on CI to avoid adding load to the saturated host. Public tracker source records contain optional undefined SDK fields that JSON persistence omits; validation compares their exact serialized boundary bytes rather than JavaScript-only undefined properties."
+files[10]{path,scope}:
+  index.ts,project
+  package.json,project
+  src/commands.ts,project
+  src/engine.ts,project
+  src/reconcile.ts,project
+  src/types.ts,project
+  test/install.acceptance.ts,project
+  test/reconcile-public.ts,project
+  test/reconcile-revert.ts,project
+  test/reconcile.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/reconcile.test.ts test/commands.test.ts,project,codex-agent,"2026-10-24T07:20:56.103Z",local_mutation,feat/disagreement-guided-reconciliation
+  node test/reconcile-revert.ts,project,codex-agent,"2026-10-24T07:20:57.303Z",local_mutation,feat/disagreement-guided-reconciliation
+docs[4]{path,scope}:
+  docs/reconciliation-validation.json,project
+  docs/RECONCILIATION.md,project
+  examples/reconciliation-plan.json,project
+  README.md,project
+body: ""

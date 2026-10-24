@@ -128,6 +128,8 @@ export interface RlmState {
   settings: RlmSettings;
   scope: RlmFilter;
   snapshot: RlmItem[];
+  /** Restrict paired runs to their captured corpus, refusing live history reads. */
+  snapshot_only?: true;
   certificate: PmCompleteListCertificate;
   calls: RlmCall[];
   reserved_tokens: number;

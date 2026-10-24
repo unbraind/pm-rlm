@@ -1,3 +1,7 @@
+/** Expose paired decompositions with fixed budgets and source-bound evidence receipts. */
+export { reconcileRlm, parseReconcileArms, RlmReconcileError } from './src/reconcile.ts';
+/** Public paired evidence declarations and compact results. */
+export type { RlmReconcileArm, RlmReconcileOptions, RlmReconcileGroup, RlmReconcileResult } from './src/reconcile.ts';
 import { defineExtension } from '@unbrained/pm-cli/sdk/authoring';
 import { register } from './src/commands.ts';
 /** Expose the certified token-budgeted environment for independent RLM loops. */
