@@ -35,3 +35,8 @@ Two further non-git regressions cover reads begun before lease acquisition
 (`load captures lease provenance before its first asynchronous read`) and stale
 release callbacks plus replaced/missing/corrupt lease tokens
 (`ledger verifies current lease token and keeps newer lease ownership on repeated release`).
+
+`checkpoint publication propagates native non-conflict failures without replacing current state`
+adds corrupt-history JSON and directory cases. Both exercise real SDK failures,
+retain the prior manifest, and ensure errors other than CAS conflicts are not
+converted into stale-state refusals.

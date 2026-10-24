@@ -71,3 +71,12 @@ uncommitted usage counters, and assigning write authority to a read that began
 outside its lease. Each must fail its non-git regression with an
 assertion failure and restore exact source bytes. The adaptive terminal-evidence
 proof now targets its shared cleanup call, preserving that earlier regression.
+
+Canonical completion now reloads the stored checkpoint before writing evidence.
+The older empty-response regression explicitly asserts that such recovery must
+succeed, so reverting string-response validation still produces an assertion
+failure even when rejection occurs during this earlier reload. The lease-free
+hydration proof carries the read-entry lease token into its temporary helper;
+the by-value proof mutates the decoded state assignment while preserving the
+provenance registration. These changes retain the existing proof inventory and
+its assertion-failure requirement.
