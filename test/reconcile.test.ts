@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { dirname, join } from 'node:path';
@@ -7,14 +8,14 @@ import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
 import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
 import { reconcileRlm, parseReconcileArms, RlmReconcileError } from '../index.ts';
 import type { RlmReconcileOptions, RlmReconcileResult } from '../index.ts';
-import { replayRlm } from '../src/engine.ts';
+import { replayRlm, resumeRlm } from '../src/engine.ts';
 import { RlmLedger } from '../src/ledger.ts';
 import { RlmError } from '../src/errors.ts';
 import { runCommand } from '../src/commands.ts';
 import { writeRlmSettings } from '../src/settings.ts';
 import { tracker, ScriptedModel } from './helpers.ts';
 import { httpFixture, requestBody } from './http.ts';
-import type { ModelRequest } from '../src/types.ts';
+import type { ModelRequest, RlmState, RlmCall } from '../src/types.ts';
 
 /** Common semantic leaves; only their grouping changes between arms. */
 const structure = [{ name: 'title', question: 'What is the title?' }, { name: 'status', question: 'What is the status?' }];
@@ -77,7 +78,7 @@ test('paired evidence preserves disagreements and the immutable boundary without
   assert.equal((await client.listAllComplete()).items.find(item => item.id === report.run)?.assignee, undefined);
   const ledger = new RlmLedger(workspace);
   Object.assign(states[0], { snapshot_only: false });
-  await ledger.save(states[0]);
+  await replaceCheckpointFixture(ledger, states[0]);
   await assert.rejects(ledger.load(states[0].run), { code: 'incomplete' });
 });
 
@@ -204,4 +205,28 @@ test('paired nested runs retain native recursive replay and exact exhaustion cha
   assert.ok(exhausted.arms.every(arm => arm.charged <= 30000));
   assert.ok(exhausted.arms.flatMap(arm => arm.groups).every(group => group.refusal?.code === 'budget'));
   assert.equal(exhausted.budget.charged, exhausted.arms.reduce((sum, arm) => sum + arm.charged, 0));
+});
+
+/** The public failure receipt names terminal calls that a concurrent resume completed first. */
+test('paired cleanup reports skipped competing completion without changing its ledger', async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel((request, index) => {
+    if (index === 0) throw new RlmError('model', 'Initial inference stopped');
+    return unknown(request);
+  });
+  const fail = RlmLedger.prototype.failUnfinished;
+  let completed: RlmState | undefined;
+  t.mock.method(RlmLedger.prototype, 'failUnfinished', async function (this: RlmLedger, run: string, failure: NonNullable<RlmCall['failure']>) {
+    await resumeRlm(workspace, run, model);
+    completed = await new RlmLedger(workspace).load(run);
+    return fail.call(this, run, failure);
+  });
+  const report = await reconcileRlm('Explain', { workspace, structure, arms, reserved_tokens: 200000, model });
+  const group = report.arms[0].groups[0];
+  assert.ok(completed);
+  assert.deepEqual(group.cleanup_skipped, [group.run]);
+  assert.deepEqual(await new RlmLedger(workspace).load(group.run), completed);
+  assert.equal(group.charged, completed.reserved_tokens);
+  assert.ok(completed.calls[0].result !== undefined);
+  assert.equal(completed.calls[0].failure, undefined);
 });

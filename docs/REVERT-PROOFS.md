@@ -63,3 +63,11 @@ answer labels, history boundary enforcement and immutable boundary flag
 validation. Every protection produces a targeted assertion failure when reverted,
 and the script restores exact source bytes. The depth-one clone inventory now
 includes this script alongside the nine existing scripts.
+
+The checkpoint review extends the paired script to ten proofs. Five new
+behavioral reversions cover cleanup reading before its lease, overwriting
+terminal calls, removing the native SDK manifest match, and materializing
+uncommitted usage counters, and assigning write authority to a read that began
+outside its lease. Each must fail its non-git regression with an
+assertion failure and restore exact source bytes. The adaptive terminal-evidence
+proof now targets its shared cleanup call, preserving that earlier regression.

@@ -33,6 +33,8 @@ export interface RlmReconcileGroup {
   tokens_out: number;
   components: RlmAnswerComponent[];
   refusal?: { code: RlmError['code']; remedy: string };
+  /** Calls already terminal when failure cleanup acquired its lease. */
+  cleanup_skipped?: string[];
 }
 /** Compact paired evidence receipt; equality never asserts truth or semantic equivalence. */
 export interface RlmReconcileResult {
@@ -105,19 +107,10 @@ async function executeReconciliation(question: string, options: RlmReconcileOpti
         catch (error) {
           refusal = { code: error instanceof RlmError ? error.code : 'model', remedy: 'Inspect the native run ledger; correct configuration or increase the reserved arm budget before starting a new comparison' };
         }
-        const state = await child.ledger.load(child.run);
-        if (refusal !== undefined) {
-          const unlock = await child.ledger.lease(child.run);
-          try {
-            for (const call of state.calls) {
-              if (call.result === undefined && call.failure === undefined) call.failure = { code: refusal.code, reason: 'Paired execution stopped' };
-            }
-            await child.ledger.save(state);
-            for (const call of state.calls) await child.ledger.complete(state, call);
-          } finally { await unlock(); }
-        }
+        const cleanup = refusal === undefined ? undefined : await child.ledger.failUnfinished(child.run, { code: refusal.code, reason: 'Paired execution stopped' });
+        const state = cleanup?.state ?? await child.ledger.load(child.run);
         const responses = state.calls.flatMap(call => call.steps.flatMap(step => step.response === undefined ? [] : [step.response]));
-        const group: RlmReconcileGroup = { run: child.run, charged: state.reserved_tokens, calls: state.calls.length, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0), components: refusal === undefined ? components : [], ...(refusal === undefined ? {} : { refusal }) };
+        const group: RlmReconcileGroup = { run: child.run, charged: state.reserved_tokens, calls: state.calls.length, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0), components: refusal === undefined ? components : [], ...(refusal === undefined ? {} : { refusal, cleanup_skipped: cleanup!.skipped }) };
         target.groups.push(group);
         target.charged += group.charged;
         calls += group.calls;

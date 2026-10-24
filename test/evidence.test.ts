@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { spawnSync } from 'node:child_process';
@@ -135,7 +136,7 @@ for (const scenario of [
     if (remedy === undefined) delete observation.remedy;
     else observation.remedy = remedy;
     if (unfinished) { delete tampered.calls[0].result; tampered.calls[0].steps.pop(); }
-    await ledger.save(tampered);
+    await replaceCheckpointFixture(ledger, tampered);
     const before = await Promise.all(paths.map(path => readFile(path)));
     await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
     await assert.rejects(evidenceRlm(workspace, run.run), { code: 'replay' });
@@ -174,12 +175,12 @@ for (const hook of [false, true]) test(`child ${hook ? 'completion' : 'model'} e
     const refusal = malformed.calls[1][receipt] as unknown as { code: string; remedy: unknown };
     if (value === 'non-evidence code') refusal.code = 'model';
     else refusal.remedy = value;
-    await ledger.save(malformed);
+    await replaceCheckpointFixture(ledger, malformed);
     await assert.rejects(ledger.load(run.run), { code: 'incomplete' });
   }
   const tampered = structuredClone(state);
   (tampered.calls[0].steps[1].observation as { remedy: string }).remedy = 'forged corrective text';
-  await ledger.save(tampered);
+  await replaceCheckpointFixture(ledger, tampered);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
 });
 
@@ -216,7 +217,7 @@ test('replay verifies every witness digest including uncited source witnesses', 
     (copy: RlmState) => { copy.calls[0].steps[1].response!.text = JSON.stringify({ action: 'answer', components: [] }); },
     (copy: RlmState) => { copy.calls[0].result = 'unchecked prose'; },
   ]) {
-    const copy = structuredClone(state); mutate(copy); await ledger.save(copy);
+    const copy = structuredClone(state); mutate(copy); await replaceCheckpointFixture(ledger, copy);
     await assert.rejects(replayRlm(workspace, run.run));
     await assert.rejects(resumeRlm(workspace, run.run, new ScriptedModel(() => { throw new Error('Must never infer'); })));
   }
@@ -225,10 +226,10 @@ test('replay verifies every witness digest including uncited source witnesses', 
   uncited.calls[0].steps[1].response!.text = JSON.stringify({ action: 'answer', components: unknown });
   uncited.calls[0].result = JSON.stringify(unknown);
   (uncited.calls[0].steps[0].observation as { data: { text: string } }).data.text = 'changed';
-  await ledger.save(uncited);
+  await replaceCheckpointFixture(ledger, uncited);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
   delete uncited.calls[0].steps[0].observation;
-  await ledger.save(uncited);
+  await replaceCheckpointFixture(ledger, uncited);
   await assert.rejects(resumeRlm(workspace, run.run, new ScriptedModel(() => { throw new Error('Must not infer'); })), { code: 'replay' });
 });
 
@@ -305,7 +306,7 @@ test('coverage CLI refuses execution-only runs and invalid component declaration
   assert.equal((await evidenceRlm(workspace, run.run)).unknown, 1);
   const state = await new RlmLedger(workspace).load(run.run);
   state.components = [];
-  await new RlmLedger(workspace).save(state);
+  await replaceCheckpointFixture(new RlmLedger(workspace), state);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'incomplete' });
 });
 
@@ -341,7 +342,7 @@ test('evidence recovery reuses pending source and completion responses without i
       copy.reserved_tokens -= (copy.calls[0].steps[0].observation as { estimated_tokens: number }).estimated_tokens;
       delete copy.calls[0].steps[0].observation;
     }
-    await ledger.save(copy);
+    await replaceCheckpointFixture(ledger, copy);
     assert.deepEqual(await resumeRlm(workspace, run.run, model), run);
     assert.equal(model.requests.length, 2);
   }
@@ -356,11 +357,11 @@ test('witness scope refusals and component refusals replay without a model retry
   const state = await ledger.load(run.run);
   const bad = structuredClone(state);
   (bad.calls[0].steps[0].observation as { reason: string }).reason = 'forged';
-  await ledger.save(bad);
+  await replaceCheckpointFixture(ledger, bad);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
   const refused = structuredClone(state);
   refused.calls[0].steps[1].observation = { refused: 'evidence', reason: 'invented' };
-  await ledger.save(refused);
+  await replaceCheckpointFixture(ledger, refused);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
   // Refuse answer actions on legacy runs, then allow the recorded legacy finish.
   const legacy = new ScriptedModel((_request, index) => index === 0 ? JSON.stringify({ action: 'answer', components: [component('unknown')] }) : '{"action":"finish","answer":"legacy"}');
@@ -370,7 +371,7 @@ test('witness scope refusals and component refusals replay without a model retry
   // A valid refusal reason must still be required when the refusal code is intact.
   const malformed = await ledger.load(oldRun.run);
   delete (malformed.calls[0].steps[0].observation as { reason?: string }).reason;
-  await ledger.save(malformed);
+  await replaceCheckpointFixture(ledger, malformed);
   await assert.rejects(replayRlm(workspace, oldRun.run), { code: 'replay' });
 });
 

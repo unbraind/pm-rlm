@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { getHistoryPath } from '@unbrained/pm-cli/sdk';
@@ -61,11 +62,11 @@ test('review r4 checkpoint ordering preserves legacy replay and resume', async t
     const legacy = structuredClone(state);
     if (version === undefined) delete legacy.aggregate_version; else legacy.aggregate_version = version;
     for (const step of legacy.calls[0].steps.slice(0, 2)) (step.observation as { data: unknown[] }).data.reverse();
-    await ledger.save(legacy);
+    await replaceCheckpointFixture(ledger, legacy);
     await verifyReplay();
     delete legacy.calls[0].result;
     legacy.calls[0].steps.pop();
-    await ledger.save(legacy);
+    await replaceCheckpointFixture(ledger, legacy);
     const continuation = new ScriptedModel((_request, index) => index < 2 ? JSON.stringify({ action: actions[index], field: 'estimated_minutes' }) : '{"action":"finish","answer":"done"}');
     await resumeRlm(workspace, result.run, continuation);
     const resumed = await ledger.load(result.run);

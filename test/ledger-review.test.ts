@@ -24,7 +24,8 @@ test('scale collection verifies zero removals and all sampled post-sweep roots',
     const sample = structuredClone(state);
     sample.run = `scale-run-${run}`; sample.calls[0].id = sample.run;
     delete sample.calls[0].parent;
-    await ledger.materialize(sample, sample.calls[0]);
+  const unlock = await ledger.lease(sample.run);
+  try { await ledger.materialize(sample, sample.calls[0]); } finally { await unlock(); }
   }
   await verifyScaleCollection(ledger);
   const blobs = new RlmBlobs(workspace);

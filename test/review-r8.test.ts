@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -66,7 +67,7 @@ function promptInput(request: ModelRequest): { depth: number; transcript: unknow
     for (const operation of ['replay', 'resume'] as const) {
       /** Select the public recovery entry point with an inference trap. */
       const recover = () => operation === 'replay' ? replayRlm(workspace, result.run) : resumeRlm(workspace, result.run, noInference);
-      await ledger.save(original);
+      await replaceCheckpointFixture(ledger, original);
       await assert.doesNotReject(async () => { assert.deepEqual(await recover(), result); });
       for (const unfinished of [false, true]) for (const change of ['code', 'reason', 'missing'] as const) {
         const forged = structuredClone(original);
@@ -75,7 +76,7 @@ function promptInput(request: ModelRequest): { depth: number; transcript: unknow
         if (change === 'code') observation.refused = entry.code === 'calls' ? 'depth' : 'calls';
         if (change === 'reason') observation.reason = 'Forged corrective prompt';
         if (change === 'missing') delete observation.reason;
-        await ledger.save(forged);
+        await replaceCheckpointFixture(ledger, forged);
         const before = await Promise.all(forged.calls.map(call => readFile(getHistoryPath(workspace, call.id), 'utf8')));
         await assert.rejects(recover(), { code: 'replay', message: `Recorded execution refusal differs at step ${result.run}:${index}` });
         assert.deepEqual(await ledger.load(result.run), forged);
@@ -85,11 +86,11 @@ function promptInput(request: ModelRequest): { depth: number; transcript: unknow
       legacy.parser_version = 1;
       if (legacy.calls[1]?.failure !== undefined) delete legacy.calls[1].failure.reason;
       delete (legacy.calls[0].steps[index].observation as { reason?: string }).reason;
-      await ledger.save(legacy);
+      await replaceCheckpointFixture(ledger, legacy);
       await assert.doesNotReject(async () => { assert.deepEqual(await recover(), result); });
       const unfinished = structuredClone(original);
       delete unfinished.calls[0].result; unfinished.calls[0].steps.pop();
-      await ledger.save(unfinished);
+      await replaceCheckpointFixture(ledger, unfinished);
       const continuation = new ScriptedModel(() => '{"action":"finish","answer":"recovered"}');
       assert.equal((await resumeRlm(workspace, result.run, continuation)).answer, 'recovered');
       assert.equal(continuation.requests.length, 1);
@@ -101,7 +102,7 @@ function promptInput(request: ModelRequest): { depth: number; transcript: unknow
       delete legacy.calls[1].failure!.reason;
       delete (legacy.calls[0].steps[index].observation as { reason?: string }).reason;
       delete legacy.calls[0].result; legacy.calls[0].steps.pop();
-      await ledger.save(legacy);
+      await replaceCheckpointFixture(ledger, legacy);
       const repeat = new ScriptedModel((_request, attempt) => JSON.stringify(attempt === 0 ? actions[index] : { action: 'finish', answer: 'recovered' }));
       await resumeRlm(workspace, result.run, repeat);
       const recovered = await ledger.load(result.run);
@@ -174,7 +175,7 @@ test('review r8 chronological reuse and nested refusal integrity', async t => {
   (forged.calls[1].steps[0].observation as { reason: string }).reason = 'Forged nested correction';
   const nestedError = `Recorded execution refusal differs at step ${state.calls[1].id}:0`;
   forged.calls[0].steps[0].observation = { refused: 'replay', reason: nestedError };
-  await ledger.save(forged);
+  await replaceCheckpointFixture(ledger, forged);
   const before = JSON.stringify((await client.listAllComplete({ includeBody: true })).items);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay', message: nestedError });
   await assert.rejects(resumeRlm(workspace, result.run, model), { code: 'replay', message: nestedError });

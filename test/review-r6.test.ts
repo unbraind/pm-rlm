@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { getHistoryPath } from '@unbrained/pm-cli/sdk';
@@ -56,7 +57,7 @@ for (const operation of ['replay', 'resume'] as const) test(`review r6 ${operati
     if (change === 'code') observation.refused = 'budget';
     if (change === 'missing') delete observation.reason;
     if (unfinished) { delete state.calls[0].result; state.calls[0].steps.pop(); }
-    await ledger.save(state);
+    await replaceCheckpointFixture(ledger, state);
     const before = await readFile(getHistoryPath(workspace, result.run));
     const noInference = new ScriptedModel(() => assert.fail('Integrity validation must precede inference'));
     await assert.rejects(operation === 'replay' ? replayRlm(workspace, result.run) : resumeRlm(workspace, result.run, noInference), { code: 'replay', message: `Recorded execution refusal differs at step ${result.run}:${index}` });
@@ -65,7 +66,7 @@ for (const operation of ['replay', 'resume'] as const) test(`review r6 ${operati
   }
   const unfinished = structuredClone(original);
   delete unfinished.calls[0].result; unfinished.calls[0].steps.pop();
-  await ledger.save(unfinished);
+  await replaceCheckpointFixture(ledger, unfinished);
   const recovery = new ScriptedModel(request => {
     assert.ok(request.prompt.includes('Item is outside the certified scope'));
     return '{"action":"finish","answer":"recovered"}';
@@ -92,7 +93,7 @@ test('review r6 execution refusal budgets follow recursive order and transcript 
   assert.deepEqual(await resumeRlm(workspace, result.run, model), result);
   const forged = structuredClone(original);
   forged.calls[0].steps[0].observation = { refused: 'budget', reason: 'Read exceeds remaining token budget' };
-  await ledger.save(forged);
+  await replaceCheckpointFixture(ledger, forged);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
   await assert.rejects(resumeRlm(workspace, result.run, model), { code: 'replay' });
 });
@@ -122,7 +123,7 @@ for (const operation of ['replay', 'resume'] as const) test(`review r7 ${operati
     }
     assert.ok(legacy.calls[0].steps.slice(0, 4).reduce((sum, step) => sum + step.reserved, 0) > legacy.settings.budget_tokens, 'Old reservations would exhaust the budget before the recorded refusal');
     if (codeOnly) delete (legacy.calls[0].steps[3].observation as { reason?: string }).reason;
-    await ledger.save(legacy);
+    await replaceCheckpointFixture(ledger, legacy);
     const before = await readFile(getHistoryPath(workspace, result.run));
     const noInference = new ScriptedModel(() => assert.fail('Completed legacy steps must not repeat inference'));
     await assert.doesNotReject(async () => {
@@ -140,7 +141,7 @@ for (const operation of ['replay', 'resume'] as const) test(`review r7 ${operati
       const unfinished = structuredClone(legacy);
       delete unfinished.calls[0].result;
       unfinished.reserved_tokens -= unfinished.calls[0].steps.pop()!.reserved;
-      await ledger.save(unfinished);
+      await replaceCheckpointFixture(ledger, unfinished);
       const continuation = new ScriptedModel(() => JSON.stringify(actions[4]));
       await assert.doesNotReject(async () => { assert.equal((await resumeRlm(workspace, result.run, continuation)).answer, result.answer); });
       assert.equal(continuation.requests.length, 1, 'Only the missing finish inference is retried');
@@ -155,7 +156,7 @@ for (const operation of ['replay', 'resume'] as const) test(`review r7 ${operati
     if (change === 'code') { observation.refused = 'scope'; delete observation.reason; }
     if (change === 'reason') observation.reason = 'Forged legacy correction';
     if (change === 'missing') delete observation.reason;
-    await ledger.save(forged);
+    await replaceCheckpointFixture(ledger, forged);
     const before = await readFile(getHistoryPath(workspace, result.run));
     const noInference = new ScriptedModel(() => assert.fail('Forged refusals must fail before inference'));
     await assert.rejects(operation === 'replay' ? replayRlm(workspace, result.run) : resumeRlm(workspace, result.run, noInference), { code: 'replay', message: `Recorded execution refusal differs at step ${result.run}:3` });

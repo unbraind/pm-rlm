@@ -3,7 +3,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { readdir } from 'node:fs/promises';
 import { RlmBlobs } from './blobs.ts';
-import { acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
+import { commitItemMutations, isPmCliExpectedError, acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
 import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
@@ -47,6 +47,8 @@ export class RlmLedger {
   /** Explicit tracker root; never serialized into run state. */
   readonly workspace: string;
   private readonly author: string;
+  private readonly leases = new Map<string, string>();
+  private readonly reads = new WeakMap<RlmState, { lease: string | undefined; checkpoint: string }>();
   /** Bind every mutation to the supplied tracker and an attributable author. */
   constructor(workspace: string, author = 'pm-rlm') {
     this.workspace = workspace; this.author = author;
@@ -68,6 +70,7 @@ export class RlmLedger {
   }
   /** Read a certified full corpus to recover the root checkpoint without compact projections. */
   async load(run: string): Promise<RlmState> {
+    const lease = this.leases.get(run);
     // Historical manifests pin every committed version, including one read before a concurrent save.
     const blobs = new RlmBlobs(this.workspace);
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
@@ -115,15 +118,24 @@ export class RlmLedger {
         }
       }
       // Preserve by-value JSON semantics even when multiple references share a cached payload.
-      return JSON.parse(JSON.stringify(decoded)) as RlmState;
+      const state = JSON.parse(JSON.stringify(decoded)) as RlmState;
+      this.reads.set(state, { lease, checkpoint: root.rlm_state });
+      return state;
     } catch { throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
   }
   /** Save reservations, model outputs, observations and completed digests in one atomic SDK item update. */
   async save(state: RlmState): Promise<void> {
     assertLedgerPrivacy(state, this.workspace, state.settings.key_env);
     await this.storage(async blobs => {
+      const expected = await this.assertCurrent(state);
       const checkpoint = await blobs.encode(state);
-      await this.client.run('update', { id: state.run, options: { rlmState: checkpoint, message: 'Checkpoint recursive run' } });
+      try {
+        await commitItemMutations({ pmRoot: this.workspace, author: this.author, transactionId: `rlm-checkpoint-${randomUUID()}`, mutations: [{ op: 'update', id: state.run, match: { key: 'rlm_state', value: expected }, options: { rlmState: checkpoint, message: 'Checkpoint recursive run' } }] });
+      } catch (error) {
+        if (isPmCliExpectedError(error) && error.code === 'upsert_match_changed') throw new RlmError('busy', 'Stale checkpoint refused by SDK compare-and-set');
+        throw error;
+      }
+      this.reads.set(state, { lease: this.leases.get(state.run), checkpoint });
     });
   }
   /** Create a deterministic call item, or reuse its crash-surviving SDK write. */
@@ -131,30 +143,65 @@ export class RlmLedger {
     assertLedgerPrivacy({ state, call }, this.workspace, state.settings.key_env);
     await this.storage(async blobs => {
       const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
-      if (corpus.items.some(item => item.id === call.id)) return;
+      if (corpus.items.some(item => item.id === call.id)) { await this.assertCurrent(state); return; }
+      if (call.depth !== 0) await this.assertCurrent(state);
+      else if (!this.leases.has(state.run)) throw new RlmError('busy', 'Run creation requires its lease');
       const checkpoint = call.depth === 0 ? await blobs.encode(state) : undefined;
       await this.client.run('create', { options: { id: call.id, title: call.depth === 0 ? 'RLM root call' : `RLM sub-call ${call.depth}`, type: 'Task', status: 'in_progress', tags: 'rlm:call', parent: call.parent, description: call.subgoal, allowDuplicate: true,
         rlmRun: state.run, rlmDepth: call.depth, rlmModel: state.settings.model, rlmPromptDigest: call.digest, rlmTokensIn: 0, rlmTokensOut: 0,
         ...(checkpoint === undefined ? {} : { rlmState: checkpoint }),
       } });
       await this.client.claim(call.id);
+      if (checkpoint !== undefined) this.reads.set(state, { lease: this.leases.get(state.run), checkpoint });
     });
   }
   /** Repair completion evidence after a crash without repeating model inference or comments. */
-  async complete(state: RlmState, call: RlmCall): Promise<void> {
-    assertLedgerPrivacy(call, this.workspace, state.settings.key_env);
+  async complete(snapshot: RlmState, requestedCall: RlmCall): Promise<void> {
+    assertLedgerPrivacy(requestedCall, this.workspace, snapshot.settings.key_env);
+    await this.assertCurrent(snapshot);
+    const state = await this.load(snapshot.run);
+    const call = state.calls.find(entry => entry.id === requestedCall.id);
+    if (call === undefined || (call.result === undefined && call.failure === undefined)) throw new RlmError('invalid', 'Completion requires a terminal checkpoint call');
     await this.materialize(state, call);
     await this.client.comments(call.id, { add: call.failure === undefined ? `RLM result:\n${call.result}` : `RLM refusal:\n${JSON.stringify(call.failure)}`, ifAbsent: true });
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
     const row = corpus.items.find(item => item.id === call.id)!;
     if (row.status !== 'closed') {
-      await this.client.run('update', { id: call.id, options: {
-        rlmTokensIn: call.steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0), 0),
-        rlmTokensOut: call.steps.reduce((sum, step) => sum + (step.response?.tokens_out ?? 0), 0),
-      } });
+      await commitItemMutations({ pmRoot: this.workspace, author: this.author, transactionId: `rlm-usage-${randomUUID()}`, mutations: [{ op: 'update', id: call.id,
+        match: { key: 'updated_at', value: row.updated_at },
+        options: {
+          rlmTokensIn: call.steps.reduce((sum, step) => sum + (step.response?.tokens_in ?? 0), 0),
+          rlmTokensOut: call.steps.reduce((sum, step) => sum + (step.response?.tokens_out ?? 0), 0),
+        },
+      }] });
       await this.client.close(call.id, 'Call terminated; evidence recorded', { validateClose: 'off' });
     }
     await this.client.release(call.id);
+  }
+  /** Refuse snapshots read outside this lease or superseded by another checkpoint publication. */
+  private async assertCurrent(state: RlmState): Promise<string> {
+    const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
+    const expected = this.reads.get(state);
+    const token = this.leases.get(state.run);
+    const raw = await sdkRead(() => readFileIfExists(join(this.workspace, 'runtime', `rlm-${state.run}.json`)));
+    const owner = raw === null ? undefined : await sdkRead(() => record(JSON.parse(raw)));
+    if (token === undefined || expected?.lease !== token || owner?.token !== token || corpus.items.find(item => item.id === state.run)?.rlm_state !== expected.checkpoint) throw new RlmError('busy', 'Stale checkpoint refused; reload inside the run lease');
+    return expected.checkpoint;
+  }
+  /** Mark only unfinished calls failed; preserve and report completed or previously failed calls. */
+  async failUnfinished(run: string, failure: NonNullable<RlmCall['failure']>): Promise<{ state: RlmState; skipped: string[] }> {
+    const unlock = await this.lease(run);
+    try {
+      const state = await this.load(run);
+      const skipped: string[] = [];
+      for (const call of state.calls) {
+        if (call.result !== undefined || call.failure !== undefined) skipped.push(call.id);
+        else call.failure = { ...failure };
+      }
+      if (skipped.length !== state.calls.length) await this.save(state);
+      for (const call of state.calls) await this.complete(state, call);
+      return { state, skipped };
+    } finally { await unlock(); }
   }
   /** Serialize publication and collection across all runs in this non-git tracker. */
   private async storage<T>(operation: (blobs: RlmBlobs) => Promise<T>): Promise<T> {
@@ -206,7 +253,9 @@ export class RlmLedger {
       }
       await writeFileAtomic(path, JSON.stringify({ pid: process.pid, token }));
     } finally { await unlock(); }
+    this.leases.set(run, token);
     return async () => {
+      if (this.leases.get(run) === token) this.leases.delete(run);
       const current = await sdkRead(() => readFileIfExists(path));
       if (current !== null && (await sdkRead(() => record(JSON.parse(current)))).token === token) await removeFileIfExists(path);
     };

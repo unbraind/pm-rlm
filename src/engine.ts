@@ -335,7 +335,8 @@ export async function prepareRlmRun(question: string, options: RlmRunOptions, co
   const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
   const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, ...(options.snapshot_only === true ? { snapshot_only: true } : {}), calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
-  await ledger.materialize(state, state.calls[0]);
+  const unlock = await ledger.lease(run);
+  try { await ledger.materialize(state, state.calls[0]); } finally { await unlock(); }
   return { ledger, engine: new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete), run };
 }
 /** Create and execute a new SDK ledger with the native reservation and recovery loop. */

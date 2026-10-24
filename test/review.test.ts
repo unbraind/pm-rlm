@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { tracker, ScriptedModel } from './helpers.ts';
@@ -122,7 +123,7 @@ test('partition references fail closed and completed oversized child results rem
   const referenceLedger = new RlmLedger(workspace);
   const changed = await referenceLedger.load(result.run);
   changed.calls[0].steps[0].observation = { refused: 'budget' };
-  await referenceLedger.save(changed);
+  await replaceCheckpointFixture(referenceLedger, changed);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
   const large = new ScriptedModel(request => {
     const value = input(request);
@@ -152,15 +153,15 @@ test('child interruption remains resumable and terminal refusal tampering fails 
   });
   const result = await runRlm('typed', { workspace, model: typed });
   const ledger = new RlmLedger(workspace); const state = await ledger.load(result.run);
-  const unfinished = structuredClone(state); delete unfinished.calls[1].failure; await ledger.save(unfinished);
+  const unfinished = structuredClone(state); delete unfinished.calls[1].failure; await replaceCheckpointFixture(ledger, unfinished);
   await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'replay' });
   const orphaned = structuredClone(state);
   const orphan = { ...orphaned.calls[1], id: `${result.run}-orphan`, steps: [] };
   delete orphan.failure;
   orphaned.calls.push(orphan);
-  await ledger.save(orphaned);
+  await replaceCheckpointFixture(ledger, orphaned);
   await assert.rejects(resumeRlm(workspace, result.run, typed), { code: 'incomplete', message: 'Completed run contains an unfinished call' });
-  state.calls[1].failure = { code: 'budget' }; await ledger.save(state);
+  state.calls[1].failure = { code: 'budget' }; await replaceCheckpointFixture(ledger, state);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
 });
 
@@ -199,9 +200,9 @@ test('replay retains existing full-slice partition receipts and rejects changed 
   const context = new RlmContext(workspace, state.snapshot, state.certificate, state.settings.budget_tokens);
   const read = await context.partition({}, 2000);
   state.calls[0].steps[0].observation = read;
-  await ledger.save(state);
+  await replaceCheckpointFixture(ledger, state);
   assert.equal((await replayRlm(workspace, result.run)).answer, 'legacy');
   read.estimated_tokens++;
-  await ledger.save(state);
+  await replaceCheckpointFixture(ledger, state);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
 });
