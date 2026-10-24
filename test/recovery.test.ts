@@ -1,3 +1,4 @@
+import { leasedFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -65,7 +66,7 @@ test('depth and call limits, digest reuse and scope checks operate on a real led
   const { workspace } = await tracker(t);
   const run = await runRlm('limits', { workspace, model: new ScriptedModel(() => '{"action":"finish","answer":"root"}') });
   const ledger = new RlmLedger(workspace);
-  const state = await ledger.load(run.run);
+  const state = await leasedFixture(t, ledger, run.run);
   const model = new ScriptedModel(() => '{"action":"finish","answer":"child"}');
   const engine = new RlmEngine(ledger, state, model);
   assert.deepEqual(engine.snapshot(), state);

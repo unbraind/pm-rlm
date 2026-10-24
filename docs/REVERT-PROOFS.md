@@ -56,3 +56,27 @@ and child failure-message persistence. Three report reversions cover the saved
 evaluation-invocation wording, measured-commit wording and its formatter output.
 The formatter regression uses a real measured Git commit followed by source
 drift, without model requests. The full six-script inventory now has 94 proofs.
+
+Paired reconciliation adds a tenth proof script with five independent
+reversions: caller reservation admission, shared captured corpus, conflicting
+answer labels, history boundary enforcement and immutable boundary flag
+validation. Every protection produces a targeted assertion failure when reverted,
+and the script restores exact source bytes. The depth-one clone inventory now
+includes this script alongside the nine existing scripts.
+
+The checkpoint review extends the paired script to ten proofs. Five new
+behavioral reversions cover cleanup reading before its lease, overwriting
+terminal calls, removing the native SDK manifest match, and materializing
+uncommitted usage counters, and assigning write authority to a read that began
+outside its lease. Each must fail its non-git regression with an
+assertion failure and restore exact source bytes. The adaptive terminal-evidence
+proof now targets its shared cleanup call, preserving that earlier regression.
+
+Canonical completion now reloads the stored checkpoint before writing evidence.
+The older empty-response regression explicitly asserts that such recovery must
+succeed, so reverting string-response validation still produces an assertion
+failure even when rejection occurs during this earlier reload. The lease-free
+hydration proof carries the read-entry lease token into its temporary helper;
+the by-value proof mutates the decoded state assignment while preserving the
+provenance registration. These changes retain the existing proof inventory and
+its assertion-failure requirement.

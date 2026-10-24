@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 /** Reproducible offline coverage acceptance using a pinned, independently verified public tracker. */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -59,7 +60,7 @@ try {
     const copy = structuredClone(state);
     if (mode === 'digest') (copy.calls[0].steps[0].observation as { data: { digest: string } }).data.digest = 'a'.repeat(64);
     else delete copy.calls[0].steps[0].observation;
-    await ledger.save(copy);
+    await replaceCheckpointFixture(ledger, copy);
     await assert.rejects(replayRlm(workspace, result.run));
     refusedTampering++;
   }

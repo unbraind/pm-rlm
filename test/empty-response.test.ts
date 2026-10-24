@@ -9,7 +9,7 @@ test('empty model output remains replayable and completed resume performs no inf
   const { workspace } = await tracker(t);
   for (const output of ['', '{', ' ']) {
     const model = new ScriptedModel((_request, index) => index === 0 ? output : '{"action":"finish","answer":"ok"}');
-    const result = await runRlm('Recover from invalid JSON', { workspace, model });
+    const result = await runRlm('Recover from invalid JSON', { workspace, model }).catch(error => assert.fail(`String outputs must remain recoverable: ${String(error)}`));
     assert.equal(result.answer, 'ok'); assert.equal(model.requests.length, 2);
     assert.equal((await replayRlm(workspace, result.run).catch(error => assert.fail(`Engine-written response must replay: ${String(error)}`))).answer, 'ok');
     const noInference = new ScriptedModel(() => { throw new Error('Completed resume must not infer'); });

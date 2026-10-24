@@ -298,3 +298,22 @@ ledger evidence. TOON/JSON output contains compact statuses and child run ids;
 full answers stay in the child ledgers. This command also works without Git.
 See the [SDK example, strategy rules and recovery boundaries](docs/ADAPTIVE-DECOMPOSITION.md)
 and [public-tracker measurements](docs/adaptive-validation.json).
+
+## Disagreement-guided answer reconciliation
+
+`reconcileRlm` and `pm rlm reconcile` compare two explicitly budgeted recursive
+decompositions against one immutable certified input boundary. The result keeps
+both answers, witness citations and native costs, labeling each component
+`disagreement`, `equal_text` or `unresolved`. Matching answers never establish
+truth. Fixed arm allowances and reserved future group floors keep execution
+within the caller's reservation; comparison adds no inference.
+
+```sh
+pm rlm reconcile 'Explain the documented incident' \
+  --plan "$(cat examples/reconciliation-plan.json)" --budget-tokens 200000 --json
+```
+
+Native TOON is the default. The typed SDK, partial receipts, remedies and
+[CLI plan example](examples/reconciliation-plan.json) are described in the
+[reconciliation guide](docs/RECONCILIATION.md). Reconciliation also works without
+Git, using a separate read-only source tracker when requested.

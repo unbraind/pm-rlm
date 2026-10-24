@@ -12,6 +12,8 @@ export interface RlmRunOptions {
   workspace: string;
   /** Optional read-only source snapshot; history actions and ledger writes use workspace. */
   source_workspace?: string;
+  /** Refuse history reads outside the captured item snapshot. */
+  snapshot_only?: true;
   scope?: RlmFilter;
   /** Require each recursive answer to cover these caller-declared components. */
   components?: string[];
@@ -159,6 +161,7 @@ export class RlmEngine {
   }
   /** Execute one action, refusing oversized observations before charging or retaining data. */
   private async observe(action: Exclude<RlmAction, { action: 'finish' | 'answer' }>, call: RlmCall, state = this.state, spawn = (subgoal: string, slice: RlmSlice) => this.spawn(call.id, subgoal, slice)): Promise<unknown> {
+    if (state.snapshot_only === true && action.action === 'history') throw new RlmEvidenceError('History is outside the immutable input boundary', 'Use get, peek or witness on captured items');
     let observation: unknown;
     let charge = 0;
     if (action.action === 'spawn') observation = { result: await spawn(action.subgoal, resolveSlice(state, call, action.slice)) };
@@ -330,9 +333,10 @@ export async function prepareRlmRun(question: string, options: RlmRunOptions, co
   await ledger.registerFields();
   const run = await ledger.newRunId();
   const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
-  const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
+  const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, ...(options.snapshot_only === true ? { snapshot_only: true } : {}), calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
-  await ledger.materialize(state, state.calls[0]);
+  const unlock = await ledger.lease(run);
+  try { await ledger.materialize(state, state.calls[0]); } finally { await unlock(); }
   return { ledger, engine: new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete), run };
 }
 /** Create and execute a new SDK ledger with the native reservation and recovery loop. */

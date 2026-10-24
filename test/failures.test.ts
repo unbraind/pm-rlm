@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { appendFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -23,12 +24,18 @@ test('schema collisions and malformed SDK checkpoints fail closed', async t => {
     await client.run('update', { id: run.run, options: { rlmState: value } });
     await assert.rejects(ledger.load(run.run), { code: 'incomplete' });
   }
-  await ledger.save(normal);
+  await replaceCheckpointFixture(ledger, normal);
   await assert.rejects(ledger.load(normal.snapshot[0]?.id ?? 'absent'), { code: 'invalid' });
   const question = (await client.listAllComplete()).items.find(item => item.tags.includes('rlm:question'))!;
   await assert.rejects(ledger.load(question.id), { code: 'invalid' });
   const recovered: RlmCall = { ...normal.calls[0], id: `${run.run}-external`, parent: run.run, depth: 1, steps: [{ prompt: 'reserved external step', reserved: 1 }], result: 'external result' };
-  await ledger.materialize(normal, recovered); await ledger.complete(normal, recovered);
+  const unlock = await ledger.lease(run.run);
+  try {
+    const current = await ledger.load(run.run);
+    current.calls.push(recovered);
+    await ledger.save(current);
+    await ledger.materialize(current, recovered); await ledger.complete(current, recovered);
+  } finally { await unlock(); }
   const row = (await client.get(recovered.id, { depth: 'full' })).item;
   assert.equal(row.rlm_tokens_in, 0); assert.equal(row.rlm_tokens_out, 0);
 });
@@ -74,16 +81,16 @@ test('replay refuses missing children, changed returned values and malformed rea
   });
   const run = await runRlm('replay graph', { workspace, model });
   const ledger = new RlmLedger(workspace); const original = await ledger.load(run.run);
-  const altered = structuredClone(original); altered.calls[0].steps[0].observation = { result: 'altered' }; await ledger.save(altered);
+  const altered = structuredClone(original); altered.calls[0].steps[0].observation = { result: 'altered' }; await replaceCheckpointFixture(ledger, altered);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
-  altered.calls.pop(); await ledger.save(altered);
+  altered.calls.pop(); await replaceCheckpointFixture(ledger, altered);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
-  const interrupted = structuredClone(original); interrupted.calls[0].steps.unshift({ prompt: 'unfinished', reserved: 1 }); await ledger.save(interrupted);
+  const interrupted = structuredClone(original); interrupted.calls[0].steps.unshift({ prompt: 'unfinished', reserved: 1 }); await replaceCheckpointFixture(ledger, interrupted);
   assert.equal((await replayRlm(workspace, run.run)).answer, 'ok');
   const readRun = await runRlm('read observations', { workspace, model: new ScriptedModel((_request, index) => index === 0 ? '{"action":"list"}' : '{"action":"finish","answer":"ok"}') });
   const state = await ledger.load(readRun.run);
   for (const observation of [null, 'bad']) {
-    state.calls[0].steps[0].observation = observation; await ledger.save(state);
+    state.calls[0].steps[0].observation = observation; await replaceCheckpointFixture(ledger, state);
     await assert.rejects(replayRlm(workspace, readRun.run), { code: 'replay' });
   }
 });

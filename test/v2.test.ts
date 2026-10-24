@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFileSync } from 'node:fs';
@@ -115,6 +116,6 @@ test('v2 ledger delivers aggregates and refusal reasons through replay and resum
   assert.equal((await replayRlm(workspace, result.run)).answer, 'done');
   assert.equal((await resumeRlm(workspace, result.run, model)).answer, 'done');
   state.calls[0].steps[1].observation = { data: 99 };
-  await new RlmLedger(workspace).save(state);
+  await replaceCheckpointFixture(new RlmLedger(workspace), state);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
 });

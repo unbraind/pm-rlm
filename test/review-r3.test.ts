@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -87,7 +88,7 @@ test('review round 3 parse refusal tampering refuses replay and resume without l
       delete tampered.calls[0].result;
       tampered.calls[0].steps.pop();
     }
-    await ledger.save(tampered);
+    await replaceCheckpointFixture(ledger, tampered);
     const bytes = await ledgerBytes(workspace);
     const expected = { code: 'replay', message: `Recorded parse refusal differs at step ${result.run}:0` };
     await assert.rejects(replayRlm(workspace, result.run), expected);
@@ -99,7 +100,7 @@ test('review round 3 parse refusal tampering refuses replay and resume without l
   const interrupted = structuredClone(original);
   delete interrupted.calls[0].result;
   interrupted.calls[0].steps.pop();
-  await ledger.save(interrupted);
+  await replaceCheckpointFixture(ledger, interrupted);
   const finish = new ScriptedModel(request => {
     assert.ok(request.prompt.includes(refusal.reason));
     return '{"action":"finish","answer":"recovered"}';
@@ -120,7 +121,7 @@ test('review round 3 legacy code-only receipts replay unchanged and recorded rea
   for (const version of [undefined, 1] as const) {
     if (version === undefined) delete state.parser_version; else state.parser_version = version;
     state.calls[0].steps[0].observation = { refused: 'invalid' };
-    await ledger.save(state);
+    await replaceCheckpointFixture(ledger, state);
     const bytes = await ledgerBytes(workspace);
     assert.deepEqual(await replayRlm(workspace, result.run), result);
     assert.deepEqual(await ledgerBytes(workspace), bytes);
@@ -130,7 +131,7 @@ test('review round 3 legacy code-only receipts replay unchanged and recorded rea
       { refused: 'scope' },
     ]) {
       state.calls[0].steps[0].observation = observation;
-      await ledger.save(state);
+      await replaceCheckpointFixture(ledger, state);
       if (observation.reason === 'Model output is not valid JSON') {
         assert.deepEqual(await replayRlm(workspace, result.run), result);
         assert.deepEqual(await resumeRlm(workspace, result.run, model), result);

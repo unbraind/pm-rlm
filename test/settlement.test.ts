@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { once } from 'node:events';
@@ -31,7 +32,7 @@ test('twenty sequential steps settle unused reservations under the actual-usage 
     const original = estimateTokens(step.prompt) + legacy.settings.output_tokens * 16;
     legacy.reserved_tokens += original - step.reserved; step.reserved = original; delete step.settled;
   }
-  await ledger.save(legacy);
+  await replaceCheckpointFixture(ledger, legacy);
   assert.equal((await resumeRlm(workspace, result.run, smallModel)).reserved_tokens, 880);
   const bad = structuredClone(state); bad.calls[0].steps[0].settled = undefined;
   const step = bad.calls[0].steps[0];

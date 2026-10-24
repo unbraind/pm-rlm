@@ -1,0 +1,10 @@
+{
+  "structure": [
+    { "name": "cause", "question": "What cause is stated in the issues?" },
+    { "name": "outcome", "question": "What outcome is documented?" }
+  ],
+  "arms": [
+    { "groups": [["cause", "outcome"]], "budget_tokens": 100000 },
+    { "groups": [["cause"], ["outcome"]], "budget_tokens": 100000 }
+  ]
+}

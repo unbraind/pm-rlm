@@ -1,3 +1,4 @@
+import { reconcileRlm, parseReconcileArms, RlmReconcileError } from './reconcile.ts';
 import { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from './adaptive.ts';
 import { parseComponents, RlmEvidenceError } from './evidence.ts';
 import { createPmCliExpectedError } from '@unbrained/pm-cli/sdk';
@@ -38,10 +39,10 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     if (command === 'tree') return await treeRlm(ctx.pm_root, argument, ctx.options.full === true);
     if (command === 'resume') return { ...await resumeRlm(ctx.pm_root, argument, undefined, ctx.global.author) };
     if (command === 'replay') return { ...await replayRlm(ctx.pm_root, argument) };
-    if (command !== 'run' && command !== 'adaptive') throw new RlmError('invalid', 'Unknown rlm command');
+    if (command !== 'run' && command !== 'adaptive' && command !== 'reconcile') throw new RlmError('invalid', 'Unknown rlm command');
     const settings: Partial<RlmSettings> = {};
     for (const [option, setting] of [['maxDepth', 'max_depth'], ['maxCalls', 'max_calls'], ['budgetTokens', 'budget_tokens']] as const) {
-      if (ctx.options[option] !== undefined && !(command === 'adaptive' && setting === 'budget_tokens')) settings[setting] = numericOperand(ctx.options[option]);
+      if (ctx.options[option] !== undefined && !(['adaptive', 'reconcile'].includes(command) && setting === 'budget_tokens')) settings[setting] = numericOperand(ctx.options[option]);
     }
     if (ctx.options.model !== undefined) settings.model = operand(ctx.options.model);
     let scope = {};
@@ -50,6 +51,13 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
       try { decoded = JSON.parse(operand(ctx.options.scope)); }
       catch (error) { if (error instanceof SyntaxError) throw new RlmError('invalid', 'Invalid --scope JSON'); throw error; }
       scope = parseFilter(decoded);
+    }
+    if (command === 'reconcile') {
+      let declaration: Record<string, unknown>;
+      try { declaration = JSON.parse(operand(ctx.options.plan)) as Record<string, unknown>; }
+      catch { throw new RlmReconcileError('invalid', 'Invalid --plan JSON', 'Supply --plan with structure and two arms'); }
+      const structure = parseQuestionStructure(declaration?.structure);
+      return { ...await reconcileRlm(argument, { workspace: ctx.pm_root, structure, arms: parseReconcileArms(declaration.arms, structure.map(part => part.name)), reserved_tokens: numericOperand(ctx.options.budgetTokens), scope, settings, author: ctx.global.author }) };
     }
     if (command === 'adaptive') {
       let structure: unknown;
@@ -61,22 +69,22 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';
-    const remedy = error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError ? error.remedy : command === 'adaptive' ? 'Supply a valid --structure, unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
+    const remedy = error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError ? error.remedy : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
     throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (remedy === undefined ? '' : '; remedy: ' + remedy) : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
   }
 }
 /** Register ledger fields and native commands, preserving host TOON and JSON rendering. */
 export function register(api: ExtensionApi): void {
   api.registerItemFields(RLM_FIELDS);
-  for (const name of ['run', 'adaptive', 'tree', 'resume', 'replay', 'evidence']) {
-    const starts = name === 'run' || name === 'adaptive';
-    const options = starts ? ['scope', name === 'adaptive' ? 'structure' : 'components', 'model', 'max-depth', 'max-calls', 'budget-tokens'] : [];
+  for (const name of ['run', 'adaptive', 'reconcile', 'tree', 'resume', 'replay', 'evidence']) {
+    const starts = name === 'run' || name === 'adaptive' || name === 'reconcile';
+    const options = starts ? ['scope', name === 'reconcile' ? 'plan' : name === 'adaptive' ? 'structure' : 'components', 'model', 'max-depth', 'max-calls', 'budget-tokens'] : [];
     api.registerCommand(defineCommand({
       name: `rlm ${name}`, description: `${name} a durable recursive language model run`,
       intent: 'Project management = context management for recursive agents',
       arguments: [{ name: starts ? 'question' : 'run', required: true }],
       flags: [...options.map(option => ({ long: `--${option}`, description: option, value_name: 'value', value_type: 'string' as const })), ...(name === 'tree' ? [{ long: '--full', description: 'Include the complete checkpoint', value_type: 'boolean' as const }] : [])],
-      examples: name === 'adaptive' ? [`pm rlm adaptive "Explain issues" --structure '[{"name":"summary","question":"What do the issues describe?"}]' --budget-tokens 50000 --json`] : [`pm rlm ${name} ${starts ? '"Count open Issues"' : 'run-id'} --json`],
+      examples: name === 'reconcile' ? [`pm rlm reconcile "Explain issues" --plan '{"structure":[{"name":"summary","question":"What is documented?"}],"arms":[{"groups":[["summary"]],"budget_tokens":25000},{"groups":[["summary"]],"budget_tokens":25000}]}' --budget-tokens 50000 --json`] : name === 'adaptive' ? [`pm rlm adaptive "Explain issues" --structure '[{"name":"summary","question":"What do the issues describe?"}]' --budget-tokens 50000 --json`] : [`pm rlm ${name} ${starts ? '"Count open Issues"' : 'run-id'} --json`],
       run: ctx => runCommand(name, ctx),
     }));
   }

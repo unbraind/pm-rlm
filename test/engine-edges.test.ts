@@ -1,3 +1,4 @@
+import { leasedFixture, replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -27,7 +28,7 @@ test('model loop executes all read actions, records billable JSON refusals, and 
   assert.equal((await replayRlm(workspace, result.run)).answer, 'reads complete');
   await assert.rejects(resumeRlm(workspace, result.run, { ...model, name: 'wrong', complete: request => model.complete(request) }), { code: 'invalid' });
   state.calls[0].steps[2].observation = { data: [] };
-  await ledger.save(state);
+  await replaceCheckpointFixture(ledger, state);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
 });
 
@@ -69,7 +70,7 @@ test('full and partial inherited slices retain safe child scope', async t => {
   const item = (await client.create({ title: 'Scoped', description: 'content' })).item;
   const model = new ScriptedModel(() => '{"action":"finish","answer":"ok"}');
   const run = await runRlm('scopes', { workspace, model });
-  const ledger = new RlmLedger(workspace); const state = await ledger.load(run.run);
+  const ledger = new RlmLedger(workspace); const state = await leasedFixture(t, ledger, run.run);
   const engine = new RlmEngine(ledger, state, model);
   const data = JSON.stringify(state.snapshot[0]);
   const fragments = [{ id: item.id, start: 0, end: data.length, text: data }];
@@ -94,13 +95,13 @@ test('replay refuses altered finish outputs and orphaned calls', async t => {
   const model = new ScriptedModel(() => '{"action":"finish","answer":"ok"}');
   const result = await runRlm('replay', { workspace, model });
   const ledger = new RlmLedger(workspace); const original = await ledger.load(result.run);
-  const changed = structuredClone(original); changed.calls[0].result = 'wrong'; await ledger.save(changed);
+  const changed = structuredClone(original); changed.calls[0].result = 'wrong'; await replaceCheckpointFixture(ledger, changed);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
-  const unfinished = structuredClone(original); unfinished.calls[0].steps = []; delete unfinished.calls[0].result; await ledger.save(unfinished);
+  const unfinished = structuredClone(original); unfinished.calls[0].steps = []; delete unfinished.calls[0].result; await replaceCheckpointFixture(ledger, unfinished);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
-  const orphan = structuredClone(original); orphan.calls.push({ ...orphan.calls[0], id: 'orphan' }); await ledger.save(orphan);
+  const orphan = structuredClone(original); orphan.calls.push({ ...orphan.calls[0], id: 'orphan' }); await replaceCheckpointFixture(ledger, orphan);
   await assert.rejects(replayRlm(workspace, result.run), { code: 'replay' });
-  await ledger.save(original);
+  await replaceCheckpointFixture(ledger, original);
   assert.ok(PROTOCOL.includes('finish'));
 });
 
@@ -113,7 +114,7 @@ test('child item reads require contiguous complete multi-fragment coverage', asy
     return JSON.stringify(input.transcript.length === 0 ? { action: 'list' } : { action: 'finish', answer: String(input.transcript[0].observation.data.length) });
   });
   const run = await runRlm('root fragment scope', { workspace, model });
-  const ledger = new RlmLedger(workspace); const state = await ledger.load(run.run);
+  const ledger = new RlmLedger(workspace); const state = await leasedFixture(t, ledger, run.run);
   const engine = new RlmEngine(ledger, state, model);
   const source = JSON.stringify(state.snapshot[0]); const middle = Math.floor(source.length / 2);
   const first = { id: item.id, start: 0, end: middle, text: source.slice(0, middle) };

@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { once } from 'node:events';
@@ -54,9 +55,9 @@ test('replay refuses absent or malformed spawn observations with a typed replay 
   const ledger = new RlmLedger(workspace); const original = await ledger.load(result.run);
   for (const observation of [undefined, null, 'bad', {}, { result: 1 }]) {
     const state = structuredClone(original); state.calls[0].steps[0].observation = observation;
-    await ledger.save(state);
+    await replaceCheckpointFixture(ledger, state);
     await assert.rejects(replayRlm(workspace, result.run), { code: 'replay', message: 'Recorded spawn step has no completed observation' });
   }
-  await ledger.save(original);
+  await replaceCheckpointFixture(ledger, original);
   assert.equal((await resumeRlm(workspace, result.run, model)).answer, 'ok');
 });

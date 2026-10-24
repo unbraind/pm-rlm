@@ -17,6 +17,7 @@ if (mode === 'no-git') {
   if (JSON.parse(String(root.rlm_state)).version !== 2) throw new Error('Expected content-addressed storage without git');
   process.send!({ answer: (await replayRlm(workspace, result.run)).answer });
 } else {
+  const unlock = await ledger.lease(run);
   const state = await ledger.load(run);
   const prompt = 'x'.repeat(32 * 1024 * 1024) + attempt;
   state.calls[0].steps.push({ prompt, reserved: 17 });
@@ -34,6 +35,7 @@ if (mode === 'no-git') {
     }
   });
   await ledger.save(state);
+  await unlock();
   watcher.close();
   process.send!({ missed: true });
 }

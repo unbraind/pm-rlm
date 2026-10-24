@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { join, resolve, sep } from 'node:path';
@@ -118,14 +119,14 @@ test('parser versions preserve strict checkpoints byte for byte on replay and st
     const legacy = structuredClone(state);
     if (version === undefined) delete legacy.parser_version; else legacy.parser_version = version;
     legacy.calls[0].steps.unshift({ prompt: 'legacy prompt', reserved: 0, settled: true, response: { text: fenced, tokens_in: 0, tokens_out: 0 }, observation: { refused: 'invalid' } });
-    await ledger.save(legacy);
+    await replaceCheckpointFixture(ledger, legacy);
     const before = (await client.get(result.run, { depth: 'full' })).item.rlm_state;
     await assert.doesNotReject(async () => { assert.deepEqual(await replayRlm(workspace, result.run), result); });
     assert.equal((await client.get(result.run, { depth: 'full' })).item.rlm_state, before);
     delete legacy.calls[0].result;
     legacy.calls[0].steps.pop();
     legacy.calls[0].steps.push({ ...finish, response: { text: fenced, tokens_in: 0, tokens_out: 0 } });
-    await ledger.save(legacy);
+    await replaceCheckpointFixture(ledger, legacy);
     const resumed = new ScriptedModel(request => {
       assert.equal(request.parser_version, 1);
       assert.match(request.prompt, /Model output is not valid JSON/);
@@ -164,6 +165,6 @@ test('legacy partition references replay with the original strict parser', async
   const ledger = new RlmLedger(workspace);
   const state = await ledger.load(run.run);
   delete state.parser_version;
-  await ledger.save(state);
+  await replaceCheckpointFixture(ledger, state);
   assert.deepEqual(await replayRlm(workspace, run.run), run);
 });

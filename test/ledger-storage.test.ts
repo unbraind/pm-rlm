@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
@@ -35,13 +36,14 @@ test('content addressed manifests deduplicate snapshots and transcript payloads'
   const before = await readdir(directory);
   const snapshotPath = join(directory, `${String(manifest.snapshot)}.json`);
   const snapshotBefore = await stat(snapshotPath, { bigint: true });
-  await ledger.save(state);
+  await replaceCheckpointFixture(ledger, state);
   assert.deepEqual(await readdir(directory), before);
   const snapshotAfter = await stat(snapshotPath, { bigint: true });
   assert.equal(snapshotAfter.ino, snapshotBefore.ino);
   assert.equal(snapshotAfter.mtimeNs, snapshotBefore.mtimeNs);
   const next = structuredClone(state); next.run = 'another-run'; next.calls[0].id = next.run;
-  await ledger.materialize(next, next.calls[0]);
+  const unlock = await ledger.lease(next.run);
+  try { await ledger.materialize(next, next.calls[0]); } finally { await unlock(); }
   const other = JSON.parse(String((await client.get(next.run, { depth: 'full' })).item.rlm_state)) as Record<string, unknown>;
   assert.equal(manifest.snapshot, other.snapshot);
   const history = await readFile(join(workspace, 'history', `${result.run}.jsonl`), 'utf8');
@@ -62,7 +64,7 @@ test('legacy checkpoints read unchanged and migrate lazily without rewriting his
   assert.equal((await replayRlm(workspace, result.run)).answer, '1');
   assert.equal((await client.listAllComplete({ includeBody: true })).items.find(item => item.id === result.run)!.rlm_state, legacy);
   assert.equal(await readFile(historyPath, 'utf8'), history);
-  await ledger.save(await ledger.load(result.run));
+  await replaceCheckpointFixture(ledger, await ledger.load(result.run));
   await resumeRlm(workspace, result.run, model);
   assert.equal(JSON.parse(String((await client.get(result.run, { depth: 'full' })).item.rlm_state)).version, 2);
   assert.ok((await readFile(historyPath, 'utf8')).startsWith(history));
@@ -105,7 +107,7 @@ test('GC removes orphans and abandoned partial files but retains verified histor
   const state = await ledger.load(result.run);
   const original = state.calls[0].steps[0].prompt;
   state.calls[0].steps[0].prompt = 'replacement prompt';
-  await ledger.save(state);
+  await replaceCheckpointFixture(ledger, state);
   const blobs = new RlmBlobs(workspace);
   const orphan = await blobs.put('unreachable payload');
   const directory = join(workspace, 'rlm-blobs');
@@ -182,7 +184,7 @@ for (const mode of ['blob', 'root']) test(`SIGKILL during ${mode} write leaves t
   const rootPath = join(workspace, 'tasks', `${result.run}.toon`);
   let killed = false;
   for (let attempt = 0; attempt < 8 && !killed; attempt++) {
-    await ledger.save(before);
+    await replaceCheckpointFixture(ledger, before);
     const originalRow = await readFile(rootPath);
     const child = fork(join(import.meta.dirname, 'ledger-storage-worker.ts'), [workspace, mode, result.run, String(attempt)], { stdio: ['ignore', 'ignore', 'inherit', 'ipc'], env: testEnvironment(process.env) });
     t.after(() => child.kill('SIGKILL'));

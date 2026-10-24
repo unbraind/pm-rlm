@@ -135,17 +135,8 @@ async function executeAdaptive(question: string, options: RlmAdaptiveOptions): P
       try { answers = (await child.engine.run()).components!; }
       catch (error) {
         refusal = error instanceof RlmError ? error.code : 'model';
-        const unlock = await child.ledger.lease(child.run);
-        try {
-          const state = await child.ledger.load(child.run);
-          state.calls[0].failure = { code: refusal, reason: 'Adaptive child terminated; inspect recorded steps' };
-          // Reconcile every terminal nested call as well as the failed child root.
-          for (const call of state.calls) {
-            if (call.result === undefined && call.failure === undefined) call.failure = { code: refusal, reason: 'Adaptive child terminated before completion' };
-            await child.ledger.save(state);
-            await child.ledger.complete(state, call);
-          }
-        } finally { await unlock(); }
+        const cleanup = await child.ledger.failUnfinished(child.run, { code: refusal, reason: 'Adaptive child terminated before completion' });
+        await client.comments(parent, { add: `RLM adaptive cleanup skipped terminal calls: ${JSON.stringify(cleanup.skipped)}` });
         result.stop_reason = 'child_failure';
       }
       const state = await child.ledger.load(child.run);

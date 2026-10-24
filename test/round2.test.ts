@@ -1,3 +1,4 @@
+import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { writeFile } from 'node:fs/promises';
@@ -97,7 +98,7 @@ test('checkpoint validation returns incomplete for malformed calls and unsafe se
     await assert.rejects(resumeRlm(workspace, run.run), { code: 'incomplete' });
     await assert.rejects(replayRlm(workspace, run.run), { code: 'incomplete' });
   }
-  await ledger.save(original);
+  await replaceCheckpointFixture(ledger, original);
   assert.equal((await resumeRlm(workspace, run.run)).answer, 'ok');
 });
 
