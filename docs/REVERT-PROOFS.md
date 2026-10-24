@@ -56,3 +56,10 @@ and child failure-message persistence. Three report reversions cover the saved
 evaluation-invocation wording, measured-commit wording and its formatter output.
 The formatter regression uses a real measured Git commit followed by source
 drift, without model requests. The full six-script inventory now has 94 proofs.
+
+Paired reconciliation adds a tenth proof script with five independent
+reversions: caller reservation admission, shared captured corpus, conflicting
+answer labels, history boundary enforcement and immutable boundary flag
+validation. Every protection produces a targeted assertion failure when reverted,
+and the script restores exact source bytes. The depth-one clone inventory now
+includes this script alongside the nine existing scripts.

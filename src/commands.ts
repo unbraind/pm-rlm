@@ -84,7 +84,7 @@ export function register(api: ExtensionApi): void {
       intent: 'Project management = context management for recursive agents',
       arguments: [{ name: starts ? 'question' : 'run', required: true }],
       flags: [...options.map(option => ({ long: `--${option}`, description: option, value_name: 'value', value_type: 'string' as const })), ...(name === 'tree' ? [{ long: '--full', description: 'Include the complete checkpoint', value_type: 'boolean' as const }] : [])],
-      examples: name === 'adaptive' ? [`pm rlm adaptive "Explain issues" --structure '[{"name":"summary","question":"What do the issues describe?"}]' --budget-tokens 50000 --json`] : [`pm rlm ${name} ${starts ? '"Count open Issues"' : 'run-id'} --json`],
+      examples: name === 'reconcile' ? [`pm rlm reconcile "Explain issues" --plan '{"structure":[{"name":"summary","question":"What is documented?"}],"arms":[{"groups":[["summary"]],"budget_tokens":25000},{"groups":[["summary"]],"budget_tokens":25000}]}' --budget-tokens 50000 --json`] : name === 'adaptive' ? [`pm rlm adaptive "Explain issues" --structure '[{"name":"summary","question":"What do the issues describe?"}]' --budget-tokens 50000 --json`] : [`pm rlm ${name} ${starts ? '"Count open Issues"' : 'run-id'} --json`],
       run: ctx => runCommand(name, ctx),
     }));
   }

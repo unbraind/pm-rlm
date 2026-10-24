@@ -75,6 +75,10 @@ test('paired evidence preserves disagreements and the immutable boundary without
   assert.ok(Buffer.byteLength(JSON.stringify(report)) < 5000);
   assert.ok(JSON.stringify(await client.comments(report.run)).includes('RLM reconciliation result:'));
   assert.equal((await client.listAllComplete()).items.find(item => item.id === report.run)?.assignee, undefined);
+  const ledger = new RlmLedger(workspace);
+  Object.assign(states[0], { snapshot_only: false });
+  await ledger.save(states[0]);
+  await assert.rejects(ledger.load(states[0].run), { code: 'incomplete' });
 });
 
 test('paired admission refuses over-reservation before writes or inference', async t => {

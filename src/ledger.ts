@@ -82,6 +82,7 @@ export class RlmLedger {
       if (decoded.components !== undefined) parseComponents(decoded.components);
       text(decoded.question); parseFilter(decoded.scope); record(decoded.certificate);
       integer(decoded.reserved_tokens, 0);
+      if (decoded.snapshot_only !== undefined && decoded.snapshot_only !== true) throw new Error('Invalid immutable boundary flag');
       if (!Array.isArray(decoded.snapshot)) throw new Error('Invalid snapshot');
       for (const item of decoded.snapshot) text(record(item).id);
       for (const entry of decoded.calls) {
