@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "id": "public-trackers-v1",
+  "sources": [
+    {
+      "id": "pm-rlm",
+      "repository": "unbraind/pm-rlm",
+      "revision": "78a2e4d82ecb9cd4512250e8b1b5b7ef1b8e3c54",
+      "corpus_sha256": "d0debc126bdc2bad4103dc75c8b4a31e919a20a692d8daade8578abe9596fef2"
+    },
+    {
+      "id": "pm-lint",
+      "repository": "unbraind/pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_sha256": "d1df5a9bd92d06f364abb9fcd7ed413c13bcd58fc74706eb1153904baacd87c8"
+    }
+  ],
+  "questions": [
+    {
+      "id": "pm-rlm-1",
+      "source": "pm-rlm",
+      "question": "How many tracker items are there, across every status?",
+      "gold": "21"
+    },
+    {
+      "id": "pm-rlm-2",
+      "source": "pm-rlm",
+      "question": "How many items have status open?",
+      "gold": "5"
+    },
+    {
+      "id": "pm-rlm-3",
+      "source": "pm-rlm",
+      "question": "How many items have status closed?",
+      "gold": "16"
+    },
+    {
+      "id": "pm-rlm-4",
+      "source": "pm-rlm",
+      "question": "How many items have status in_progress?",
+      "gold": "0"
+    },
+    {
+      "id": "pm-rlm-5",
+      "source": "pm-rlm",
+      "question": "How many items have type Issue?",
+      "gold": "7"
+    },
+    {
+      "id": "pm-rlm-6",
+      "source": "pm-rlm",
+      "question": "How many items have type Feature?",
+      "gold": "11"
+    },
+    {
+      "id": "pm-rlm-7",
+      "source": "pm-rlm",
+      "question": "Who is the assignee of pm-rlm-6a8t? Use the literal null when unassigned.",
+      "gold": "null"
+    },
+    {
+      "id": "pm-rlm-8",
+      "source": "pm-rlm",
+      "question": "Who is the recorded author of pm-rlm-6a8t?",
+      "gold": "codex-agent"
+    },
+    {
+      "id": "pm-rlm-9",
+      "source": "pm-rlm",
+      "question": "What is the exact updated_at timestamp of pm-rlm-6a8t?",
+      "gold": "2026-10-22T12:11:24.447Z"
+    },
+    {
+      "id": "pm-rlm-10",
+      "source": "pm-rlm",
+      "question": "Which item is the lexicographically first declared blocked_by dependency of pm-rlm-6a8t? Include closed blockers; use none if absent.",
+      "gold": "pm-rlm-nmny"
+    },
+    {
+      "id": "pm-rlm-11",
+      "source": "pm-rlm",
+      "question": "How many declared blocked_by dependencies does pm-rlm-6a8t have, including closed blockers?",
+      "gold": "1"
+    },
+    {
+      "id": "pm-rlm-12",
+      "source": "pm-rlm",
+      "question": "What is the shortest directed blocked_by dependency path from pm-rlm-6a8t to pm-rlm-nmny? Include both endpoints joined by ->, without spaces; use none when no path exists.",
+      "gold": "pm-rlm-6a8t->pm-rlm-nmny"
+    },
+    {
+      "id": "pm-lint-13",
+      "source": "pm-lint",
+      "question": "How many tracker items are there, across every status?",
+      "gold": "12"
+    },
+    {
+      "id": "pm-lint-14",
+      "source": "pm-lint",
+      "question": "How many items have status open?",
+      "gold": "0"
+    },
+    {
+      "id": "pm-lint-15",
+      "source": "pm-lint",
+      "question": "How many items have status closed?",
+      "gold": "11"
+    },
+    {
+      "id": "pm-lint-16",
+      "source": "pm-lint",
+      "question": "How many items have status in_progress?",
+      "gold": "1"
+    },
+    {
+      "id": "pm-lint-17",
+      "source": "pm-lint",
+      "question": "How many items have type Issue?",
+      "gold": "0"
+    },
+    {
+      "id": "pm-lint-18",
+      "source": "pm-lint",
+      "question": "How many items have type Feature?",
+      "gold": "6"
+    },
+    {
+      "id": "pm-lint-19",
+      "source": "pm-lint",
+      "question": "Who is the assignee of pm-lint-1c6j? Use the literal null when unassigned.",
+      "gold": "null"
+    },
+    {
+      "id": "pm-lint-20",
+      "source": "pm-lint",
+      "question": "Who is the recorded author of pm-lint-1c6j?",
+      "gold": "pi-glm-tooling"
+    },
+    {
+      "id": "pm-lint-21",
+      "source": "pm-lint",
+      "question": "What is the exact updated_at timestamp of pm-lint-1c6j?",
+      "gold": "2026-10-13T15:10:21.730Z"
+    },
+    {
+      "id": "pm-lint-22",
+      "source": "pm-lint",
+      "question": "Which item is the lexicographically first declared blocked_by dependency of pm-lint-1c6j? Include closed blockers; use none if absent.",
+      "gold": "none"
+    },
+    {
+      "id": "pm-lint-23",
+      "source": "pm-lint",
+      "question": "How many declared blocked_by dependencies does pm-lint-1c6j have, including closed blockers?",
+      "gold": "0"
+    },
+    {
+      "id": "pm-lint-24",
+      "source": "pm-lint",
+      "question": "What is the shortest directed blocked_by dependency path from pm-lint-1c6j to pm-lint-41oh? Include both endpoints joined by ->, without spaces; use none when no path exists.",
+      "gold": "none"
+    }
+  ]
+}

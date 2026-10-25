@@ -55,7 +55,7 @@ See [the storage measurements](docs/LEDGER-STORAGE.md) for the public eval corpo
 
 ## Without git
 
-Environment reads, recursive run, tree, resume, replay, lazy storage migration and blob GC work in a plain-directory tracker without a Git executable. They need no Git repository. The public-corpus evaluation harness needs Git and GitHub to verify published source revisions; repository changelog and release tooling also use Git.
+Environment reads, recursive run, tree, resume, replay, lazy storage migration and blob GC work in a plain-directory tracker without a Git executable. They need no Git repository. The eval command works without Git; preparing verified public source revisions needs Git and GitHub; repository changelog and release tooling also use Git.
 
 ## Environment and execution
 
@@ -317,3 +317,11 @@ Native TOON is the default. The typed SDK, partial receipts, remedies and
 [CLI plan example](examples/reconciliation-plan.json) are described in the
 [reconciliation guide](docs/RECONCILIATION.md). Reconciliation also works without
 Git, using a separate read-only source tracker when requested.
+
+## Measured public tracker evaluation
+
+`pm rlm eval suite.json --sources '{"sample":"copies/sample/pm"}' --id trial-1 --model gemma3:4b --json` compares the native recursive engine with a truncated single-call baseline using the same installed local Ollama model. A reviewed suite contains at least twenty exact questions and gold answers bound to complete public source snapshots. Gold answers never enter model prompts. Default TOON/JSON is compact; `--full` includes every paired observation. The SDK exports `evaluateRlm`, suite/result types and `RlmEvalError` with remedies.
+
+See the [24-question suite](docs/public-eval-suite.json), [methodology and SDK example](docs/PUBLIC-EVALUATION.md) and [measured results](docs/public-eval-results.json). Failed or interrupted attempts remain in the denominator, and unavailable usage is explicitly unknown. Reusing an evaluation ID preserves completed evidence without repeating inference. Historical invalidated measurements remain separate.
+
+The completed local `functiongemma:270m` trial scored 0/24 in both arms: truncated 53125 reported-or-estimated tokens, 24 requests, 28.542 seconds; recursive engine 521496 tokens, 384 requests, 386.805 seconds, zero children. All refusals remain in the denominator. This single small-model result does not establish an RLM advantage; see the methodology for limits and source provenance.

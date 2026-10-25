@@ -1,0 +1,756 @@
+{
+  "evaluation": "eval-rlm-eval-local-v1",
+  "suite": "public-trackers-v1",
+  "model": "functiongemma:270m",
+  "mode": "local",
+  "status": "complete",
+  "reason": "",
+  "token_usage": "reported_or_estimated_with_unknown_interrupted_usage",
+  "interpretation": "exact_match_single_trial_no_advantage_claim",
+  "settings": {
+    "context_tokens": 8192,
+    "output_tokens": 256,
+    "budget_tokens": 60000,
+    "max_depth": 2,
+    "max_calls": 4
+  },
+  "sources": [
+    {
+      "id": "pm-rlm",
+      "repository": "unbraind/pm-rlm",
+      "revision": "78a2e4d82ecb9cd4512250e8b1b5b7ef1b8e3c54",
+      "corpus_sha256": "d0debc126bdc2bad4103dc75c8b4a31e919a20a692d8daade8578abe9596fef2"
+    },
+    {
+      "id": "pm-lint",
+      "repository": "unbraind/pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_sha256": "d1df5a9bd92d06f364abb9fcd7ed413c13bcd58fc74706eb1153904baacd87c8"
+    }
+  ],
+  "summary": {
+    "truncated": {
+      "correct": 0,
+      "questions": 24,
+      "accuracy": 0,
+      "calls": 24,
+      "tokens": 53125,
+      "wall_ms": 28542,
+      "children": 0,
+      "failed_requests": 0
+    },
+    "recursive": {
+      "correct": 0,
+      "questions": 24,
+      "accuracy": 0,
+      "calls": 384,
+      "tokens": 521496,
+      "wall_ms": 386805,
+      "children": 0,
+      "failed_requests": 0
+    }
+  },
+  "rows": [
+    {
+      "id": "pm-rlm-1",
+      "source": "pm-rlm",
+      "visible_bytes": 7745,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2156,
+        "tokens_out": 8,
+        "wall_ms": 4179,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21313,
+        "tokens_out": 320,
+        "wall_ms": 20296,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-2",
+      "source": "pm-rlm",
+      "visible_bytes": 7767,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2167,
+        "tokens_out": 8,
+        "wall_ms": 1209,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 16457,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-3",
+      "source": "pm-rlm",
+      "visible_bytes": 7765,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2167,
+        "tokens_out": 8,
+        "wall_ms": 1116,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 14739,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-4",
+      "source": "pm-rlm",
+      "visible_bytes": 7760,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2167,
+        "tokens_out": 8,
+        "wall_ms": 928,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21281,
+        "tokens_out": 320,
+        "wall_ms": 13353,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-5",
+      "source": "pm-rlm",
+      "visible_bytes": 7768,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2167,
+        "tokens_out": 8,
+        "wall_ms": 1108,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 14541,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-6",
+      "source": "pm-rlm",
+      "visible_bytes": 7766,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2166,
+        "tokens_out": 8,
+        "wall_ms": 1037,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 13196,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-7",
+      "source": "pm-rlm",
+      "visible_bytes": 7726,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2153,
+        "tokens_out": 8,
+        "wall_ms": 990,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21505,
+        "tokens_out": 320,
+        "wall_ms": 26865,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-8",
+      "source": "pm-rlm",
+      "visible_bytes": 7757,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2173,
+        "tokens_out": 8,
+        "wall_ms": 978,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21393,
+        "tokens_out": 320,
+        "wall_ms": 14809,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-9",
+      "source": "pm-rlm",
+      "visible_bytes": 7745,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2164,
+        "tokens_out": 8,
+        "wall_ms": 1440,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21441,
+        "tokens_out": 320,
+        "wall_ms": 25850,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-10",
+      "source": "pm-rlm",
+      "visible_bytes": 7666,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2120,
+        "tokens_out": 8,
+        "wall_ms": 1975,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21649,
+        "tokens_out": 320,
+        "wall_ms": 21776,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-11",
+      "source": "pm-rlm",
+      "visible_bytes": 7708,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2144,
+        "tokens_out": 8,
+        "wall_ms": 1095,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21505,
+        "tokens_out": 320,
+        "wall_ms": 17601,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-12",
+      "source": "pm-rlm",
+      "visible_bytes": 7627,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2128,
+        "tokens_out": 8,
+        "wall_ms": 1275,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21873,
+        "tokens_out": 320,
+        "wall_ms": 19290,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-13",
+      "source": "pm-lint",
+      "visible_bytes": 7745,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2264,
+        "tokens_out": 7,
+        "wall_ms": 908,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21313,
+        "tokens_out": 320,
+        "wall_ms": 13124,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-14",
+      "source": "pm-lint",
+      "visible_bytes": 7767,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2266,
+        "tokens_out": 7,
+        "wall_ms": 916,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 14997,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-15",
+      "source": "pm-lint",
+      "visible_bytes": 7765,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2265,
+        "tokens_out": 7,
+        "wall_ms": 859,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 12451,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-16",
+      "source": "pm-lint",
+      "visible_bytes": 7760,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2266,
+        "tokens_out": 7,
+        "wall_ms": 905,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21281,
+        "tokens_out": 320,
+        "wall_ms": 12434,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-17",
+      "source": "pm-lint",
+      "visible_bytes": 7768,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2266,
+        "tokens_out": 7,
+        "wall_ms": 1009,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 12074,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-18",
+      "source": "pm-lint",
+      "visible_bytes": 7766,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2265,
+        "tokens_out": 7,
+        "wall_ms": 917,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21249,
+        "tokens_out": 320,
+        "wall_ms": 12057,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-19",
+      "source": "pm-lint",
+      "visible_bytes": 7725,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2260,
+        "tokens_out": 7,
+        "wall_ms": 960,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21489,
+        "tokens_out": 320,
+        "wall_ms": 12522,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-20",
+      "source": "pm-lint",
+      "visible_bytes": 7756,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2271,
+        "tokens_out": 7,
+        "wall_ms": 916,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21377,
+        "tokens_out": 320,
+        "wall_ms": 11047,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-21",
+      "source": "pm-lint",
+      "visible_bytes": 7744,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2270,
+        "tokens_out": 7,
+        "wall_ms": 1057,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21425,
+        "tokens_out": 320,
+        "wall_ms": 15593,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-22",
+      "source": "pm-lint",
+      "visible_bytes": 7665,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2225,
+        "tokens_out": 7,
+        "wall_ms": 919,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21633,
+        "tokens_out": 320,
+        "wall_ms": 15048,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-23",
+      "source": "pm-lint",
+      "visible_bytes": 7707,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2245,
+        "tokens_out": 7,
+        "wall_ms": 895,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21489,
+        "tokens_out": 320,
+        "wall_ms": 15811,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-24",
+      "source": "pm-lint",
+      "visible_bytes": 7625,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "9327bc7c4570a488d0482f104d8e5cd9e0b52b276ef3c7033678f62f081825f5",
+        "calls": 1,
+        "tokens_in": 2210,
+        "tokens_out": 7,
+        "wall_ms": 951,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "calls": 16,
+        "tokens_in": 21857,
+        "tokens_out": 320,
+        "wall_ms": 20874,
+        "refusal": "budget",
+        "failed_requests": 0,
+        "children": 0
+      }
+    }
+  ],
+  "started_at": "2026-10-25T02:03:07.254Z",
+  "finished_at": "2026-10-25T02:10:14.168Z",
+  "implementation_sha256": "cd8ffac87fe4d321c0749041718c66f871cf371b0daa93bb7e79fa34634b907d",
+  "source_counts": [
+    {
+      "id": "pm-rlm",
+      "items": 21,
+      "bytes": 236661
+    },
+    {
+      "id": "pm-lint",
+      "items": 12,
+      "bytes": 54941
+    }
+  ],
+  "source_integrity": [
+    {
+      "id": "pm-rlm",
+      "after_sha256": "d0debc126bdc2bad4103dc75c8b4a31e919a20a692d8daade8578abe9596fef2",
+      "read_only_copy": true
+    },
+    {
+      "id": "pm-lint",
+      "after_sha256": "d1df5a9bd92d06f364abb9fcd7ed413c13bcd58fc74706eb1153904baacd87c8",
+      "read_only_copy": true
+    }
+  ],
+  "live_comparison": "complete",
+  "methodology": "One sequential trial; truncated first, recursive second. Temperature zero; shared context and output allocations. Model counters are reported or byte-estimated; failed requests can have unknown usage. Wall time includes tracker IO and host load. No raw model output or source bodies are published. Child reach is observed, never forced. Interrupted arms are not retried."
+}

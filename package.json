@@ -37,7 +37,10 @@
     "docs/adaptive-validation.json",
     "docs/RECONCILIATION.md",
     "docs/reconciliation-validation.json",
-    "examples/reconciliation-plan.json"
+    "examples/reconciliation-plan.json",
+    "docs/PUBLIC-EVALUATION.md",
+    "docs/public-eval-suite.json",
+    "docs/public-eval-results.json"
   ],
   "scripts": {
     "build": "tsc",
