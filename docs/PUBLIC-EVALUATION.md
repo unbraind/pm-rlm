@@ -26,7 +26,7 @@ const result = await evaluateRlm(suite, {
 });
 ```
 
-Every evaluation ID is bound to its suite, model, transport and limits. Reusing it returns completed measurements without inference. Another configuration requires a new ID. The controller reads its receipt inside the native process lease, publishes SDK description compare-and-set transactions, and releases the lease last. Competing evaluators receive `busy`; a later peer receives the completed receipt exactly. Native edits that bypass the evaluation lease still meet the description CAS. Foreign records are preserved with `status: skipped` and `reason: foreign_record_preserved`. The harness has no deletion, sweep or drainer path.
+The SDK captures declarations at entry so caller mutations cannot change an in-flight comparison. Every evaluation ID is bound to its suite, model, transport and limits. Reusing it returns completed measurements without inference. Another configuration requires a new ID. The controller reads its receipt inside the native process lease, publishes SDK description compare-and-set transactions, and releases the lease last. Competing evaluators receive `busy`; a later peer receives the completed receipt exactly. Native edits that bypass the evaluation lease still meet the description CAS. Foreign records are preserved with `status: skipped` and `reason: foreign_record_preserved`. The harness has no deletion, sweep or drainer path.
 
 A durable reservation precedes either inference arm. After interruption, a rerun preserves completed rows and records the pending row as interrupted without repeating inference. Completed baseline evidence is retained when available. An arm whose response was not checkpointed has unknown calls, tokens and wall time (`null`), and counts incorrect. This is convergence of the receipt, not exactly-once external inference: a killed process can lose a response or fail before sending its reserved request. Unfinished native run checkpoints remain available for inspection; they are never silently relabeled completed. Create a new evaluation ID for a fresh trial.
 
@@ -41,6 +41,6 @@ Harness validation was rerun after implementation fixes; the final artifact reco
 | Arm | Exact correct | Byte-estimated tokens | Observed calls | Arm wall time | Children |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | truncated | 4/24 (16.67%) | 190800 | 24 | 1 ms | 0 |
-| recursive | 4/24 (16.67%) | 62303 | 24 | 12660 ms | 0 |
+| recursive | 4/24 (16.67%) | 62303 | 24 | 12560 ms | 0 |
 
 Timing is rounded to integer milliseconds and includes arm execution, with native engine SDK IO in the recursive arm. Controller checkpoints, corpus preflight and suite setup are outside these arm timers; the artifact also retains invocation start/end timestamps. The constant-zero baseline scores 4/24. No live-model advantage, recursive child quality, billing usage or statistical confidence is established. Reproduce this fallback with `node test/evaluation-live.ts --stub` after preparing the source copies.

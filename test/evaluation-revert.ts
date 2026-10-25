@@ -12,4 +12,5 @@ proveRevert({ name: 'pending arm never silently retried after crash', file: 'src
 proveRevert({ name: 'native no-git command registration', file: 'src/commands.ts', before: "name: 'rlm eval', description:", after: "name: 'rlm eval-disabled', description:", pattern: '^evaluation host' }, file);
 proveRevert({ name: 'failed child reach measurement', file: 'src/evaluation.ts', before: 'recursive.children = observedChildren;', after: 'recursive.children = 0;', pattern: '^evaluation records child' }, file);
 proveRevert({ name: 'malformed response refusal classification', file: 'src/evaluation.ts', before: "refusal = error instanceof RlmError ? error.code : 'incomplete'", after: "refusal = error instanceof RlmError ? error.code : 'model'", pattern: '^evaluation counts' }, file);
-console.log('11/11 evaluation behavioral revert proofs passed');
+proveRevert({ name: 'immutable evaluation declarations', file: 'src/evaluation.ts', before: '...structuredClone(declarations), stub, on_boundary', after: '...declarations, stub, on_boundary', pattern: '^evaluation measures' }, file);
+console.log('12/12 evaluation behavioral revert proofs passed');

@@ -10,7 +10,7 @@ import { evalDigest, evaluateRlm, parseEvalSuite, truncatedEvalPrompt } from '..
 import { readCorpus } from '../src/environment.ts';
 import { readRlmSettings } from '../src/settings.ts';
 import { RlmError } from '../src/errors.ts';
-import type { RlmEvalBoundary, RlmEvalOptions, RlmEvalSuite } from '../src/evaluation-types.ts';
+import type { RlmEvalBoundary, RlmEvalOptions, RlmEvalResult, RlmEvalSuite } from '../src/evaluation-types.ts';
 import { httpFixture, requestBody } from './http.ts';
 import { ScriptedModel, tracker, killAtCheckpoint, installExtension } from './helpers.ts';
 import { runCommand } from '../src/commands.ts';
@@ -31,8 +31,16 @@ export async function fixture(t: Parameters<typeof tracker>[0]) {
 test('evaluation measures both arms and reuses completed receipts in a non-git tracker', async t => {
   const { source, target, suite, model, options } = await fixture(t);
   const before = JSON.stringify((await readCorpus(source.workspace)).items);
-  const result = await evaluateRlm(suite, options);
+  const retained = { id: options.id, mode: options.mode, model: options.model, sources: { ...options.sources } };
+  const pending = evaluateRlm(suite, options);
+  Object.assign(options, { id: 'changed', mode: 'local', model: 'changed' });
+  options.sources.sample = join(target.root, 'missing');
+  let result!: RlmEvalResult;
+  try { await assert.doesNotReject(async () => { result = await pending; }); }
+  finally { Object.assign(options, retained); }
   assert.equal(result.status, 'complete');
+  assert.equal(result.model, model.name);
+  assert.equal(result.mode, 'stub');
   for (const arm of [result.summary.truncated, result.summary.recursive]) {
     assert.equal(arm.correct, 20); assert.equal(arm.accuracy, 1); assert.equal(arm.calls, 20);
     assert.ok(arm.tokens! > 0); assert.ok(arm.wall_ms! >= 0); assert.equal(arm.failed_requests, 0);

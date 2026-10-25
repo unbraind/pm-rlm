@@ -45,7 +45,7 @@
       "accuracy": 0.16666666666666666,
       "calls": 24,
       "tokens": 62303,
-      "wall_ms": 12660,
+      "wall_ms": 12560,
       "children": 0,
       "failed_requests": 0
     }
@@ -73,7 +73,7 @@
         "calls": 1,
         "tokens_in": 2552,
         "tokens_out": 32,
-        "wall_ms": 811,
+        "wall_ms": 862,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -101,7 +101,7 @@
         "calls": 1,
         "tokens_in": 2530,
         "tokens_out": 32,
-        "wall_ms": 476,
+        "wall_ms": 510,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -129,7 +129,7 @@
         "calls": 1,
         "tokens_in": 2532,
         "tokens_out": 32,
-        "wall_ms": 451,
+        "wall_ms": 710,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -157,7 +157,7 @@
         "calls": 1,
         "tokens_in": 2537,
         "tokens_out": 32,
-        "wall_ms": 498,
+        "wall_ms": 584,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -185,7 +185,7 @@
         "calls": 1,
         "tokens_in": 2529,
         "tokens_out": 32,
-        "wall_ms": 568,
+        "wall_ms": 563,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -213,7 +213,7 @@
         "calls": 1,
         "tokens_in": 2531,
         "tokens_out": 32,
-        "wall_ms": 731,
+        "wall_ms": 578,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -241,7 +241,7 @@
         "calls": 1,
         "tokens_in": 2571,
         "tokens_out": 32,
-        "wall_ms": 595,
+        "wall_ms": 1127,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -269,7 +269,7 @@
         "calls": 1,
         "tokens_in": 2540,
         "tokens_out": 32,
-        "wall_ms": 461,
+        "wall_ms": 969,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -297,7 +297,7 @@
         "calls": 1,
         "tokens_in": 2552,
         "tokens_out": 32,
-        "wall_ms": 545,
+        "wall_ms": 595,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -325,7 +325,7 @@
         "calls": 1,
         "tokens_in": 2631,
         "tokens_out": 32,
-        "wall_ms": 438,
+        "wall_ms": 600,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -353,7 +353,7 @@
         "calls": 1,
         "tokens_in": 2589,
         "tokens_out": 32,
-        "wall_ms": 494,
+        "wall_ms": 366,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -381,7 +381,7 @@
         "calls": 1,
         "tokens_in": 2670,
         "tokens_out": 32,
-        "wall_ms": 399,
+        "wall_ms": 388,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -409,7 +409,7 @@
         "calls": 1,
         "tokens_in": 2552,
         "tokens_out": 32,
-        "wall_ms": 379,
+        "wall_ms": 412,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -437,7 +437,7 @@
         "calls": 1,
         "tokens_in": 2530,
         "tokens_out": 32,
-        "wall_ms": 353,
+        "wall_ms": 352,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -465,7 +465,7 @@
         "calls": 1,
         "tokens_in": 2532,
         "tokens_out": 32,
-        "wall_ms": 392,
+        "wall_ms": 338,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -493,7 +493,7 @@
         "calls": 1,
         "tokens_in": 2537,
         "tokens_out": 32,
-        "wall_ms": 672,
+        "wall_ms": 313,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -521,7 +521,7 @@
         "calls": 1,
         "tokens_in": 2529,
         "tokens_out": 32,
-        "wall_ms": 480,
+        "wall_ms": 420,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -549,7 +549,7 @@
         "calls": 1,
         "tokens_in": 2531,
         "tokens_out": 32,
-        "wall_ms": 520,
+        "wall_ms": 407,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -577,7 +577,7 @@
         "calls": 1,
         "tokens_in": 2572,
         "tokens_out": 32,
-        "wall_ms": 411,
+        "wall_ms": 412,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -605,7 +605,7 @@
         "calls": 1,
         "tokens_in": 2541,
         "tokens_out": 32,
-        "wall_ms": 531,
+        "wall_ms": 403,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -633,7 +633,7 @@
         "calls": 1,
         "tokens_in": 2553,
         "tokens_out": 32,
-        "wall_ms": 542,
+        "wall_ms": 403,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -661,7 +661,7 @@
         "calls": 1,
         "tokens_in": 2632,
         "tokens_out": 32,
-        "wall_ms": 677,
+        "wall_ms": 372,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -689,7 +689,7 @@
         "calls": 1,
         "tokens_in": 2590,
         "tokens_out": 32,
-        "wall_ms": 518,
+        "wall_ms": 469,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
@@ -717,16 +717,16 @@
         "calls": 1,
         "tokens_in": 2672,
         "tokens_out": 32,
-        "wall_ms": 718,
+        "wall_ms": 407,
         "refusal": "",
         "failed_requests": 0,
         "children": 0
       }
     }
   ],
-  "started_at": "2026-10-25T01:34:14.685Z",
-  "finished_at": "2026-10-25T01:34:35.131Z",
-  "implementation_sha256": "bdf7acb5bfa3787198e09b8d851b5f2beb03881d97270222eeb5e0651017a30c",
+  "started_at": "2026-10-25T01:44:33.216Z",
+  "finished_at": "2026-10-25T01:44:54.787Z",
+  "implementation_sha256": "cd8ffac87fe4d321c0749041718c66f871cf371b0daa93bb7e79fa34634b907d",
   "source_counts": [
     {
       "id": "pm-rlm",

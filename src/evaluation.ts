@@ -184,7 +184,10 @@ async function executeEvaluation(suite: RlmEvalSuite, options: RlmEvalOptions): 
 }
 /** Run an exact paired evaluation, returning compact native-renderable results or typed remedies. */
 export async function evaluateRlm(value: unknown, options: RlmEvalOptions): Promise<RlmEvalResult> {
-  try { return await executeEvaluation(parseEvalSuite(value), options); }
+  try {
+    const { stub, on_boundary, ...declarations } = options;
+    return await executeEvaluation(parseEvalSuite(value), { ...structuredClone(declarations), stub, on_boundary });
+  }
   catch (error) {
     if (error instanceof RlmEvalError) throw error;
     throw new RlmEvalError(error instanceof RlmError ? error.code : 'incomplete', 'Evaluation refused', 'Inspect tracker integrity and local Ollama; rerun the same evaluation id to retain completed rows and mark interrupted work unknown');
