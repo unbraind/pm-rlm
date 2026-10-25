@@ -1,0 +1,12 @@
+id: pm-rlm-8xxq
+title: Re-run the recursive vs truncated evaluation with a capable local model and a budget that reaches child calls
+description: "pm-rlm#23 shipped the evaluation harness (24 versioned questions on two public tracker copies) and an honest first run. That run used functiongemma:270m: both arms scored 0/24 and every recursive run hit its budget before any child call, so it measured the harness, not recursion. Re-run with the strongest local model the host fits (nimble:9b or clef-flash:9b) and a recursive budget that reaches children, while host CPU pressure is low. Also fix the review's non-blocking note: interrupted recursive arms record children: 0 instead of unknown (src/evaluation.ts:58)."
+type: Task
+status: open
+priority: 2
+tags[3]: evaluation,local-model,rlm
+created_at: "2026-10-25T11:30:31.971Z"
+updated_at: "2026-10-25T11:30:31.971Z"
+author: claude-hub
+acceptance_criteria: "Same capable local model in both arms; at least one recursive run reaches child calls; accuracy, tokens, calls and wall time reported per arm; interrupted arms report children as unknown with a regression test; results recorded on this item."
+body: ""
