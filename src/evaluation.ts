@@ -128,7 +128,7 @@ async function executeEvaluation(suite: RlmEvalSuite, options: RlmEvalOptions): 
     let reason = '';
     if (existing !== null) {
       const row = (await client.get(evaluation, { fields: 'description,tags' })).item;
-      serialized = typeof row.description === 'string' ? row.description : '';
+      serialized = String(row.description);
       try { state = record(JSON.parse(serialized)) as unknown as EvalState; } catch { state = {} as EvalState; }
       if (!row.tags?.includes('rlm:evaluation') || state.owner !== 'pm-rlm/eval-v1' || !Array.isArray(state.rows) || typeof state.complete !== 'boolean') {
         state = { owner: 'pm-rlm/eval-v1', boundary, rows: [], complete: false }; reason = 'foreign_record_preserved';

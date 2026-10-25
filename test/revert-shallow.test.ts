@@ -33,7 +33,7 @@ test('every revert script succeeds in a depth-one clone of HEAD', { timeout: 360
   assert.equal(git(clone, 'rev-list', '--count', 'HEAD'), '1');
   assert.equal(git(clone, 'rev-parse', 'HEAD'), git(source, 'rev-parse', 'HEAD'));
   const scripts = (await readdir(join(source, 'test'))).filter(name => /(?:^|-)revert\.ts$/.test(name)).sort();
-  assert.equal(scripts.length, 10);
+  assert.equal(scripts.length, 11);
   for (const name of [...scripts, 'revert-source.ts']) {
     assert.deepEqual(await readFile(join(clone, 'test', name)), await readFile(join(source, 'test', name)), `${name}: commit proof changes before testing HEAD`);
   }

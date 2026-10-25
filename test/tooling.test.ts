@@ -23,6 +23,7 @@ import { runCoverageGate } from "../scripts/coverage-gate.ts";
 import { runDocstringGate } from "../scripts/docstring-gate.ts";
 import { gitEnvironment } from '../scripts/environment.ts';
 import { auditIdentities, runIdentityGate } from "../scripts/identity-gate.ts";
+import * as evaluationTypeContracts from "../src/evaluation-types.ts";
 import * as typeContracts from "../src/types.ts";
 
 import fleetConfig from "../eslint.config.ts";
@@ -150,6 +151,7 @@ test('the manifest coverage gate owns the full authored scope without exemptions
 
 test('shared lint type contracts load without runtime exports', () => {
   assert.deepEqual([...Object.keys(typeContracts)], []);
+  assert.deepEqual([...Object.keys(evaluationTypeContracts)], []);
 });
 
 test("published flat configuration can be consumed directly", () => { assert.ok(Array.isArray(fleetConfig)); });

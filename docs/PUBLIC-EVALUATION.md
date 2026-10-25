@@ -33,3 +33,14 @@ A durable reservation precedes either inference arm. After interruption, a rerun
 Accuracy always uses the full question count, including refusals. Calls count observed model transport attempts, not ledger nodes. Children count observed child nodes separately. Wall time measures each arm including SDK work and host contention. Token counters are provider-reported when available and conservative byte estimates otherwise, as in the existing model adapter. A failed transport can have unreported usage; those token totals become unknown rather than zero. Unknown rows propagate unknown totals. These are single sequential trials with the baseline first, no confidence interval and no claimed recursive advantage. Historical invalidated evaluations are preserved unchanged.
 
 `RlmEvalError` exposes a stable native `code` plus `remedy`. Invalid suites or reused IDs require corrected declarations or a new ID; source drift requires recreating the verified copy; model errors require local Ollama or explicitly labeled SDK stub mode; busy work should be retried with the same ID after the peer stops. The host renders expected errors with exit 2 (budget admission uses exit 3). Inspect receipts before choosing a new trial ID.
+
+## Public-data stub validation
+
+Harness validation was rerun after implementation fixes; the final artifact records one sequential invocation. The completed validation uses the explicitly labeled `constant-zero-stub`; the live local-model comparison is pending because bounded local inference probes did not respond. These figures validate the harness and do not measure model quality. The 24 questions cover 21 pm-rlm items (236661 serialized bytes) and 12 pm-lint items (54941 bytes), copied from the pinned public commits. Both source directories and their files were made read-only, and both post-run corpus hashes match the suite.
+
+| Arm | Exact correct | Byte-estimated tokens | Observed calls | Arm wall time | Children |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| truncated | 4/24 (16.67%) | 190800 | 24 | 1 ms | 0 |
+| recursive | 4/24 (16.67%) | 62303 | 24 | 12660 ms | 0 |
+
+Timing is rounded to integer milliseconds and includes arm execution, with native engine SDK IO in the recursive arm. Controller checkpoints, corpus preflight and suite setup are outside these arm timers; the artifact also retains invocation start/end timestamps. The constant-zero baseline scores 4/24. No live-model advantage, recursive child quality, billing usage or statistical confidence is established. Reproduce this fallback with `node test/evaluation-live.ts --stub` after preparing the source copies.

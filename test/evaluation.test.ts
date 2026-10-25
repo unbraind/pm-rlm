@@ -105,8 +105,10 @@ test('evaluation counts malformed answers, model failures and failed recursive a
   assert.equal(result.summary.truncated.calls, 20); assert.equal(result.summary.recursive.calls, 20);
   assert.equal(result.summary.truncated.tokens, null); assert.equal(result.summary.recursive.tokens, null);
   assert.equal(result.summary.truncated.failed_requests, 20); assert.equal(requests, 40);
-  const bad = new ScriptedModel(request => request.response_kind === 'answer' ? '{"answer":12}' : '{"action":"finish","answer":"wrong"}');
+  assert.equal(result.rows![0].truncated.tokens_in, null); assert.equal(result.rows![0].truncated.tokens_out, null);
+  const bad = new ScriptedModel((request, index) => request.response_kind === 'answer' ? index === 0 ? '{"answer":}' : '{"answer":12}' : '{"action":"finish","answer":"wrong"}');
   const malformed = await evaluateRlm(suite, { ...options, id: 'bad-json', stub: bad });
+  assert.equal(malformed.rows![0].truncated.refusal, 'incomplete');
   assert.equal(malformed.summary.truncated.correct, 0); assert.equal(malformed.summary.truncated.failed_requests, 0);
   assert.equal(malformed.summary.recursive.correct, 0);
 });

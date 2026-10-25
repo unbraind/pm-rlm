@@ -9,7 +9,7 @@ proveRevert({ name: 'failed request usage remains unknown', file: 'src/evaluatio
 proveRevert({ name: 'evaluation outer lease', file: 'src/evaluation.ts', before: 'const release = await ledger.lease(evaluation);', after: 'const release = async () => {};', pattern: '^evaluation interleaving' }, file);
 proveRevert({ name: 'description CAS preserves native peer edits', file: 'src/evaluation.ts', before: "match: { key: 'description', value: previous.value }, ", after: '', pattern: '^evaluation interleaving' }, file);
 proveRevert({ name: 'pending arm never silently retried after crash', file: 'src/evaluation.ts', before: 'if (state.pending !== undefined)', after: 'if (false)', pattern: '^evaluation crash' }, file, 300000);
-console.log('8/8 evaluation behavioral revert proofs passed');
 proveRevert({ name: 'native no-git command registration', file: 'src/commands.ts', before: "name: 'rlm eval', description:", after: "name: 'rlm eval-disabled', description:", pattern: '^evaluation host' }, file);
 proveRevert({ name: 'failed child reach measurement', file: 'src/evaluation.ts', before: 'recursive.children = observedChildren;', after: 'recursive.children = 0;', pattern: '^evaluation records child' }, file);
-console.log('10/10 evaluation behavioral revert proofs passed');
+proveRevert({ name: 'malformed response refusal classification', file: 'src/evaluation.ts', before: "refusal = error instanceof RlmError ? error.code : 'incomplete'", after: "refusal = error instanceof RlmError ? error.code : 'model'", pattern: '^evaluation counts' }, file);
+console.log('11/11 evaluation behavioral revert proofs passed');
