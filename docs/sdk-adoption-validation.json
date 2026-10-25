@@ -1,0 +1,33 @@
+{
+  "baseline": "e8315c0ab33cb7edc067ec1ba5954cad6ad3a57b",
+  "candidate_production_sources_unchanged": true,
+  "intentional_differences": [],
+  "measurements": [
+    {
+      "repository": "unbraind/pm-rlm",
+      "revision": "e8315c0ab33cb7edc067ec1ba5954cad6ad3a57b",
+      "items": 22,
+      "files": 50,
+      "source_files_unchanged": true,
+      "source_files_read_only": true,
+      "non_git": true,
+      "git_executable_available": false,
+      "cases": 13,
+      "identical_outputs": true,
+      "output_sha256": "02e02417ce9193e2ae427685c40864bb6d8a6070eb989b497b6f91503d327825"
+    },
+    {
+      "repository": "unbraind/pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "items": 12,
+      "files": 30,
+      "source_files_unchanged": true,
+      "source_files_read_only": true,
+      "non_git": true,
+      "git_executable_available": false,
+      "cases": 13,
+      "identical_outputs": true,
+      "output_sha256": "2135a4039b1fa970fbb3a0f83db99eef0d991d78181a38e9bcae7d2a26f53fd0"
+    }
+  ]
+}
