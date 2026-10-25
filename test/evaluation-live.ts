@@ -31,7 +31,7 @@ async function freezeCopy(root: string): Promise<void> {
 for (const source of Object.values(sources)) await freezeCopy(source);
 const started_at = new Date().toISOString();
 const mode = process.argv.includes('--stub') ? 'stub' : 'local';
-const model = mode === 'stub' ? 'constant-zero-stub' : 'gemma3:4b';
+const model = mode === 'stub' ? 'constant-zero-stub' : process.env.PM_RLM_EVAL_MODEL ?? 'gemma3:4b';
 const stub = mode === 'stub' ? { name: model, async complete(request: ModelRequest) {
   const text = request.response_kind === 'answer' ? '{"answer":"0"}' : '{"action":"finish","answer":"0"}';
   return { text, tokens_in: Buffer.byteLength(request.prompt), tokens_out: Buffer.byteLength(text) };

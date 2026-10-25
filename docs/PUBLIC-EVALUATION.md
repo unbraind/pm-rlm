@@ -34,13 +34,19 @@ Accuracy always uses the full question count, including refusals. Calls count ob
 
 `RlmEvalError` exposes a stable native `code` plus `remedy`. Invalid suites or reused IDs require corrected declarations or a new ID; source drift requires recreating the verified copy; model errors require local Ollama or explicitly labeled SDK stub mode; busy work should be retried with the same ID after the peer stops. The host renders expected errors with exit 2 (budget admission uses exit 3). Inspect receipts before choosing a new trial ID.
 
-## Public-data stub validation
+## Live public-tracker measurement
 
-Harness validation was rerun after implementation fixes; the final artifact records one sequential invocation. The completed validation uses the explicitly labeled `constant-zero-stub`; the live local-model comparison is pending because bounded local inference probes did not respond. These figures validate the harness and do not measure model quality. The 24 questions cover 21 pm-rlm items (236661 serialized bytes) and 12 pm-lint items (54941 bytes), copied from the pinned public commits. Both source directories and their files were made read-only, and both post-run corpus hashes match the suite.
+The completed live trial uses the installed local `functiongemma:270m` model in both arms. It was selected for availability after earlier local generation timeouts; the frozen questions, gold answers, prompts and limits were not tuned using model answers. Exactly one completed live invocation is published. Earlier deterministic harness validations used an explicitly labeled stub; their figures do not measure model quality.
 
-| Arm | Exact correct | Byte-estimated tokens | Observed calls | Arm wall time | Children |
+The 24 questions cover 21 pm-rlm items (236661 serialized bytes) and 12 pm-lint items (54941 bytes), copied from the pinned public commits. Both source directories and files were read-only, and both post-run corpus hashes match the suite. Every baseline prompt was truncated. Both arms used temperature zero, context 8192 and output allowance 256. Native engine limits were 60000 charged tokens, depth 2 and four logical call nodes per question. That node limit differs from measured transport requests, which can include multiple model steps per node.
+
+| Arm | Exact correct | Reported-or-estimated model tokens | Observed requests | Arm wall time | Children |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| truncated | 4/24 (16.67%) | 190800 | 24 | 1 ms | 0 |
-| recursive | 4/24 (16.67%) | 62303 | 24 | 12560 ms | 0 |
+| truncated | 0/24 (0%) | 53125 | 24 | 28542 ms | 0 |
+| recursive | 0/24 (0%) | 521496 | 384 | 386805 ms | 0 |
 
-Timing is rounded to integer milliseconds and includes arm execution, with native engine SDK IO in the recursive arm. Controller checkpoints, corpus preflight and suite setup are outside these arm timers; the artifact also retains invocation start/end timestamps. The constant-zero baseline scores 4/24. No live-model advantage, recursive child quality, billing usage or statistical confidence is established. Reproduce this fallback with `node test/evaluation-live.ts --stub` after preparing the source copies.
+Exact refusal histograms: truncated {"none": 24}; recursive {"budget": 24}. `none` means no outer refusal; it does not mean a correct answer. No transport requests failed.
+
+Timing is rounded to integer milliseconds and includes arm execution, with native engine SDK IO in the recursive arm. Controller checkpoints, corpus preflight and suite setup are outside these arm timers; the artifact retains invocation start/end timestamps. The constant-zero guess scores 4/24 (16.67%), above both measured arms. This tiny-model trial establishes neither useful answer quality nor recursive child quality or an RLM advantage. It is a single sequential trial, without a confidence interval or generalization to other models or limits. Model counters retain the adapter's reported-or-estimated label because per-response provenance is not exposed.
+
+Reproduce with `PM_RLM_EVAL_MODEL=functiongemma:270m node test/evaluation-live.ts` after preparing verified copies. Use `node test/evaluation-live.ts --stub` only for explicitly labeled deterministic harness validation.
