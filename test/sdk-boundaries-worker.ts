@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { PmClient } from '@unbrained/pm-cli/sdk';
-import { createRlmContext, readCorpus } from '../dist/src/environment.js';
-import { RlmLedger } from '../dist/src/ledger.js';
+import { createRlmContext, readCorpus } from '../src/environment.ts';
+import { RlmLedger } from '../src/ledger.ts';
 
 const [workspace, ledgerRoot] = process.argv.slice(2);
 assert.ok(workspace && ledgerRoot);

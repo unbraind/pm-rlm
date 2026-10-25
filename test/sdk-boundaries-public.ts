@@ -29,6 +29,11 @@ try {
   execFileSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc')], { cwd: baseline, env });
   execFileSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc')], { cwd: root, env });
   await copyFile(join(root, 'test/sdk-boundaries-worker.ts'), join(baseline, 'test/sdk-boundaries-worker.ts'));
+  for (const [name, build] of [['baseline', baseline], ['candidate', root]]) {
+    const config = join(scratch, `${name}-worker.json`);
+    await writeFile(config, JSON.stringify({ extends: join(build, 'tsconfig.json'), compilerOptions: { typeRoots: [join(root, 'node_modules/@types')] }, include: [join(build, 'test/sdk-boundaries-worker.ts')] }));
+    execFileSync(process.execPath, [join(root, 'node_modules/typescript/bin/tsc'), '--project', config], { cwd: build, env, encoding: 'utf8' });
+  }
   const measurements = [];
   for (const source of [{ repo: 'pm-rlm', revision }, { repo: 'pm-lint', revision: 'f2c20efa78139f4071f3dd08d317bea05337fe28' }]) {
     const repository = `repos/unbraind/${source.repo}`;
@@ -44,7 +49,7 @@ try {
     const runEnv = { ...testEnvironment(env), GIT_CEILING_DIRECTORIES: dirname(scratch), PATH: scratch };
     const outputs = [];
     for (const [name, build] of [['before', baseline], ['after', root]]) {
-      outputs.push(execFileSync(process.execPath, [join(build, 'test/sdk-boundaries-worker.ts'), copy.workspace, join(scratch, `${source.repo}-${name}-ledger`)], { cwd: scratch, env: runEnv, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
+      outputs.push(execFileSync(process.execPath, [join(build, 'dist/test/sdk-boundaries-worker.js'), copy.workspace, join(scratch, `${source.repo}-${name}-ledger`)], { cwd: scratch, env: runEnv, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }));
     }
     const beforeOutput = JSON.parse(outputs[0]) as { corpus: { items: unknown[] } };
     assert.deepEqual(JSON.parse(outputs[1]), beforeOutput);

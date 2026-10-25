@@ -25,10 +25,12 @@ async function isolatedTracker(t: TestContext) {
 
 /** Corrupt valid JSON without changing size or mtime after the real SDK indexes it. */
 async function corruptIndexedHistory(workspace: string, id: string): Promise<void> {
+  const path = getHistoryPath(workspace, id);
+  const timestamp = new Date('2026-01-01T00:00:00.000Z');
+  await utimes(path, timestamp, timestamp);
   const page = await listMutationEvents({ pmRoot: workspace, item: id, full: true });
   assert.equal(page.source, 'derived_index');
   assert.ok(page.events.some(event => event.item_id === id));
-  const path = getHistoryPath(workspace, id);
   const before = await readFile(path, 'utf8');
   const metadata = await stat(path);
   const after = before.replace('Cache source', 'Cache tamper');
@@ -37,6 +39,9 @@ async function corruptIndexedHistory(workspace: string, id: string): Promise<voi
   for (const line of after.trim().split('\n')) JSON.parse(line);
   await writeFile(path, after);
   await utimes(path, metadata.atime, metadata.mtime);
+  const corrupted = await stat(path);
+  assert.equal(corrupted.mtimeMs, metadata.mtimeMs);
+  assert.equal(corrupted.size, metadata.size);
 }
 
 /** A frozen scope keeps literal commas and never observes later live item updates. */
