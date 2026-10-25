@@ -1,0 +1,756 @@
+{
+  "evaluation": "eval-rlm-eval-stub-v1",
+  "suite": "public-trackers-v1",
+  "model": "constant-zero-stub",
+  "mode": "stub",
+  "status": "complete",
+  "reason": "",
+  "token_usage": "reported_or_estimated_with_unknown_interrupted_usage",
+  "interpretation": "exact_match_single_trial_no_advantage_claim",
+  "settings": {
+    "context_tokens": 8192,
+    "output_tokens": 256,
+    "budget_tokens": 60000,
+    "max_depth": 2,
+    "max_calls": 4
+  },
+  "sources": [
+    {
+      "id": "pm-rlm",
+      "repository": "unbraind/pm-rlm",
+      "revision": "78a2e4d82ecb9cd4512250e8b1b5b7ef1b8e3c54",
+      "corpus_sha256": "d0debc126bdc2bad4103dc75c8b4a31e919a20a692d8daade8578abe9596fef2"
+    },
+    {
+      "id": "pm-lint",
+      "repository": "unbraind/pm-lint",
+      "revision": "f2c20efa78139f4071f3dd08d317bea05337fe28",
+      "corpus_sha256": "d1df5a9bd92d06f364abb9fcd7ed413c13bcd58fc74706eb1153904baacd87c8"
+    }
+  ],
+  "summary": {
+    "truncated": {
+      "correct": 4,
+      "questions": 24,
+      "accuracy": 0.16666666666666666,
+      "calls": 24,
+      "tokens": 190800,
+      "wall_ms": 2,
+      "children": 0,
+      "failed_requests": 0
+    },
+    "recursive": {
+      "correct": 4,
+      "questions": 24,
+      "accuracy": 0.16666666666666666,
+      "calls": 24,
+      "tokens": 62303,
+      "wall_ms": 25668,
+      "children": 0,
+      "failed_requests": 0
+    }
+  },
+  "rows": [
+    {
+      "id": "pm-rlm-1",
+      "source": "pm-rlm",
+      "visible_bytes": 7745,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 2,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2552,
+        "tokens_out": 32,
+        "wall_ms": 3905,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-2",
+      "source": "pm-rlm",
+      "visible_bytes": 7767,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2530,
+        "tokens_out": 32,
+        "wall_ms": 1874,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-3",
+      "source": "pm-rlm",
+      "visible_bytes": 7765,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2532,
+        "tokens_out": 32,
+        "wall_ms": 1243,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-4",
+      "source": "pm-rlm",
+      "visible_bytes": 7760,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2537,
+        "tokens_out": 32,
+        "wall_ms": 1056,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-5",
+      "source": "pm-rlm",
+      "visible_bytes": 7768,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2529,
+        "tokens_out": 32,
+        "wall_ms": 1112,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-6",
+      "source": "pm-rlm",
+      "visible_bytes": 7766,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2531,
+        "tokens_out": 32,
+        "wall_ms": 1215,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-7",
+      "source": "pm-rlm",
+      "visible_bytes": 7726,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2571,
+        "tokens_out": 32,
+        "wall_ms": 1326,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-8",
+      "source": "pm-rlm",
+      "visible_bytes": 7757,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2540,
+        "tokens_out": 32,
+        "wall_ms": 798,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-9",
+      "source": "pm-rlm",
+      "visible_bytes": 7745,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2552,
+        "tokens_out": 32,
+        "wall_ms": 679,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-10",
+      "source": "pm-rlm",
+      "visible_bytes": 7666,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2631,
+        "tokens_out": 32,
+        "wall_ms": 1643,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-11",
+      "source": "pm-rlm",
+      "visible_bytes": 7708,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2589,
+        "tokens_out": 32,
+        "wall_ms": 1040,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-rlm-12",
+      "source": "pm-rlm",
+      "visible_bytes": 7627,
+      "corpus_bytes": 236661,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2670,
+        "tokens_out": 32,
+        "wall_ms": 630,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-13",
+      "source": "pm-lint",
+      "visible_bytes": 7745,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2552,
+        "tokens_out": 32,
+        "wall_ms": 586,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-14",
+      "source": "pm-lint",
+      "visible_bytes": 7767,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2530,
+        "tokens_out": 32,
+        "wall_ms": 604,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-15",
+      "source": "pm-lint",
+      "visible_bytes": 7765,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2532,
+        "tokens_out": 32,
+        "wall_ms": 582,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-16",
+      "source": "pm-lint",
+      "visible_bytes": 7760,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2537,
+        "tokens_out": 32,
+        "wall_ms": 1216,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-17",
+      "source": "pm-lint",
+      "visible_bytes": 7768,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2529,
+        "tokens_out": 32,
+        "wall_ms": 851,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-18",
+      "source": "pm-lint",
+      "visible_bytes": 7766,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2531,
+        "tokens_out": 32,
+        "wall_ms": 757,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-19",
+      "source": "pm-lint",
+      "visible_bytes": 7725,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2572,
+        "tokens_out": 32,
+        "wall_ms": 764,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-20",
+      "source": "pm-lint",
+      "visible_bytes": 7756,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2541,
+        "tokens_out": 32,
+        "wall_ms": 586,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-21",
+      "source": "pm-lint",
+      "visible_bytes": 7744,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2553,
+        "tokens_out": 32,
+        "wall_ms": 1067,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-22",
+      "source": "pm-lint",
+      "visible_bytes": 7665,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2632,
+        "tokens_out": 32,
+        "wall_ms": 823,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-23",
+      "source": "pm-lint",
+      "visible_bytes": 7707,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": true,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2590,
+        "tokens_out": 32,
+        "wall_ms": 606,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    },
+    {
+      "id": "pm-lint-24",
+      "source": "pm-lint",
+      "visible_bytes": 7625,
+      "corpus_bytes": 54941,
+      "truncated": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 7936,
+        "tokens_out": 14,
+        "wall_ms": 0,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      },
+      "recursive": {
+        "correct": false,
+        "answer_sha256": "5feceb66ffc86f38d952786c6d696c79c2dbc239dd4e91b46729d73a27fb57e9",
+        "calls": 1,
+        "tokens_in": 2672,
+        "tokens_out": 32,
+        "wall_ms": 705,
+        "refusal": "",
+        "failed_requests": 0,
+        "children": 0
+      }
+    }
+  ],
+  "started_at": "2026-10-25T01:24:07.081Z",
+  "finished_at": "2026-10-25T01:24:46.182Z",
+  "implementation_sha256": "54cb4dd4d705d1af750f5818c7e44f38985b3afa5f67b85c9bd36c2ed55a1789",
+  "source_counts": [
+    {
+      "id": "pm-rlm",
+      "items": 21,
+      "bytes": 236661
+    },
+    {
+      "id": "pm-lint",
+      "items": 12,
+      "bytes": 54941
+    }
+  ],
+  "source_integrity": [
+    {
+      "id": "pm-rlm",
+      "after_sha256": "d0debc126bdc2bad4103dc75c8b4a31e919a20a692d8daade8578abe9596fef2",
+      "read_only_copy": true
+    },
+    {
+      "id": "pm-lint",
+      "after_sha256": "d1df5a9bd92d06f364abb9fcd7ed413c13bcd58fc74706eb1153904baacd87c8",
+      "read_only_copy": true
+    }
+  ],
+  "live_comparison": "pending: local inventory reachable, but Gemma inference exceeded 60 seconds and a minimal FunctionGemma availability probe exceeded 20 seconds; no live accuracy claim",
+  "methodology": "One sequential trial; truncated first, recursive second. Temperature zero; shared context and output allocations. Model counters are reported or byte-estimated; failed requests can have unknown usage. Wall time includes tracker IO and host load. No raw model output or source bodies are published. Child reach is observed, never forced. Interrupted arms are not retried."
+}

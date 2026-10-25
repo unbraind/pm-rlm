@@ -3,7 +3,7 @@ import { httpFixture } from './http.ts';
 import assert from 'node:assert/strict';
 import { writeRlmSettings } from '../src/settings.ts';
 import { spawnSync } from 'node:child_process';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { activateExtensionForTest, decodeToon } from '@unbrained/pm-cli/sdk/testing';
@@ -11,15 +11,8 @@ import extension from '../index.ts';
 import { runCommand } from '../src/commands.ts';
 import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
 import { runRlm } from '../src/engine.ts';
-import { ScriptedModel, tracker } from './helpers.ts';
+import { ScriptedModel, tracker, installExtension } from './helpers.ts';
 
-/** Register the real package in a scratch tracker for host CLI acceptance. */
-export async function installExtension(workspace: string): Promise<void> {
-  const dir = join(workspace, 'extensions', 'pm-rlm');
-  await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, 'manifest.json'), JSON.stringify({ name: 'pm-rlm', version: '2026.10.18', entry: 'entry.js', capabilities: ['commands', 'schema'] }));
-  await writeFile(join(dir, 'entry.js'), `export { default } from ${JSON.stringify(new URL('../index.ts', import.meta.url).href)};\n`);
-}
 /** Invoke the actual host CLI rather than simulating its output renderer. */
 function cli(root: string, workspace: string, args: string[]) {
   return spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace, PM_AUTHOR: 'rlm-test' } });

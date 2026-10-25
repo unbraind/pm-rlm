@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { evaluateRlm, RlmEvalError } from './evaluation.ts';
 import { reconcileRlm, parseReconcileArms, RlmReconcileError } from './reconcile.ts';
 import { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from './adaptive.ts';
 import { parseComponents, RlmEvidenceError } from './evidence.ts';
@@ -35,6 +37,16 @@ function componentOperand(value: unknown): string[] {
 export async function runCommand(command: string, ctx: CommandHandlerContext): Promise<Record<string, unknown>> {
   try {
     const argument = operand(ctx.args[0]);
+    if (command === 'eval') {
+      let suite: unknown; let sources: Record<string, string>;
+      try {
+        suite = JSON.parse(await readFile(argument, 'utf8')) as unknown;
+        const input: unknown = JSON.parse(operand(ctx.options.sources));
+        if (input === null || typeof input !== 'object' || Array.isArray(input) || Object.values(input).some(value => typeof value !== 'string')) throw new Error();
+        sources = input as Record<string, string>;
+      } catch { throw new RlmEvalError('invalid', 'Invalid evaluation input', 'Supply a readable suite JSON file and --sources as a JSON object of source id to tracker root'); }
+      return { ...await evaluateRlm(suite, { workspace: ctx.pm_root, sources, id: operand(ctx.options.id), model: operand(ctx.options.model), full: ctx.options.full === true, endpoint: ctx.options.endpoint === undefined ? undefined : operand(ctx.options.endpoint), author: ctx.global.author }) };
+    }
     if (command === 'evidence') return { ...await evidenceRlm(ctx.pm_root, argument) };
     if (command === 'tree') return await treeRlm(ctx.pm_root, argument, ctx.options.full === true);
     if (command === 'resume') return { ...await resumeRlm(ctx.pm_root, argument, undefined, ctx.global.author) };
@@ -69,13 +81,20 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';
-    const remedy = error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError ? error.remedy : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
+    const remedy = error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError ? error.remedy : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
     throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (remedy === undefined ? '' : '; remedy: ' + remedy) : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
   }
 }
 /** Register ledger fields and native commands, preserving host TOON and JSON rendering. */
 export function register(api: ExtensionApi): void {
   api.registerItemFields(RLM_FIELDS);
+  api.registerCommand(defineCommand({
+    name: 'rlm eval', description: 'Measure recursive and truncated answers on a frozen public question suite',
+    arguments: [{ name: 'suite', required: true }],
+    flags: [...['sources', 'id', 'model', 'endpoint'].map(name => ({ long: `--${name}`, description: name, value_name: 'value', value_type: 'string' as const })), { long: '--full', description: 'Include per-question metrics', value_type: 'boolean' as const }],
+    examples: [`pm rlm eval suite.json --sources '{"sample":"source/.agents/pm"}' --id trial-1 --model gemma3:4b --json`],
+    run: ctx => runCommand('eval', ctx),
+  }));
   for (const name of ['run', 'adaptive', 'reconcile', 'tree', 'resume', 'replay', 'evidence']) {
     const starts = name === 'run' || name === 'adaptive' || name === 'reconcile';
     const options = starts ? ['scope', name === 'reconcile' ? 'plan' : name === 'adaptive' ? 'structure' : 'components', 'model', 'max-depth', 'max-calls', 'budget-tokens'] : [];

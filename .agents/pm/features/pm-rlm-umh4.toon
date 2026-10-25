@@ -2,11 +2,13 @@ id: pm-rlm-umh4
 title: Measured public tracker aggregation evaluation
 description: ""
 type: Feature
-status: open
+status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-18T19:33:05.897Z"
-updated_at: "2026-10-23T15:26:30.344Z"
+updated_at: "2026-10-25T01:26:25.401Z"
+assignee: codex-agent
+claim_principal: codex-agent
 author: codex-agent
 estimated_minutes: 80
 acceptance_criteria: "At least twenty exact questions on copies of verified public trackers compare recursive and truncated one-call runs with the same local model; report accuracy, tokens, calls and wall time honestly."
@@ -14,7 +16,7 @@ parent: pm-rlm-a1ih
 blocked_by: pm-rlm-kaht
 dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
   pm-rlm-kaht,blocked_by,"2026-10-18T20:00:27.314Z",codex-agent,"cli:update:blocked_by",detected
-comments[16]{created_at,author,text}:
+comments[19]{created_at,author,text}:
   "2026-10-18T19:44:09.352Z",codex-agent,"Live evaluation is running sequentially on verified PUBLIC copies of pm-vcs and pm-lint. Twenty-four exact ground-truth aggregations; same installed local model in both arms; 4096 context, 96 output limit. Early results are negative: the small model copies context or requests excessive reads; budget refusals count as incorrect. No success claim is inferred from the architecture."
   "2026-10-18T19:59:55.257Z",codex-agent,"Measured npm run test:live: 24 exact questions from verified PUBLIC tracker copies (145 and 12 items; 814268 and 54941 JSON bytes), local gemma4-local:e2b-q3km, context 4096, output 96, temperature 0. RLM: 1/24 correct (4.17%), 35557 provider tokens total (1481.54/question), 82 model requests (3.42/question), 622384 ms total (25.93 s/question), 23 budget refusals. Truncated stuffing: 0/24 correct, 25225 tokens (1051.04/question), 24 requests (1/question), 117573 ms (4.90 s/question). One root per RLM question and no child calls. This does not demonstrate an RLM advantage. Public per-question metrics and response digests are in eval-results.json; README contains the table."
   "2026-10-18T21:16:44.464Z",codex-agent,"Calibration diagnosis: eval overrode defaults to 4096 context, 96 output tokens and 16000 run budget. Full read/partition payloads exceeded the next prompt, while output was too small for copying useful slices into spawn JSON. Add compact deterministic partition references in the model protocol, retain the exported lossless environment API, calibrate with synthetic two-partition/two-child tests, and measure without answer-based tuning. Eval will copy only a verified public revision and explicitly pin loopback Ollama transport."
@@ -31,27 +33,44 @@ comments[16]{created_at,author,text}:
   "2026-10-19T05:34:11.045Z",codex-agent,"Removed answer-format instructions from every generated question; JSON response requirements remain solely in the separate arm protocols. The seeded truth-only regression rejects any response-format instruction. README, cloud report and structured results explicitly invalidate the historical scores; the offline formatter preserves this notice. Historical rows, counters, timestamps, baselines and fingerprint are unchanged; no evaluation rerun."
   "2026-10-19T05:36:40.432Z",codex-agent,"Behavioral revert proofs: restoring only the old bare-answer suffix fails the seeded format-neutral question assertion with exit 1; removing only the cloud invalidation notice fails the offline report regression with exit 1. Restoring both passes the linked 12/12 tests. Full revert suite passes 51/51. Compared the entire historical eval artifact against the previous commit: all existing data are deeply identical; only explicit invalidation metadata was added. No live eval was run."
   "2026-10-23T15:26:15.970Z",codex-agent,"STALE-CLAIM: audited main 09661846f4c24fd24d8effa2a7c578b3a5c49ed9; no open PR or recently pushed live branch references this record. Inspected: eval-results.json, docs/EVAL-CLOUD.md. Remaining: This item remains blocked by pm-rlm-kaht and the retained scores were explicitly invalidated by prompt-format asymmetry. Complete a valid independently authorized comparison; preserve historical measurements without claiming delivered evaluation. Release historical contention and retain real work as open; no delivery/cancellation is claimed."
-files[11]{path,scope}:
+  "2026-10-25T01:09:22.063Z",codex-agent,"Implement a public typed eval SDK and native CLI over immutable certified source copies. Keep both arms on the same local Ollama model, version exact questions and gold answers, retain failed attempts in accuracy and call counts, and label token provenance. Evaluation writes only to uniquely owned disposable SDK trackers; source corpus is read-only. Historical invalidated results remain unchanged. Validate no-git operation, competing evaluations, crash boundaries, and behavioral reverts before the CI release gates."
+  "2026-10-25T01:13:28.355Z",codex-agent,"The typed evaluateRlm API and rlm eval command now bind frozen corpus hashes, use the same local-only model in both arms, preserve all refusals in the denominator, and emit compact summaries with opt-in rows. Evaluation controllers use the existing SDK-backed ledger lease, SDK lookup/create, and description compare-and-set transactions. No new deletion path exists. Interrupted reservations become explicit unknown metrics on rerun rather than duplicate inference; completed receipts are reused."
+  "2026-10-25T01:23:27.753Z",codex-agent,"Public provenance verified for frozen pm-rlm and pm-lint revisions. The versioned suite has 24 format-neutral exact questions, including ownership, blockers, dependency paths and last-change timestamps. Local Ollama inventory was reachable, but Gemma generation exceeded 60 seconds and an independent minimal FunctionGemma probe exceeded 20 seconds without a response. The interrupted local trial is retained as pending evidence. The explicitly labeled constant-zero stub completed 24 paired public-data questions, 4/24 correct in both arms; these numbers validate harness mechanics, not model quality. Acceptance requiring a completed local-model comparison remains unmet, so the PR will be draft and this item remains in_progress."
+files[20]{path,scope}:
   eval-results.json,project
+  index.ts,project
+  src/commands.ts,project
+  src/evaluation-types.ts,project
+  src/evaluation.ts,project
   test/eval-design.ts,project
   test/eval-metrics.ts,project
   test/eval-questions.ts,project
   test/eval-report.ts,project
   test/eval-source.test.ts,project
   test/eval.test.ts,project
+  test/evaluation-crash.ts,project
+  test/evaluation-live.ts,project
+  test/evaluation-public.ts,project
+  test/evaluation-revert.ts,project
+  test/evaluation.test.ts,project
   test/live.ts,project
   test/review.test.ts,project
   test/round2.test.ts,project
   test/round4.test.ts,project
-tests[4]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[6]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test test/eval.test.ts,project,codex-agent,"2026-10-18T19:58:35.949Z",local_mutation,feat/rlm
   node --test test/eval.test.ts test/eval-source.test.ts test/round2.test.ts,project,codex-agent,"2026-10-18T23:31:08.839Z",local_mutation,feat/rlm
   node --test test/round4.test.ts,project,codex-agent,"2026-10-19T03:27:01.098Z",local_mutation,feat/rlm
   node --test test/round2.test.ts test/round4.test.ts,project,codex-agent,"2026-10-19T05:34:17.683Z",local_mutation,feat/rlm
-docs[5]{path,scope}:
+  node --test test/evaluation.test.ts,project,codex-agent,"2026-10-25T01:26:22.643Z",local_mutation,feat/recursive-vs-truncated-eval
+  node test/evaluation-revert.ts,project,codex-agent,"2026-10-25T01:26:25.302Z",local_mutation,feat/recursive-vs-truncated-eval
+docs[8]{path,scope}:
   ARCHITECTURE.md,project
   docs/EVAL-CLOUD.md,project
   docs/eval-design.json,project
   docs/EVAL-DESIGN.md,project
+  docs/public-eval-results.json,project
+  docs/public-eval-suite.json,project
+  docs/PUBLIC-EVALUATION.md,project
   README.md,project
 body: ""

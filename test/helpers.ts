@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { TestContext } from 'node:test';
@@ -47,4 +47,12 @@ export async function killAtCheckpoint(t: TestContext, child: ChildProcess): Pro
   child.kill('SIGKILL');
   assert.deepEqual(await exit, [null, 'SIGKILL']);
   return message;
+}
+
+/** Register the real package in a scratch tracker for host CLI acceptance. */
+export async function installExtension(workspace: string): Promise<void> {
+  const dir = join(workspace, 'extensions', 'pm-rlm');
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, 'manifest.json'), JSON.stringify({ name: 'pm-rlm', version: '2026.10.18', entry: 'entry.js', capabilities: ['commands', 'schema'] }));
+  await writeFile(join(dir, 'entry.js'), `export { default } from ${JSON.stringify(new URL('../index.ts', import.meta.url).href)};\n`);
 }
