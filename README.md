@@ -353,7 +353,8 @@ original root or a recursive child. The exact question must equal that call's
 subgoal. Scope predicates, settings, parser/aggregate versions and all three
 identity strings must match. Object property order is immaterial; question text,
 array order, whitespace and source revision fields are exact SDK values. Questions
-are nonblank and at most 4096 UTF-16 units; each scope string is 1–4096 units and
+are nonblank and at most 4096 Unicode code points; each scope string is 1–4096
+code points and
 `ids` is a dense array of at most 10000 strings. Unknown fields, holes, coercions
 and counters outside 0–1000000000 refuse at the boundary. Completed call counts
 are 1–1000000000; reused results require exactly one logical call and zero new

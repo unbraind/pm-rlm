@@ -198,6 +198,8 @@ test('reuse authenticates target invariants provenance answers and original revi
   for (const scope of [{ ids: new Array(2) }, { ids: Object.assign(new Array(3), { 0: 'ok', 2: 'bad' }) }, { ids: Array.from({ length: 10001 }, () => 'x') }, { ids: [NaN] }, { unknown: true }]) assert.throws(() => parseReuseRequest({ question: 'question', identity, selection: options.selection, scope }));
   for (const question of ['', '   ', 'x'.repeat(4097), Infinity, null]) assert.throws(() => parseReuseRequest({ question, identity, selection: options.selection, scope: {} }));
   assert.deepEqual(parseReuseRequest({ question: 'question', identity, selection: options.selection, scope: { ids: ['id'] } }).scope, { ids: ['id'] });
+  assert.equal(parseReuseRequest({ question: '😀'.repeat(4096), identity, selection: options.selection, scope: { text: '😀'.repeat(4096) } }).question.length, 8192);
+  for (const input of [{ question: '😀'.repeat(4097), scope: {} }, { question: 'question', scope: { text: '😀'.repeat(4097) } }]) assert.throws(() => parseReuseRequest({ ...input, identity, selection: options.selection }));
 });
 
 /** Arbitrary configured status names retain SDK role semantics during completion recovery. */
