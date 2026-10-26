@@ -42,4 +42,4 @@ export type { RlmReuseOptions, RlmReuseResult, RlmReuseSkipped } from './src/reu
 /** Immutable caller policy and original provenance identities. */
 export type { RlmReuseDimension, RlmReuseIdentity, RlmReuseSelection, RlmReuseProvenance } from './src/reuse-contract.ts';
 /** Strict reuse boundary schema and machine-actionable refusal. */
-export { REUSE_SCHEMA, RlmReuseError } from './src/reuse-contract.ts';
+export { REUSE_SCHEMA, RlmReuseError, RlmReuseConflict } from './src/reuse-contract.ts';

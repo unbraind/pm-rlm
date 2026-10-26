@@ -6,8 +6,8 @@ import { PmClient, readSettings, resolveRuntimeStatusRegistry } from '@unbrained
 import { RlmBlobs } from '../src/blobs.ts';
 import { readCorpus } from '../src/environment.ts';
 import { RlmError } from '../src/errors.ts';
-import { prepareRlmRun, replayRlm, resumeRlm, runRlm } from '../src/engine.ts';
-import { RlmLedger, promptDigest } from '../src/ledger.ts';
+import { RlmEngine, prepareRlmRun, replayRlm, resumeRlm, runRlm } from '../src/engine.ts';
+import { RlmLedger, promptDigest, reserveStep } from '../src/ledger.ts';
 import { compactReuseResult, reuseRlm, validateReuseState } from '../src/reuse.ts';
 import { parseReuseRequest, parseReuseProvenance, parseReuseSelection } from '../src/reuse-contract.ts';
 import type { RlmReuseOptions } from '../src/reuse.ts';
@@ -41,21 +41,31 @@ test('500 seeded operation sequences preserve SDK-read native fields relationshi
     const nativeReference = (await client.get(prepared.run, { depth: 'full' })).item;
     const inputs: RlmState[] = [];
     for (let revision = 0; revision < 8; revision++) {
-      await client.update(source, { title: `Title ${revision}  `, description: ['line\r\n two ', ' line\n two', '  white space  ', 'tab\tvalue'][revision % 4], priority: revision % 4, addTags: [`revision:${revision}`], parent: revision % 2 === 0 ? parent : alternateParent, replaceDeps: true, dep: [`id=${dependency},kind=related`, ...(revision % 2 === 0 ? [] : [`id=${parent},kind=related`])] });
+      await client.update(source, { title: `Title ${revision}  `, description: ['line\r\n two ', ' line\n two', '  white space  ', 'tab\tvalue'][revision % 4], body: ['body\r\n line  ', ' body\nline\t', ' body spaces  \n'][revision % 3], priority: revision % 4, addTags: [`revision:${revision}`], parent: revision % 2 === 0 ? parent : alternateParent, replaceDeps: true, dep: [`id=${dependency},kind=related`, ...(revision % 2 === 0 ? [] : [`id=${parent},kind=related`])] });
       if (revision % 2 === 0) await client.claim(source); else await client.release(source);
       const snapshot = (await readCorpus(workspace)).items;
       inputs.push({ ...structuredClone(actual), snapshot });
     }
     const blobs = new RlmBlobs(workspace);
+    const seen = new Set<number>();
+    let olderReplays = 0;
+    let legacyInputs = 0;
     for (let sequence = 0; sequence < 500; sequence++) {
       // Each sequence captures, exports, replays an arbitrary older input, then imports via SDK CAS.
-      const captured = structuredClone(inputs[next() % inputs.length]);
+      const captureIndex = (next() >>> 16) % inputs.length;
+      const replayIndex = (next() >>> 16) % inputs.length;
+      const captured = structuredClone(inputs[captureIndex]);
       const exported = await blobs.encode(captured);
-      const replayed = structuredClone(inputs[next() % inputs.length]);
+      const replayed = structuredClone(inputs[replayIndex]);
       const oldExport = await blobs.encode(replayed);
-      const selected = next() % 2 === 0 ? exported : oldExport;
-      const reference = selected === exported ? captured : replayed;
-      const interchange = next() % 3 === 0 ? JSON.stringify(reference) : selected;
+      const replayOlder = (next() >>> 16) % 2 === 0;
+      const legacy = (next() >>> 16) % 3 === 0;
+      const selected = replayOlder ? oldExport : exported;
+      const reference = replayOlder ? replayed : captured;
+      seen.add(replayOlder ? replayIndex : captureIndex);
+      if (replayOlder) olderReplays++;
+      if (legacy) legacyInputs++;
+      const interchange = legacy ? JSON.stringify(reference) : selected;
       const imported = await blobs.decode(interchange);
       Object.assign(actual, imported);
       await ledger.save(actual);
@@ -71,6 +81,9 @@ test('500 seeded operation sequences preserve SDK-read native fields relationshi
       // Reacquire write authority by reading through the lease-owning ledger.
       actual = await ledger.load(prepared.run);
     }
+    assert.deepEqual([...seen].sort(), inputs.map((_input, index) => index));
+    assert.deepEqual([olderReplays, legacyInputs, 500 - legacyInputs], [246, 179, 321]);
+    t.diagnostic(`500 sequences sampled all ${seen.size} source revisions with ${olderReplays} older-input replays and ${legacyInputs} native-v1 inputs and ${500 - legacyInputs} native-v2 inputs`);
     const sourceAfter = (await new PmClient({ pmRoot: workspace, noExtensions: true }).get(source, { depth: 'full' })).item;
     assert.deepEqual(sourceAfter, (await client.get(source, { depth: 'full' })).item);
   } finally { await release(); }
@@ -118,8 +131,8 @@ test('reuse interleavings exclude competing source and target transitions at eve
         await boundary('unlock:after', run);
       };
     });
-    t.mock.method(RlmLedger.prototype, 'load', async function (this: RlmLedger, run: string) {
-      await boundary('load:before', run); const state = await load.call(this, run); await boundary('load:after', run); return state;
+    t.mock.method(RlmLedger.prototype, 'load', async function (this: RlmLedger, run: string, at?: string) {
+      await boundary('load:before', run); const state = await load.call(this, run, at); await boundary('load:after', run); return state;
     });
     t.mock.method(RlmLedger.prototype, 'save', async function (this: RlmLedger, state: RlmState) {
       await boundary('save:before', state.run); await save.call(this, state); await boundary('save:after', state.run);
@@ -211,18 +224,37 @@ test('seeded custom status registries preserve terminal roles instead of compari
 
 /** A peer may finish or start a newly allocated target between creation and the next acquisition. */
 test('reuse reports peer success and refuses started targets without replacing their work', async t => {
-  const { workspace } = await tracker(t);
-  const model = new ScriptedModel(() => finish);
-  const run = await runRlm('question', { workspace, model, reuse_identity: identity });
+  const { workspace, client } = await tracker(t);
+  const model = new ScriptedModel(request => {
+    const input: { depth: number; transcript: unknown[] } = JSON.parse(request.prompt.slice(request.prompt.lastIndexOf('\n') + 1));
+    return input.depth === 0 && input.transcript.length === 0 ? JSON.stringify({ action: 'spawn', subgoal: 'question', slice: { fragments: [], estimated_tokens: 2 } }) : finish;
+  });
+  const run = await runRlm('question', { workspace, model, scope: { tag: 'alpha-source' }, reuse_identity: identity });
+  const other = await runRlm('question', { workspace, model, scope: { tag: 'alpha-source' }, reuse_identity: identity });
   const source = await new RlmLedger(workspace).load(run.run);
-  const options = { workspace, settings: source.settings, reuse_identity: identity, selection: { run: run.run, call: run.run } };
-  for (const mode of ['complete', 'started']) {
+  const options = { workspace, scope: source.scope, settings: source.settings, reuse_identity: identity, selection: { run: run.run, call: run.run } };
+  await client.create({ title: 'Foreign context fixture', tags: 'beta-source' });
+  const betaModel = new ScriptedModel(() => '{"action":"finish","answer":"foreign context answer"}');
+  const beta = await runRlm('question', { workspace, model: betaModel, scope: { tag: 'beta-source' }, reuse_identity: { ...identity, consent: 'other-purpose:1' } });
+  const betaState = await new RlmLedger(workspace).load(beta.run);
+  const priorOutcomes = new Map<string, RlmState>();
+  for (const [name, selection, context] of [
+    ['other-run', { run: other.run, call: other.run }, source],
+    ['other-call', { run: run.run, call: source.calls[1].id }, source],
+    ['foreign-complete', { run: beta.run, call: beta.run }, betaState],
+  ] as const) {
+    const outcome = await reuseRlm('question', { workspace, scope: context.scope, settings: context.settings, reuse_identity: context.reuse_identity!, selection });
+    assert.equal(outcome.status, 'reused');
+    if (outcome.status === 'reused') priorOutcomes.set(name, await new RlmLedger(workspace).load(outcome.run));
+  }
+  const cases = ['complete', 'started', 'other-run', 'other-call', 'invalid-completion', 'failed', 'foreign-pending', 'foreign-complete', 'revoked', 'redirected-run', 'redirected-call'];
+  for (const mode of cases) {
     const lease = RlmLedger.prototype.lease;
     let injected = 0;
     let target = '';
     t.mock.method(RlmLedger.prototype, 'lease', async function (this: RlmLedger, id: string) {
       const unlock = await lease.call(this, id);
-      if (id !== run.run && id !== '__blob_store') target = id;
+      if (id !== run.run && id !== other.run && id !== beta.run && id !== '__blob_store') target = id;
       if (id !== run.run || injected !== 0) return unlock;
       return async () => {
         await unlock();
@@ -232,19 +264,28 @@ test('reuse reports peer success and refuses started targets without replacing t
         const release = await lease.call(ledger, target);
         try {
           const state = await ledger.load(target);
-          if (mode === 'complete') delete state.reuse_selection;
-          else {
-            state.calls[0].steps.push({ prompt: 'pending peer prompt', reserved: 1 });
-            state.reserved_tokens = 1;
-          }
+          if (mode === 'complete') {
+            const parent = state.calls[0].parent;
+            const ids = new Map(source.calls.map((call, index) => [call.id, index === 0 ? target : `${target}-c${index}`]));
+            state.calls = structuredClone(source.calls).map(call => ({ ...call, id: ids.get(call.id)!, parent: call.depth === 0 ? parent : ids.get(call.parent!)! }));
+            state.reserved_tokens = source.reserved_tokens;
+          } else if (mode === 'failed') state.calls[0].failure = { code: 'model', reason: 'Peer refused' };
+          else if (mode === 'revoked') delete state.reuse_selection;
+          else if (mode === 'redirected-run') state.reuse_selection = { run: other.run, call: other.run };
+          else if (mode === 'redirected-call') state.reuse_selection = { run: run.run, call: source.calls[1].id };
+          else if (mode === 'foreign-pending' || mode === 'foreign-complete') {
+            state.scope = betaState.scope; state.snapshot = betaState.snapshot; state.reuse_identity = betaState.reuse_identity;
+            state.reuse_selection = { run: beta.run, call: beta.run };
+          } else if (mode === 'invalid-completion') state.calls[0].result = 'unverified peer answer';
+          else if (mode === 'started') { state.calls[0].steps.push({ prompt: 'pending peer prompt', reserved: 1 }); state.reserved_tokens = 1; }
+          const prior = priorOutcomes.get(mode);
+          if (prior !== undefined) { state.reuse = prior.reuse; state.calls[0].result = prior.calls[0].result; }
           await ledger.save(state);
+          if (mode === 'complete') {
+            for (const call of state.calls) await ledger.materialize(state, call);
+            for (const call of state.calls) await ledger.complete(state, call);
+          }
         } finally { await release(); }
-        if (mode === 'complete') {
-          await resumeRlm(workspace, target, model);
-          const restore = await lease.call(ledger, target);
-          try { const completed = await ledger.load(target); completed.reuse_selection = options.selection; await ledger.save(completed); }
-          finally { await restore(); }
-        }
       };
     });
     try {
@@ -252,7 +293,28 @@ test('reuse reports peer success and refuses started targets without replacing t
         const result = await reuseRlm('question', options);
         assert.equal(result.status, 'peer_completed');
         if (result.status === 'peer_completed') assert.ok(result.tokens_in > 0);
-      } else await assert.rejects(reuseRlm('question', options), { dimension: 'target_started' });
+      } else if (mode === 'started') await assert.rejects(reuseRlm('question', options), { dimension: 'target_started' });
+      else if (mode === 'failed') {
+        await assert.rejects(reuseRlm('question', options), { code: 'model' });
+        const saved = await new RlmLedger(workspace).load(target);
+        assert.equal(saved.calls[0].failure!.reason, 'Peer refused'); assert.equal(saved.calls[0].result, undefined); assert.equal(saved.reuse, undefined);
+      } else if (mode === 'invalid-completion') await assert.rejects(reuseRlm('question', options), { code: 'replay', dimension: 'target_state' });
+      else if (mode === 'other-run' || mode === 'other-call') {
+        const result = await reuseRlm('question', options);
+        assert.equal(result.status, 'peer_completed');
+        if (result.status === 'peer_completed') {
+          assert.equal(result.tokens_in, 0);
+          assert.equal(result.reuse!.run, mode === 'other-run' ? other.run : run.run);
+          assert.equal(result.reuse!.call, mode === 'other-run' ? other.run : source.calls[1].id);
+        }
+      } else {
+        const result = await reuseRlm('question', options);
+        assert.equal(result.status, 'skipped');
+        if (result.status === 'skipped') { assert.equal(result.reason, 'foreign'); assert.equal(result.run, target); }
+        assert.equal(Object.hasOwn(result, 'answer'), false); assert.equal(Object.hasOwn(result, 'reuse'), false);
+        const saved = await new RlmLedger(workspace).load(target);
+        assert.equal(saved.calls[0].result, mode === 'foreign-complete' ? 'foreign context answer' : undefined);
+      }
       assert.equal(injected, 1);
     } finally { t.mock.restoreAll(); }
   }
@@ -290,8 +352,6 @@ test('reuse preserves failed-child accounting and typed operational remedies', a
   const run = await runRlm('question', { workspace, model, reuse_identity: identity });
   const ledger = new RlmLedger(workspace);
   const origin = await ledger.load(run.run);
-  delete origin.calls[0].parent;
-  await replaceCheckpointFixture(ledger, origin);
   const options = { workspace, settings: origin.settings, reuse_identity: identity, selection: { run: run.run, call: run.run } };
   const reused = await reuseRlm('question', options);
   assert.equal(reused.status, 'reused');
@@ -377,4 +437,112 @@ test('selected source digests questions and depth are authenticated against thei
   await replaceCheckpointFixture(ledger, valid);
   assert.equal((await reuseRlm('question', options)).status, 'reused');
   assert.equal(model.requests.length, 1);
+});
+
+/** A source run may not label inference with model settings changed by a peer before acquisition. */
+test('opted-in inference rechecks transport identity after acquiring its run lease', async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel(() => finish);
+  const prepared = await prepareRlmRun('question', { workspace, model, reuse_identity: identity });
+  const lease = RlmLedger.prototype.lease;
+  let injected = false;
+  t.mock.method(RlmLedger.prototype, 'lease', async function (this: RlmLedger, run: string) {
+    if (this === prepared.ledger && run === prepared.run && !injected) {
+      injected = true;
+      const peer = new RlmLedger(workspace);
+      const release = await lease.call(peer, run);
+      try {
+        const state = await peer.load(run);
+        state.settings.model = 'replacement-model';
+        state.reuse_identity = { ...identity, model_policy: 'replacement-fixture-v1' };
+        state.calls[0].digest = promptDigest(state.calls[0].subgoal, state.calls[0].slice, state.settings);
+        await peer.save(state);
+        await peer.client.run('update', { id: run, options: { rlmModel: 'replacement-model' } });
+      } finally { await release(); }
+    }
+    return lease.call(this, run);
+  });
+  try { await assert.rejects(prepared.engine.run(), { code: 'invalid', dimension: 'settings' }); }
+  finally { t.mock.restoreAll(); }
+  assert.equal(injected, true); assert.equal(model.requests.length, 0);
+  const replacement = new ScriptedModel(() => finish); replacement.name = 'replacement-model';
+  assert.equal((await resumeRlm(workspace, prepared.run, replacement)).answer, 'answer');
+  assert.equal(replacement.requests.length, 1);
+});
+
+/** Native creation history records consent before inference; imported answers cannot opt in retroactively. */
+test('native creation history pins consent and context without granting historical write authority', async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel(() => finish);
+  const source = await runRlm('question', { workspace, model, reuse_identity: identity });
+  const ledger = new RlmLedger(workspace);
+  const valid = await ledger.load(source.run);
+  const release = await ledger.lease(source.run);
+  try { await assert.rejects(ledger.save(await ledger.load(source.run, '1')), { code: 'busy' }); }
+  finally { await release(); }
+  for (const variant of ['retrofit', 'imported', 'response', 'reserved', 'missing', 'corrupt', 'revoked', 'lost-selection']) {
+    const state = structuredClone(valid);
+    state.run = await ledger.newRunId();
+    state.calls[0].id = state.run;
+    delete state.calls[0].parent;
+    if (variant === 'retrofit') delete state.reuse_identity;
+    if (variant === 'response' || variant === 'reserved') delete state.calls[0].result;
+    if (variant === 'reserved') {
+      const prompt = state.calls[0].steps[0].prompt;
+      state.calls[0].steps = []; state.reserved_tokens = 0;
+      reserveStep(state, state.calls[0], prompt);
+    }
+    if (variant === 'missing' || variant === 'corrupt' || variant === 'lost-selection') {
+      await ledger.client.run('create', { options: { id: state.run, title: 'Native history fixture', type: 'Task', tags: 'rlm:call', rlmRun: state.run, ...(variant === 'corrupt' ? { rlmState: '{' } : {}) } });
+      if (variant === 'lost-selection') state.reuse_selection = { run: source.run, call: source.run };
+      else delete state.reuse_identity;
+      await replaceCheckpointFixture(ledger, state);
+    } else {
+      const unlock = await ledger.lease(state.run);
+      try { await ledger.materialize(state, state.calls[0]); }
+      finally { await unlock(); }
+      if (variant === 'retrofit') { state.reuse_identity = identity; await replaceCheckpointFixture(ledger, state); }
+      if (variant === 'response') { state.calls[0].result = 'answer'; await replaceCheckpointFixture(ledger, state); }
+      if (variant === 'revoked') { delete state.reuse_identity; await replaceCheckpointFixture(ledger, state); }
+    }
+    const options = { workspace, settings: valid.settings, reuse_identity: identity, selection: { run: state.run, call: state.run } };
+    if (variant === 'reserved') {
+      assert.equal((await resumeRlm(workspace, state.run, model)).answer, 'answer');
+      assert.equal((await reuseRlm('question', options)).status, 'reused');
+    } else if (variant === 'missing') assert.equal((await resumeRlm(workspace, state.run, model)).answer, 'answer');
+    else if (variant === 'corrupt') await assert.rejects(resumeRlm(workspace, state.run, model), { code: 'incomplete' });
+    else if (variant === 'lost-selection') await assert.rejects(resumeRlm(workspace, state.run, model), { dimension: 'target_state', code: 'busy' });
+    else if (variant === 'revoked') await assert.rejects(resumeRlm(workspace, state.run, model), { dimension: 'original_opt_in' });
+    else await assert.rejects(reuseRlm('question', options), { dimension: 'original_opt_in' });
+  }
+  assert.equal(model.requests.length, 2);
+});
+
+/** The transport identity is checked again immediately before inference after a durable reservation. */
+test('opted-in inference refuses a transport changed after its reservation', async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel(() => finish);
+  const prepared = await prepareRlmRun('question', { workspace, model, reuse_identity: identity });
+  const save = prepared.ledger.save.bind(prepared.ledger);
+  t.mock.method(prepared.ledger, 'save', async (state: RlmState) => {
+    await save(state);
+    if (state.calls[0].steps.length > 0) model.name = 'other-model';
+  });
+  await assert.rejects(prepared.engine.run(), { dimension: 'settings', code: 'invalid' });
+  assert.equal(model.requests.length, 0);
+});
+
+/** Caller context is pinned even if a prepared instance was built from stale local input. */
+test('reuse refuses stale caller context after reloading an unchanged native target', async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel(() => finish);
+  const original = await runRlm('question', { workspace, model, reuse_identity: identity });
+  const source = await new RlmLedger(workspace).load(original.run);
+  const prepared = await prepareRlmRun('question', { workspace, settings: source.settings, reuse_identity: identity, reuse_selection: { run: source.run, call: source.run } });
+  const stale = await prepared.ledger.load(prepared.run);
+  stale.reuse_identity = { ...identity, consent: 'other-purpose' };
+  const engine = new RlmEngine(prepared.ledger, stale, model);
+  await assert.rejects(engine.run(), { dimension: 'target_state', code: 'busy' });
+  assert.equal(model.requests.length, 1);
+  assert.equal((await prepared.ledger.load(prepared.run)).reuse, undefined);
 });

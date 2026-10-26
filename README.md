@@ -334,7 +334,9 @@ exact tool policy, pinned model policy and consent revision. Each is 1–128 ASC
 letters, digits or `_.:/+-`, beginning with a letter or digit. The caller owns
 these revisions: change them when model weights, tool permissions, authorization
 or consent change. Reuse never infers consent from public visibility. Opted-in
-runs use snapshot-only reads; live history access is refused.
+runs use snapshot-only reads; live history access is refused. Each opted-in
+model request rechecks its transport name against the settings read inside the
+run lease, so a peer cannot relabel inference with changed model settings.
 
 ```sh
 pm rlm run 'Count the scoped issues' --scope '{"type":"Issue"}' \
@@ -357,10 +359,12 @@ and counters outside 0–1000000000 refuse at the boundary. Completed call count
 are 1–1000000000; reused results require exactly one logical call and zero new
 usage. Every emitted accounting coordinate is validated before success.
 
-Every reuse authenticates call digests and recorded model prompts (including
-question, depth, slice and evidence declarations), replays the original graph
-before creating a new native run, then
-revalidates its captured source dependencies before checkpoint publication. A
+Every reuse reads the native creation checkpoint through the SDK to prove that
+opt-in and the source contract predate inference. Imported completed answers and
+retroactively added consent refuse. It authenticates call digests and recorded
+model prompts (including question, depth, slice and evidence declarations),
+replays the original graph before creating a new native run, then revalidates
+its captured source dependencies before checkpoint publication. A
 root depends on every item in its scoped snapshot, including membership. A child
 depends conservatively on the complete SDK row for each supplied fragment,
 including revision metadata and relationships. Changing an unrelated row does
@@ -386,13 +390,19 @@ components. SDK results retain the complete answer. Foreign records return
 `status: skipped`, `reason: foreign`, and a remedy without mutation. Other
 refusals are `RlmReuseError` with a stable `code`, `dimension`, and `remedy`;
 CLI refusals exit nonzero and include the remedy. A target completed by a peer
-is returned as `peer_completed` with its actual usage; a started target is never
-overwritten. Source and target leases serialize package writers, and checkpoint
+with new inference or a different verified origin is returned as `peer_completed`
+with its actual usage and provenance. If a peer changes the original target
+scope, identities or selection intent, the result is `skipped` with only the
+target id and remedy; its answer and provenance are withheld. A started target
+is never overwritten. Source and target leases serialize package writers, and checkpoint
 publication uses the native SDK compare-and-set. The initial checkpoint records
 the selected origin as durable intent: interrupted reuse resumes by revalidating
 the source and target, and never falls back to inference. The SDK can also
 prepare this intent with `prepareRlmRun` and `reuse_selection`; reuse sources
-must be in the same tracker. No source path is persisted.
+must be in the same tracker. Creation history also preserves intent when a
+later checkpoint loses its selection flag. `RlmLedger.load(run, '1')` exposes
+the read-only creation checkpoint; historical reads never grant write authority.
+No source path is persisted.
 
 This command, its checkpoint round trips, resume and replay work **without Git**.
 No answer cache, discovery index, new sync format or background promotion exists.

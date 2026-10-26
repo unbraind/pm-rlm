@@ -69,13 +69,13 @@ export class RlmLedger {
     const settings = await sdkRead(() => readSettings(this.workspace));
     return `${settings.id_prefix}rlm-${randomUUID().replaceAll('-', '')}`;
   }
-  /** Read a certified full corpus to recover the root checkpoint without compact projections. */
-  async load(run: string): Promise<RlmState> {
+  /** Recover a checkpoint through certified SDK reads; optional native history reads never grant write authority. */
+  async load(run: string, at?: string): Promise<RlmState> {
     const lease = this.leases.get(run);
     // Historical manifests pin every committed version, including one read before a concurrent save.
     const blobs = new RlmBlobs(this.workspace);
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
-    const root = corpus.items.find(item => item.id === run);
+    const root = at === undefined ? corpus.items.find(item => item.id === run) : (await sdkRead(() => this.client.get(run, { at, fields: 'rlm_state' }))).item;
     if (root === undefined || typeof root.rlm_state !== 'string') throw new RlmError('invalid', 'Run checkpoint was not found');
     try {
       const decoded = await blobs.decode(root.rlm_state);
@@ -123,7 +123,7 @@ export class RlmLedger {
       }
       // Preserve by-value JSON semantics even when multiple references share a cached payload.
       const state = JSON.parse(JSON.stringify(decoded)) as RlmState;
-      this.reads.set(state, { lease, checkpoint: root.rlm_state });
+      if (at === undefined) this.reads.set(state, { lease, checkpoint: root.rlm_state });
       return state;
     } catch { throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
   }

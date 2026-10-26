@@ -6,7 +6,7 @@ import { matches, readCorpus } from './environment.ts';
 import { RlmError } from './errors.ts';
 import { readRlmSettings } from './settings.ts';
 import { RlmLedger } from './ledger.ts';
-import { assertReuseUsage, parseReuseProvenance, parseReuseRequest, parseReuseSelection, RlmReuseError } from './reuse-contract.ts';
+import { assertReuseUsage, parseReuseProvenance, parseReuseRequest, parseReuseSelection, RlmReuseConflict, RlmReuseError } from './reuse-contract.ts';
 import type { RlmReuseDimension, RlmReuseIdentity, RlmReuseProvenance, RlmReuseSelection } from './reuse-contract.ts';
 import type { RlmCall, RlmItem, RlmResult, RlmState } from './types.ts';
 
@@ -16,13 +16,18 @@ export interface RlmReuseOptions extends Omit<RlmRunOptions, 'reuse_identity' | 
   selection: RlmReuseSelection;
 }
 /** Foreign native rows are skipped without mutation or model inference. */
-export interface RlmReuseSkipped { status: 'skipped'; reason: 'foreign'; remedy: string }
+export interface RlmReuseSkipped { status: 'skipped'; reason: 'foreign'; remedy: string; run?: string }
 /** Compact native run result retaining original provenance separately from new usage. */
 export type RlmReuseResult = (RlmResult & { status: 'reused'; model_calls: 0; reuse: RlmReuseProvenance }) | (RlmResult & { status: 'peer_completed' }) | RlmReuseSkipped;
 
 /** Hash JSON values with stable object-key order, retaining exact strings and array order. */
 function digest(value: unknown): string {
   return blobDigest(JSON.stringify(value, (_key, entry: unknown) => typeof entry === 'object' && entry !== null && !Array.isArray(entry) ? Object.fromEntries(Object.keys(entry).sort().map(key => [key, (entry as Record<string, unknown>)[key]])) : entry) ?? 'undefined');
+}
+/** Bind immutable caller context while allowing checkpoints, counters and peer outcomes to advance. */
+export function reuseTargetContract(state: RlmState): string {
+  const root = state.calls[0];
+  return digest([state.version, state.question, state.components, state.settings, state.scope, state.snapshot, state.snapshot_only, state.reuse_identity, state.reuse_selection, state.parser_version, state.aggregate_version, [root.id, root.parent, root.depth, root.subgoal, root.slice, root.digest]]);
 }
 /** Sanitize operational failures while retaining existing contract refusals and their remedies. */
 function reuseFailure(error: unknown): RlmReuseError {
@@ -44,6 +49,9 @@ async function provenance(workspace: string, target: RlmState, selection: RlmReu
   if (origin.reuse !== undefined || origin.reuse_selection !== undefined || origin.reuse_identity === undefined || origin.snapshot_only !== true) throw new RlmReuseError('original_opt_in');
   const call = origin.calls.find(call => call.id === selection.call);
   if (call === undefined || call.result === undefined || call.failure !== undefined || call.completion_refusal !== undefined) throw new RlmReuseError('completion');
+  const initial = await ledger.load(selection.run, '1');
+  if (initial.reuse_identity === undefined || initial.calls.some(call => call.result !== undefined || call.steps.some(step => step.response !== undefined))) throw new RlmReuseError('original_opt_in');
+  equal(reuseTargetContract(origin), reuseTargetContract(initial), 'provenance');
   validateReuseTranscript(origin);
   equal(target.reuse_identity, origin.reuse_identity, 'identity');
   equal(target.settings, origin.settings, 'settings');
@@ -72,7 +80,7 @@ export async function validateReuseState(workspace: string, state: RlmState): Pr
   } catch (error) { throw reuseFailure(error); }
 }
 /** Satisfy a new run from one explicitly selected original subanswer, without inference or usage duplication. */
-async function prepareReuse(question: string, options: RlmReuseOptions): Promise<Awaited<ReturnType<typeof prepareRlmRun>> | RlmReuseSkipped> {
+async function prepareReuse(question: string, options: RlmReuseOptions): Promise<(Awaited<ReturnType<typeof prepareRlmRun>> & { selection: RlmReuseSelection }) | RlmReuseSkipped> {
   const request = parseReuseRequest({ question, scope: options.scope ?? {}, identity: options.reuse_identity, selection: options.selection });
   const selection = request.selection;
   const reuse_identity = request.identity;
@@ -89,7 +97,7 @@ async function prepareReuse(question: string, options: RlmReuseOptions): Promise
     const candidate = { ...origin, question, scope: request.scope, reuse_identity, settings: await readRlmSettings(options.workspace, options.settings), parser_version: 3 as const, aggregate_version: 2 as const, snapshot: corpus.items.filter(item => matches(item, request.scope)) };
     await provenance(options.workspace, candidate, selection);
     const prepared = await prepareRlmRun(question, { ...options, scope: request.scope, reuse_identity, reuse_selection: selection, components: origin.components }, corpus);
-    return prepared;
+    return { ...prepared, selection };
   } finally { await releaseSource(); }
 }
 
@@ -118,9 +126,15 @@ export async function reuseRlm(question: string, options: RlmReuseOptions): Prom
     if ('status' in prepared) return prepared;
     const result = await prepared.engine.run();
     assertReuseUsage(result);
-    return result.reuse === undefined ? { ...result, status: 'peer_completed' } : { ...result, reuse: result.reuse, status: 'reused', model_calls: 0 };
+    const origin = result.reuse;
+    return origin === undefined || origin.run !== prepared.selection.run || origin.call !== prepared.selection.call
+      ? { ...result, status: 'peer_completed' }
+      : { ...result, reuse: origin, status: 'reused', model_calls: 0 };
   }
-  catch (error) { throw reuseFailure(error); }
+  catch (error) {
+    if (error instanceof RlmReuseConflict) return { status: 'skipped', reason: 'foreign', run: error.run, remedy: 'A peer changed the target contract. Inspect that run and start a new run with the intended scope and identities' };
+    throw reuseFailure(error);
+  }
 }
 
 /** Bound command output; full answers remain available through the SDK and explicit --full. */

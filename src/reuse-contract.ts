@@ -33,6 +33,13 @@ export class RlmReuseError extends RlmError {
     this.remedy = 'Select an intact original completed call and match its exact question, scope, snapshot, settings and recorded policy/consent identities; otherwise execute a fresh run';
   }
 }
+/** A peer replaced the caller's target context; its contents must not be returned to that caller. */
+export class RlmReuseConflict extends RlmReuseError {
+  /** Native target identity available for an explicitly authorized inspection. */
+  readonly run: string;
+  /** Retain only a bounded native identifier, without the peer's answer or context. */
+  constructor(run: string) { super('target_state', 'busy'); this.run = parseReuseSelection({ run, call: run }).run; }
+}
 const identityText: ActionSchema = { type: 'string', pattern: '^[A-Za-z0-9][A-Za-z0-9_.:/+-]{0,127}$' };
 const id: ActionSchema = { type: 'string', pattern: '^[A-Za-z0-9_-]{1,160}$' };
 const hash: ActionSchema = { type: 'string', pattern: '^[a-f0-9]{64}$' };
