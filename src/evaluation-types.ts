@@ -9,7 +9,7 @@ export interface RlmEvalSuite { version: 1; id: string; sources: RlmEvalSource[]
 /** An interrupted request has unknown counters, never invented zero usage. */
 export interface RlmEvalMetrics {
   correct: boolean; answer_sha256: string; calls: number | null; tokens_in: number | null; tokens_out: number | null;
-  wall_ms: number | null; refusal: string; failed_requests: number | null; children: number;
+  wall_ms: number | null; refusal: string; failed_requests: number | null; children: number | null;
 }
 /** One paired observation, with exact truncation accounting. */
 export interface RlmEvalRow {
@@ -19,7 +19,7 @@ export interface RlmEvalRow {
 /** Whole-suite denominator includes failures and interrupted requests. */
 export interface RlmEvalSummary {
   correct: number; questions: number; accuracy: number; calls: number | null;
-  tokens: number | null; wall_ms: number | null; children: number; failed_requests: number | null;
+  tokens: number | null; wall_ms: number | null; children: number | null; unknown_children_arms: number; failed_requests: number | null;
 }
 /** Native renderer payload; per-question observations are opt-in. */
 export interface RlmEvalResult {

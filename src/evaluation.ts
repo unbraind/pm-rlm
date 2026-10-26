@@ -55,17 +55,19 @@ export function truncatedEvalPrompt(question: string, items: RlmItem[], settings
 }
 /** A persisted reservation without its result is explicit missing evidence after interruption. */
 function unknownMetrics(): RlmEvalMetrics {
-  return { correct: false, answer_sha256: '', calls: null, tokens_in: null, tokens_out: null, wall_ms: null, refusal: 'interrupted', failed_requests: null, children: 0 };
+  return { correct: false, answer_sha256: '', calls: null, tokens_in: null, tokens_out: null, wall_ms: null, refusal: 'interrupted', failed_requests: null, children: null };
 }
 /** Sum only known measurements; an interrupted observation makes that total unknown. */
-function total(rows: RlmEvalMetrics[], field: 'calls' | 'tokens_in' | 'tokens_out' | 'wall_ms' | 'failed_requests'): number | null {
+function total(rows: RlmEvalMetrics[], field: 'calls' | 'tokens_in' | 'tokens_out' | 'wall_ms' | 'failed_requests' | 'children'): number | null {
   return rows.some(row => row[field] === null) ? null : rows.reduce((sum, row) => sum + row[field]!, 0);
 }
 /** Exact match accuracy always retains the entire suite in its denominator. */
 function summary(rows: RlmEvalMetrics[], questions: number): RlmEvalSummary {
+  rows = [...rows];
+  while (rows.length < questions) rows.push(unknownMetrics());
   const usage = [total(rows, 'tokens_in'), total(rows, 'tokens_out')];
   const correct = rows.filter(row => row.correct).length;
-  return { correct, questions, accuracy: correct / questions, calls: total(rows, 'calls'), tokens: usage.includes(null) ? null : Number(usage[0]) + Number(usage[1]), wall_ms: total(rows, 'wall_ms'), children: rows.reduce((sum, row) => sum + row.children, 0), failed_requests: total(rows, 'failed_requests') };
+  return { correct, questions, accuracy: correct / questions, calls: total(rows, 'calls'), tokens: usage.includes(null) ? null : Number(usage[0]) + Number(usage[1]), wall_ms: total(rows, 'wall_ms'), children: total(rows, 'children'), unknown_children_arms: rows.filter(row => row.children === null).length, failed_requests: total(rows, 'failed_requests') };
 }
 /** Controller checkpoint; the boundary digest prevents an id being reused for different work. */
 interface EvalState { owner: 'pm-rlm/eval-v1'; boundary: string; rows: RlmEvalRow[]; pending?: { index: number; baseline?: RlmEvalMetrics }; complete: boolean }
@@ -133,6 +135,8 @@ async function executeEvaluation(suite: RlmEvalSuite, options: RlmEvalOptions): 
       if (!row.tags?.includes('rlm:evaluation') || state.owner !== 'pm-rlm/eval-v1' || !Array.isArray(state.rows) || typeof state.complete !== 'boolean') {
         state = { owner: 'pm-rlm/eval-v1', boundary, rows: [], complete: false }; reason = 'foreign_record_preserved';
       } else if (state.boundary !== boundary) throw new RlmEvalError('invalid', 'Evaluation id belongs to another configuration', 'Reuse its original suite/model/settings or choose a new evaluation id');
+      // Older receipts recorded zero children for interrupted arms; that was not an observation.
+      for (const row of state.rows) for (const arm of [row.truncated, row.recursive]) if (arm.refusal === 'interrupted') arm.children = null;
     } else {
       state = { owner: 'pm-rlm/eval-v1', boundary, rows: [], complete: false }; serialized = JSON.stringify(state);
       await client.create({ id: evaluation, type: 'Task', title: 'Recursive versus truncated evaluation', tags: 'rlm:evaluation,rlm:question', description: serialized, allowDuplicate: true });
@@ -164,7 +168,7 @@ async function executeEvaluation(suite: RlmEvalSuite, options: RlmEvalOptions): 
           });
           Object.assign(state.pending, { baseline }); await save('baseline_settled');
           await save('recursive_reserved');
-          let observedChildren = 0;
+          let observedChildren: number | null = null;
           recursive = await measure(model, question.gold, async counted => {
             const prepared = await prepareRlmRun(question.question, { workspace: options.workspace, model: counted, settings, author: options.author ?? 'rlm-eval', question_item: evaluation, snapshot_only: true }, structuredClone(corpus));
             try { const result = await prepared.engine.run(); return { answer: result.answer, children: result.calls - 1 }; }

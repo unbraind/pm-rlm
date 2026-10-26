@@ -215,6 +215,10 @@ npm run release:check
 bun run release:check
 ```
 
+Regression subprocess limits use `PM_RLM_TEST_TIMEOUT_SCALE`, a positive finite multiplier (default `1`). For a CPU-saturated host, run `PM_RLM_TEST_TIMEOUT_SCALE=3 npm run release:check` (or `bun run release:check`). The ordinary per-regression limit remains 120000 ms and existing explicit limits (for example 300000 ms for crash proofs) scale by the same factor, as do the enclosing shallow-clone proof deadlines. A timed-out child stops validation with `timed out` and missing assertion evidence; it is never accepted or labelled as a regression proof. Genuine assertion failures are checked immediately without retries or waiting out the deadline.
+
+`node test/sdk-boundaries-public.ts` is an optional public-corpus parity audit. It requires Git, tar, authenticated `gh` access for public provenance checks, and fleet-relative `fleet/pm-rlm` and `fleet/pm-lint` Git checkouts at the paths resolved by `publicSource` in `test/live.ts`. Fetch `origin/main` for pm-rlm and the pinned pm-lint revision `f2c20efa78139f4071f3dd08d317bea05337fe28`. The candidate production sources must match `origin/main`. In a standalone clone without those fixtures, the runner exits successfully with a clear `SKIP SDK public parity` message before setup or output writes; a skip supplies no parity evidence. Normal unit tests and the npm/Bun release gates work without fleet checkouts.
+
 Coverage includes every authored source, script, entry point and ESLint configuration, with unchanged 100% statement, branch, function and line thresholds. The suite uses real scratch trackers built through the SDK; its scripted double replaces only the LM. SIGKILL recovery, exact budget refusal, depth/call limits, partition reconstruction, replay tamper detection, native TOON/JSON and credential/path privacy are verified. The behavioral revert proofs remove SDK read boundaries, fatal evidence-write classification, metric provenance labels and independent npm/Bun packed dispatch, as well as environment casing guards, CLI numeric/string/root validation, root-ancestor and Windows privacy matching, identity path matching and marker-based report replacement, as well as two-phase settlement, pre-response crash accounting, empty-response recovery, redirect rejection, rejected-body cancellation, typed replay observations, Git replacement isolation, checkpoint validation, transport byte and HTTPS guards, scope diagnostics, escaped privacy checks, verified archive checks and seeded answer caps, alongside the calibration, terminal child refusal, observation, scoped privacy, reservation, digest reuse and partition checks. Each regression must fail before exact source bytes are restored.
 
 Exit codes: `0` success; `2` invalid command, scope, model, integrity, replay or executor-conflict failure; `3` exhausted token, depth or call budget. Tool-level refusals can be recovered within a run; an exhausted outer budget ends the command. `test:live` counts refused answers rather than presenting them as successes.
@@ -348,6 +352,95 @@ Git, using a separate read-only source tracker when requested.
 
 `pm rlm eval suite.json --sources '{"sample":"copies/sample/pm"}' --id trial-1 --model gemma3:4b --json` compares the native recursive engine with a truncated single-call baseline using the same installed local Ollama model. A reviewed suite contains at least twenty exact questions and gold answers bound to complete public source snapshots. Gold answers never enter model prompts. Default TOON/JSON is compact; `--full` includes every paired observation. The SDK exports `evaluateRlm`, suite/result types and `RlmEvalError` with remedies.
 
-See the [24-question suite](docs/public-eval-suite.json), [methodology and SDK example](docs/PUBLIC-EVALUATION.md) and [measured results](docs/public-eval-results.json). Failed or interrupted attempts remain in the denominator, and unavailable usage is explicitly unknown. Reusing an evaluation ID preserves completed evidence without repeating inference. Historical invalidated measurements remain separate.
+See the [24-question suite](docs/public-eval-suite.json), [methodology and SDK example](docs/PUBLIC-EVALUATION.md) and [measured results](docs/public-eval-results.json). Failed or interrupted attempts remain in the denominator, and unavailable usage is explicitly unknown. Unobserved child counts are `null` in typed SDK results, including reused interrupted receipts; native CLI JSON and TOON render missing counters as `"unknown"` so host null compaction cannot hide them. Each arm summary reports unknown `children` if any count is unknown, plus `unknown_children_arms` with the number of such arms; observed zero-child arms remain `0`. Reusing an evaluation ID preserves completed evidence without repeating inference. Historical invalidated measurements remain separate.
 
 The completed local `functiongemma:270m` trial scored 0/24 in both arms: truncated 53125 reported-or-estimated tokens, 24 requests, 28.542 seconds; recursive engine 521496 tokens, 384 requests, 386.805 seconds, zero children. All refusals remain in the denominator. This single small-model result does not establish an RLM advantage; see the methodology for limits and source provenance.
+
+## Reuse a verified subanswer across runs
+
+Opt in **before the original inference** by supplying `reuse_identity` to
+`runRlm`, or `--identity` to `pm rlm run`. Its three opaque identities name the
+exact tool policy, pinned model policy and consent revision. Each is 1–128 ASCII
+letters, digits or `_.:/+-`, beginning with a letter or digit. The caller owns
+these revisions: change them when model weights, tool permissions, authorization
+or consent change. Reuse never infers consent from public visibility. Opted-in
+runs use snapshot-only reads; live history access is refused. Each opted-in
+model request rechecks its transport name against the settings read inside the
+run lease, so a peer cannot relabel inference with changed model settings.
+
+```sh
+pm rlm run 'Count the scoped issues' --scope '{"type":"Issue"}' \
+  --identity '{"tool_policy":"snapshot-v1","model_policy":"pinned-model-v1","consent":"public-review:1"}' --json
+pm rlm reuse 'Count the scoped issues' --from original-run --call original-call \
+  --scope '{"type":"Issue"}' \
+  --identity '{"tool_policy":"snapshot-v1","model_policy":"pinned-model-v1","consent":"public-review:1"}' --json
+```
+
+Supply the same model and execution settings as the original run, including any
+nondefault limits. `reuseRlm(question, {workspace, selection: {run, call}, scope,
+settings, reuse_identity})` is the typed SDK equivalent. Select either the
+original root or a recursive child. The exact question must equal that call's
+subgoal. Scope predicates, settings, parser/aggregate versions and all three
+identity strings must match. Object property order is immaterial; question text,
+array order, whitespace and source revision fields are exact SDK values. Questions
+are nonblank and at most 4096 Unicode code points; each scope string is 1–4096
+code points and
+`ids` is a dense array of at most 10000 strings. Unknown fields, holes, coercions
+and counters outside 0–1000000000 refuse at the boundary. Completed call counts
+are 1–1000000000; reused results require exactly one logical call and zero new
+usage. Every emitted accounting coordinate is validated before success.
+
+Every reuse reads the native creation checkpoint through the SDK to prove that
+opt-in and the source contract predate inference. Imported completed answers and
+retroactively added consent refuse. It authenticates call digests and recorded
+model prompts (including question, depth, slice and evidence declarations),
+replays the original graph before creating a new native run, then revalidates
+its captured source dependencies before checkpoint publication. A
+root depends on every item in its scoped snapshot, including membership. A child
+depends conservatively on the complete SDK row for each supplied fragment,
+including revision metadata and relationships. Changing an unrelated row does
+not invalidate that child. Changed, missing or unreadable dependencies refuse;
+there is no automatic fallback to paid inference. Existing reused runs retain
+their frozen snapshot when live sources later change.
+
+Success has `status: reused` and `model_calls: 0`. New `tokens_in`, `tokens_out`
+and `reserved_tokens` are zero. `calls: 1` describes the new logical root, not a
+model request. `reuse` names the original run/call, checkpoint, call, scope,
+snapshot and policy digests, plus the selected subtree's original model counters
+and settled/reserved step charge. Those original counters are informational and
+are never added to the new run. Resume and replay verify this provenance again;
+the original complete tracker, blobs and history must remain available. Reusing
+an already reused run is deliberately refused: select the original call instead.
+Replay verifies execution and source provenance, not semantic entailment or
+provider billing. Legacy runs without recorded opt-in cannot be reused.
+
+Default CLI TOON/JSON includes the provenance, a SHA-256 answer digest, byte count
+and at most 160 UTF-16 units of answer preview; `answer_complete` reports whether
+the preview is the whole answer. `--full` returns the answer and any evidence
+components. SDK results retain the complete answer. Foreign records return
+`status: skipped`, `reason: foreign`, and a remedy without mutation. Other
+refusals are `RlmReuseError` with a stable `code`, `dimension`, and `remedy`;
+CLI refusals exit nonzero and include the remedy. A target completed by a peer
+with new inference or a different verified origin is returned as `peer_completed`
+with its actual usage and provenance. If a peer changes the original target
+scope, identities or selection intent, the result is `skipped` with only the
+target id and remedy; its answer and provenance are withheld. A started target
+is never overwritten. Source and target leases serialize package writers, and checkpoint
+publication uses the native SDK compare-and-set. The initial checkpoint records
+the selected origin as durable intent: interrupted reuse resumes by revalidating
+the source and target, and never falls back to inference. The SDK can also
+prepare this intent with `prepareRlmRun` and `reuse_selection`; reuse sources
+must be in the same tracker. Creation history also preserves intent when a
+later checkpoint loses its selection flag. `RlmLedger.load(run, '1')` exposes
+the read-only creation checkpoint; historical reads never grant write authority.
+No source path is persisted.
+
+This command, its checkpoint round trips, resume and replay work **without Git**.
+No answer cache, discovery index, new sync format or background promotion exists.
+Copy the whole tracker for transport, as described in the ledger storage section.
+The [public-data example](examples/verified-subanswer-reuse.ts) extracts committed
+public tracker bytes into a disposable non-git directory, runs a deterministic
+protocol fixture, changes one copied source revision and measures dependent
+refusal and independent reuse. Build with `npm run build`, then run `node examples/verified-subanswer-reuse.ts`
+from a checkout containing `origin/main`. Its report makes no inference-quality
+claim and fingerprints the original archive before and after.

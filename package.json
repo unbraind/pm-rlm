@@ -40,7 +40,9 @@
     "examples/reconciliation-plan.json",
     "docs/PUBLIC-EVALUATION.md",
     "docs/public-eval-suite.json",
-    "docs/public-eval-results.json"
+    "docs/public-eval-results.json",
+    "docs/verified-subanswer-reuse-validation.json",
+    "examples/verified-subanswer-reuse.ts"
   ],
   "scripts": {
     "build": "tsc",

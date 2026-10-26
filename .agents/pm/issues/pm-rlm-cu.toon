@@ -1,0 +1,36 @@
+id: pm-rlm-cu
+title: Report unknown interrupted child counts and run validation portably
+description: "Address review findings from PRs #23 and #27: preserve unobserved child counts, allow standalone SDK parity validation, and distinguish revert timeouts from assertion evidence under host load."
+type: Issue
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-26T05:40:32.797Z"
+updated_at: "2026-10-26T05:54:42.904Z"
+author: codex-agent
+acceptance_criteria: "Interrupted arms use nullable child counts in typed results and native JSON/TOON; summaries preserve unknown totals and report unknown arm counts.; The public SDK parity runner skips clearly without fleet fixtures and README documents prerequisites.; One documented timeout scale preserves default regression limits, classifies timeouts explicitly, and keeps assertion failures immediate.; Behavioral revert proofs, targeted tests, typecheck and lint pass; npm and Bun CI release gates pass before handoff."
+parent: pm-rlm-a1ih
+comments[4]{created_at,author,text}:
+  "2026-10-26T05:40:35.485Z",codex-agent,"Tracker orientation found related evaluation and SDK adoption items, but no existing item for these three review corrections. Implement nullable observations and unknown-arm summaries, detect missing public parity fixtures before setup, and centralize scaled regression deadlines with explicit timeout diagnostics. Preserve repository-pinned SDK dependencies."
+  "2026-10-26T05:45:41.086Z",codex-agent,"Implemented nullable interrupted child counts, unknown_children_arms summaries, legacy receipt normalization, and unknown aggregates for skipped/unobserved rows. Standalone public parity now preflights fleet fixtures before setup. Regression deadlines and enclosing shallow-clone limits share PM_RLM_TEST_TIMEOUT_SCALE; ETIMEDOUT reports timed out with missing assertion evidence and restores mutated source. Initial typecheck/lint passed; real native renderer and child-process regressions are running. Full npm/Bun release validation will run in CI at unchanged thresholds."
+  "2026-10-26T05:52:38.657Z",codex-agent,"Native renderer regression exposed pinned host TOON compaction: null summary counters were omitted even though row nulls survived. Keep nullable counters in SDK results and convert missing metric values to the explicit string unknown at the native command boundary for both JSON and TOON. Added a separate behavioral proof for that conversion; earlier proof runs are not acceptance evidence until the unmodified regression passes."
+  "2026-10-26T05:54:40.738Z",codex-agent,"Verified local acceptance: pm test pm-rlm-cu --run --progress passes all 3 linked commands. Focused behavioral suite passes 4/4; npm run typecheck and npm run lint pass. Revert proof: PM_RLM_TEST_TIMEOUT_SCALE=3 node test/evaluation-revert.ts --review-only passes 4/4 independent mutations (unknown observation, unknown aggregate, legacy receipts, native rendering); PM_RLM_TEST_TIMEOUT_SCALE=3 node test/sdk-boundaries-revert.ts passes 6/6 (including standalone preflight, scaling and timeout classification). Each mutated behavior produces exit 1 with a real assertion, then exact source bytes are restored. npm run duplication passes at 0 percent and npm run docstring passes. Tracker test-result tracking is disabled, so this comment retains sanitized results. Full unchanged-threshold npm/Bun release gates remain pending CI and will be linked from the ready-for-review PR."
+files[11]{path,scope}:
+  src/commands.ts,project
+  src/evaluation-types.ts,project
+  src/evaluation.ts,project
+  test/evaluation-revert.ts,project
+  test/evaluation.test.ts,project
+  test/revert-shallow.test.ts,project
+  test/revert-source.ts,project
+  test/revert.ts,project
+  test/sdk-boundaries-public.ts,project
+  test/sdk-boundaries-revert.ts,project
+  test/validation-portability.test.ts,project
+tests[3]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  npm run typecheck && npm run lint,project,300,codex-agent,"2026-10-26T05:44:57.083Z",local_mutation,fix/interrupted-children-unknown
+  "npm run build && node --test --test-name-pattern=\"^evaluation (preserves|interrupted children)|^public parity|^regression deadlines\" test/evaluation.test.ts test/validation-portability.test.ts",project,900,codex-agent,"2026-10-26T05:47:52.472Z",local_mutation,fix/interrupted-children-unknown
+  PM_RLM_TEST_TIMEOUT_SCALE=3 node test/evaluation-revert.ts --review-only && PM_RLM_TEST_TIMEOUT_SCALE=3 node test/sdk-boundaries-revert.ts,project,1800,codex-agent,"2026-10-26T05:47:55.194Z",local_mutation,fix/interrupted-children-unknown
+docs[1]{path,scope}:
+  README.md,project
+body: ""

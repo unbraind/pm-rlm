@@ -1,0 +1,21 @@
+{
+  "source": "unbraind/pm-rlm",
+  "revision": "6ee1966cbe78d84080335b0d9235f0d365b8a44e",
+  "source_archive_sha256": "6254edb8a38d04fe3991ce871288d04a6008a44c4fe3f9b130a38855bef071b3",
+  "public_items": 23,
+  "scoped_items": 2,
+  "original_logical_calls": 3,
+  "original_model_requests": 5,
+  "reused_subanswers": 2,
+  "new_model_requests": 0,
+  "changed_source_revisions": 1,
+  "dependent_refusals": 1,
+  "unaffected_reuses": 1,
+  "new_tokens_in": 0,
+  "new_tokens_out": 0,
+  "new_reserved_tokens": 0,
+  "compact_json_bytes": 944,
+  "git_required_at_runtime": false,
+  "source_bytes_unchanged": true,
+  "model": "scripted protocol fixture; no inference quality or billing claim"
+}

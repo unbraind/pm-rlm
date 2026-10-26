@@ -11,7 +11,7 @@ export { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from './src/ada
 /** Expose caller declarations, deterministic comparisons and compact results. */
 export type { RlmQuestionPart, RlmStrategy, RlmStrategyComparison, RlmAdaptiveOptions, RlmAdaptiveResult, RlmAdaptiveComponent } from './src/adaptive.ts';
 /** Expose durable recursive execution, recovery, replay and tree inspection. */
-export { runRlm, resumeRlm, replayRlm, evidenceRlm, treeRlm, RlmEngine } from './src/engine.ts';
+export { prepareRlmRun, runRlm, resumeRlm, replayRlm, evidenceRlm, treeRlm, RlmEngine } from './src/engine.ts';
 /** Expose the SDK ledger and logical reservation primitive. */
 export { RlmLedger, reserveStep, promptDigest } from './src/ledger.ts';
 /** Expose typed errors and conservative token estimation. */
@@ -34,3 +34,12 @@ export default defineExtension({ name: 'pm-rlm', version: '2026.10.18', descript
 export { evaluateRlm, parseEvalSuite, evalDigest, truncatedEvalPrompt, RlmEvalError } from './src/evaluation.ts';
 /** Public suite, measurement and durable fault-boundary contracts. */
 export type { RlmEvalSource, RlmEvalQuestion, RlmEvalSuite, RlmEvalMetrics, RlmEvalRow, RlmEvalSummary, RlmEvalResult, RlmEvalBoundary, RlmEvalOptions } from './src/evaluation-types.ts';
+
+/** Explicit cross-run subanswer selection, verification and typed refusals. */
+export { reuseRlm, compactReuseResult } from './src/reuse.ts';
+/** Reuse request and compact result contracts. */
+export type { RlmReuseOptions, RlmReuseResult, RlmReuseSkipped } from './src/reuse.ts';
+/** Immutable caller policy and original provenance identities. */
+export type { RlmReuseDimension, RlmReuseIdentity, RlmReuseSelection, RlmReuseProvenance } from './src/reuse-contract.ts';
+/** Strict reuse boundary schema and machine-actionable refusal. */
+export { REUSE_SCHEMA, RlmReuseError, RlmReuseConflict } from './src/reuse-contract.ts';

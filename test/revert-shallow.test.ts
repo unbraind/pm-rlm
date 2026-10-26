@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { gitEnvironment, testEnvironment } from '../scripts/environment.ts';
-import { replaceFixed } from './revert-source.ts';
+import { assertChildCompleted, replaceFixed, testTimeout } from './revert-source.ts';
 
 /** Exact replacements reject source drift and preserve literal replacement characters. */
 test('revert transforms refuse missing and ambiguous fixed snippets', () => {
@@ -18,7 +18,7 @@ test('revert transforms refuse missing and ambiguous fixed snippets', () => {
 });
 
 /** Run every committed proof against HEAD with only one Git commit available. */
-test('every revert script succeeds in a depth-one clone of HEAD', { timeout: 3600000 }, async t => {
+test('every revert script succeeds in a depth-one clone of HEAD', { timeout: testTimeout(3600000) }, async t => {
   const source = join(import.meta.dirname, '..');
   const scratch = await mkdtemp(join(tmpdir(), 'rlm-shallow-'));
   t.after(async () => { await rm(scratch, { recursive: true, force: true }); });
@@ -42,8 +42,8 @@ test('every revert script succeeds in a depth-one clone of HEAD', { timeout: 360
   await symlink(join(source, 'node_modules'), join(clone, 'node_modules'), 'junction');
   for (const name of scripts) {
     await t.test(name, () => {
-      const result = spawnSync(process.execPath, [join('test', name)], { cwd: clone, env, encoding: 'utf8', timeout: 1800000 });
-      assert.equal(result.error, undefined);
+      const result = spawnSync(process.execPath, [join('test', name)], { cwd: clone, env, encoding: 'utf8', timeout: testTimeout(1800000) });
+      assertChildCompleted(result, testTimeout(1800000));
       assert.equal(result.status, 0, result.stdout + result.stderr);
       assert.match(result.stdout, /\d+\/\d+ .*revert proofs/);
       assert.equal(git(clone, 'status', '--porcelain', '--untracked-files=no'), '', `${name}: restore tracked source bytes`);
