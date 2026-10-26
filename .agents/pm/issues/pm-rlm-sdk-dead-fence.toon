@@ -1,0 +1,13 @@
+id: pm-rlm-sdk-dead-fence
+title: SDK commit fence delays dead-owner crash recovery beyond the default lock wait
+description: SDK 2026.10.23 introduces a commit fence whose orphaned cleanup gate prevents automatic dead-owner lock takeover within the default three-second wait. The full deterministic minimal reproduction and CI evidence are recorded on pm-rlm-tc1023. Preserve the package crash-safety assertions and require an upstream SDK fix rather than package retries.
+type: Issue
+status: open
+priority: 1
+tags: []
+created_at: "2026-10-26T18:17:31.287Z"
+updated_at: "2026-10-26T20:58:15.023Z"
+author: codex-agent
+comments[1]{created_at,author,text}:
+  "2026-10-26T20:58:15.019Z",codex-agent,"Contract check: upstream issue https://github.com/unbraind/pm-cli/issues/1549 separates mutation-lease fencing from already-completed dead-owner recovery. The published SDK source returns from cleanup-gate recovery while the gate age is at most 10000 ms, before inspecting its recorded owner. Thus a provably killed fence owner still blocks the default 3000 ms acquisition, as the minimal reproduction shows. This supports treating the recovery delay as an SDK regression rather than adding a package retry layer. The original issue concerns preventing stale overwrite; this follow-up concerns crash recovery after that fix."
+body: ""
