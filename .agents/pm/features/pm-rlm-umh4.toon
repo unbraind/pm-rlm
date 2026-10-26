@@ -2,20 +2,18 @@ id: pm-rlm-umh4
 title: Measured public tracker aggregation evaluation
 description: ""
 type: Feature
-status: closed
+status: open
 priority: 2
 tags: []
 created_at: "2026-10-18T19:33:05.897Z"
-updated_at: "2026-10-25T11:28:39.105Z"
-closed_at: "2026-10-25T11:28:39.085Z"
-completed_at: "2026-10-25T02:44:07.000Z"
+updated_at: "2026-10-26T08:25:26.421Z"
 author: codex-agent
 estimated_minutes: 80
 acceptance_criteria: "At least twenty exact questions on copies of verified public trackers compare recursive and truncated one-call runs with the same local model; report accuracy, tokens, calls and wall time honestly."
 parent: pm-rlm-a1ih
 dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
   pm-rlm-kaht,blocked_by,"2026-10-18T20:00:27.314Z",codex-agent,"cli:update:blocked_by",detected
-comments[26]{created_at,author,text}:
+comments[27]{created_at,author,text}:
   "2026-10-18T19:44:09.352Z",codex-agent,"Live evaluation is running sequentially on verified PUBLIC copies of pm-vcs and pm-lint. Twenty-four exact ground-truth aggregations; same installed local model in both arms; 4096 context, 96 output limit. Early results are negative: the small model copies context or requests excessive reads; budget refusals count as incorrect. No success claim is inferred from the architecture."
   "2026-10-18T19:59:55.257Z",codex-agent,"Measured npm run test:live: 24 exact questions from verified PUBLIC tracker copies (145 and 12 items; 814268 and 54941 JSON bytes), local gemma4-local:e2b-q3km, context 4096, output 96, temperature 0. RLM: 1/24 correct (4.17%), 35557 provider tokens total (1481.54/question), 82 model requests (3.42/question), 622384 ms total (25.93 s/question), 23 budget refusals. Truncated stuffing: 0/24 correct, 25225 tokens (1051.04/question), 24 requests (1/question), 117573 ms (4.90 s/question). One root per RLM question and no child calls. This does not demonstrate an RLM advantage. Public per-question metrics and response digests are in eval-results.json; README contains the table."
   "2026-10-18T21:16:44.464Z",codex-agent,"Calibration diagnosis: eval overrode defaults to 4096 context, 96 output tokens and 16000 run budget. Full read/partition payloads exceeded the next prompt, while output was too small for copying useful slices into spawn JSON. Add compact deterministic partition references in the model protocol, retain the exported lossless environment API, calibrate with synthetic two-partition/two-child tests, and measure without answer-based tuning. Eval will copy only a verified public revision and explicitly pin loopback Ollama transport."
@@ -42,6 +40,7 @@ comments[26]{created_at,author,text}:
   "2026-10-25T01:45:38.525Z",codex-agent,"Final SDK consistency refinement: evaluateRlm now captures declarations, including nested source maps and settings, before its first await while preserving the transport and boundary-hook objects. The targeted SDK test mutates the original id, model, mode and source map during IO and passes 1/1 with the fix; removing only the deep capture fails an assertion with exit 1 and restores exact source. The committed evaluation proof script now contains twelve independent behavioral mutations. Refreshed final read-only public-data stub artifact matches the measured implementation fingerprint: both arms remain 4/24 with 24 calls and zero children; truncated 190800 byte-estimated tokens and 1 ms, recursive 62303 and 12560 ms. Exact-head full CI and packed npm/Bun acceptance will be linked in the draft PR. Local strict health additionally reports extension_host_pm_cli_version_skew for pinned CLI 2026.10.20 versus global pm-github 2026.10.24; clean CI health is the relevant isolated evidence. No dependency or global setting was changed."
   "2026-10-25T02:03:06.401Z",codex-agent,"Local inference availability recovered during the CI wait: a fresh minimal FunctionGemma request completed in roughly four seconds after earlier bounded timeouts. Starting the frozen 24-question live comparison with the installed functiongemma:270m model in both arms, selected only for availability. Questions, gold, source revisions, context/output allocations and engine limits are unchanged. Preserve failures and unknown usage honestly; no answer-based tuning or advantage claim."
   "2026-10-25T02:13:04.285Z",codex-agent,"Acceptance live comparison completed: one frozen 24-question trial on verified public pm-rlm (21 items, 236661 JSON bytes) and pm-lint (12 items, 54941 bytes), using the same installed local functiongemma:270m transport for both arms. Context 8192, output 256, temperature zero; native limits 60000 charged tokens, depth two, four logical nodes. Truncated: 0/24 exact, 53125 reported-or-estimated model tokens, 24 observed requests, 28542 ms arm wall time, no outer refusals. Recursive engine: 0/24, 521496 tokens, 384 requests, 386805 ms, 24 budget refusals, zero children. No transport failures; all refusals remain in the denominator. Constant zero scores 4/24. This does not establish useful answer quality, child quality or an RLM advantage. Read-only source post-run hashes and measured implementation fingerprint match. docs/public-eval-results.json and docs/PUBLIC-EVALUATION.md retain every paired observation and methodology; historical invalidated artifacts are unchanged. The PR can leave draft after this live result is committed, with final artifact-head CI still required. Item remains in_progress for orchestrator verification."
+  "2026-10-26T08:25:22.661Z",codex-agent,"Owner-decision correction: PR #23 merged as 73a7176bba9820a9055b40f8b10622bb817b4928 at 2026-10-25T02:44:07Z and delivers the evaluation harness, not an accepted recursive-quality result. Inspected src/evaluation.ts and existing evaluation receipts: functiongemma:270m scored 0/24 for both arms and reached no children under the recursive budget. The orchestrator requires this item OPEN pending the owner decision on that result. Reuse existing Task pm-rlm-8xxq for the 9B rerun rather than create a duplicate. No inference is run by this closure sweep."
 files[23]{path,scope}:
   eval-results.json,project
   index.ts,project
@@ -82,5 +81,4 @@ docs[8]{path,scope}:
   docs/public-eval-suite.json,project
   docs/PUBLIC-EVALUATION.md,project
   README.md,project
-close_reason: "https://github.com/unbraind/pm-rlm/pull/23 merged 2026-10-25T02:44:07Z, merge 73a7176bba9820a9055b40f8b10622bb817b4928: Measure recursive and truncated answers on frozen public trackers. Reviewed (read-only codex/Claude review, MERGE verdict) with green CI release gates."
 body: ""

@@ -5,7 +5,6 @@
 ### Added
 
 - Reuse explicitly selected verified subanswers across runs ([pm-rlm-bx9v](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-bx9v.toon))
-- Measured public tracker aggregation evaluation ([pm-rlm-umh4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-umh4.toon))
 - Compare recursive answers with shared-source evidence and reserved budgets ([pm-rlm-disagreement](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-disagreement.toon))
 - Answer evidence coverage for declared question components ([pm-rlm-pdtc](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-pdtc.toon))
 - Adaptive decomposition with declared budgets ([pm-rlm-b8cs](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-b8cs.toon))
@@ -28,5 +27,4 @@
 
 ### Other
 
-- Verify SDK adoption boundaries for recursive run ownership and scoped reads ([pm-rlm-alp8](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/tasks/pm-rlm-alp8.toon))
 - Reconcile stale in-progress tracker records (2026-10-23) ([pm-rlm-reconcile-1023](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-reconcile-1023.toon))

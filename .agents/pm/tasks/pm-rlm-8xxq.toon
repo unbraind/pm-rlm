@@ -6,7 +6,13 @@ status: open
 priority: 2
 tags[3]: evaluation,local-model,rlm
 created_at: "2026-10-25T11:30:31.971Z"
-updated_at: "2026-10-25T11:30:31.971Z"
+updated_at: "2026-10-26T08:25:44.119Z"
 author: claude-hub
-acceptance_criteria: "Same capable local model in both arms; at least one recursive run reaches child calls; accuracy, tokens, calls and wall time reported per arm; interrupted arms report children as unknown with a regression test; results recorded on this item."
+acceptance_criteria: "Same capable local model in both arms; at least one recursive run reaches child calls; accuracy, tokens, calls and wall time reported per arm; interrupted arms report children as unknown with a regression test; results recorded on this item.; Run pm rlm eval with a local 9B model only when measured host CPU pressure is below 50 percent; Declare a recursive budget sufficient to reach child calls and record child-call reach with the same model in both arms"
+comments[1]{created_at,author,text}:
+  "2026-10-26T08:25:37.750Z",codex-agent,"Reused after searching 9B and the open Task list: this task already covers the requested evaluation follow-up. Owner requirement is now explicit: wait for measured CPU pressure below 50 percent, use a local 9B model in both pm rlm eval arms, declare a recursive budget that reaches children, and report accuracy, tokens, calls and wall time. Preserve the existing interrupted-child-count regression and honest refusal reporting. This sweep only refines planning; no model run or owner decision is claimed. Parent evaluation item pm-rlm-umh4 remains open."
+files[1]{path,scope}:
+  src/evaluation.ts,project
+docs[1]{path,scope}:
+  README.md,project
 body: ""
