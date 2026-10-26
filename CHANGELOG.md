@@ -27,5 +27,6 @@
 
 ### Other
 
+- Align host and npm floors with published SDK capabilities ([pm-rlm-sdk-floor-1025](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/tasks/pm-rlm-sdk-floor-1025.toon))
 - Verify SDK adoption boundaries for recursive run ownership and scoped reads ([pm-rlm-alp8](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/tasks/pm-rlm-alp8.toon))
 - Reconcile stale in-progress tracker records (2026-10-23) ([pm-rlm-reconcile-1023](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-reconcile-1023.toon))
