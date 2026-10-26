@@ -1,6 +1,6 @@
 import { certifyCompleteListResult } from '@unbrained/pm-cli/sdk';
 import { blobDigest } from './blobs.ts';
-import { prepareRlmRun, replayRlm } from './engine.ts';
+import { prepareRlmRun, replayRlm, validateReuseTranscript } from './engine.ts';
 import type { RlmRunOptions } from './engine.ts';
 import { matches, readCorpus } from './environment.ts';
 import { RlmError } from './errors.ts';
@@ -44,6 +44,7 @@ async function provenance(workspace: string, target: RlmState, selection: RlmReu
   if (origin.reuse !== undefined || origin.reuse_selection !== undefined || origin.reuse_identity === undefined || origin.snapshot_only !== true) throw new RlmReuseError('original_opt_in');
   const call = origin.calls.find(call => call.id === selection.call);
   if (call === undefined || call.result === undefined || call.failure !== undefined || call.completion_refusal !== undefined) throw new RlmReuseError('completion');
+  validateReuseTranscript(origin);
   equal(target.reuse_identity, origin.reuse_identity, 'identity');
   equal(target.settings, origin.settings, 'settings');
   equal([target.parser_version, target.aggregate_version, target.components], [origin.parser_version, origin.aggregate_version, origin.components], 'tool_policy');

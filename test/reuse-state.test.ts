@@ -7,7 +7,7 @@ import { RlmBlobs } from '../src/blobs.ts';
 import { readCorpus } from '../src/environment.ts';
 import { RlmError } from '../src/errors.ts';
 import { prepareRlmRun, replayRlm, resumeRlm, runRlm } from '../src/engine.ts';
-import { RlmLedger } from '../src/ledger.ts';
+import { RlmLedger, promptDigest } from '../src/ledger.ts';
 import { compactReuseResult, reuseRlm, validateReuseState } from '../src/reuse.ts';
 import { parseReuseRequest, parseReuseProvenance, parseReuseSelection } from '../src/reuse-contract.ts';
 import type { RlmReuseOptions } from '../src/reuse.ts';
@@ -354,4 +354,27 @@ test('duplicate release callbacks cannot delete a newer peer lease after reading
     }
     assert.equal(outcome, 'serialized');
   } finally { continueRead.resolve(); await first; t.mock.restoreAll(); syncBuiltinESMExports(); }
+});
+
+/** A metadata edit must never relabel an old model request as a newly matching question. */
+test('selected source digests questions and depth are authenticated against their recorded prompts', async t => {
+  const { workspace } = await tracker(t);
+  const model = new ScriptedModel(() => finish);
+  const run = await runRlm('question', { workspace, model, reuse_identity: identity });
+  const ledger = new RlmLedger(workspace);
+  const valid = await ledger.load(run.run);
+  const options = { workspace, settings: valid.settings, reuse_identity: identity, selection: { run: run.run, call: run.run } };
+  for (const variant of ['digest', 'question', 'depth', 'prompt']) {
+    const state = structuredClone(valid);
+    let question = 'question';
+    if (variant === 'digest') state.calls[0].digest = 'a'.repeat(64);
+    if (variant === 'question') { question = 'forged question'; state.calls[0].subgoal = question; state.calls[0].digest = promptDigest(question, state.calls[0].slice, state.settings); }
+    if (variant === 'depth') state.calls[0].depth = 1;
+    if (variant === 'prompt') state.calls[0].steps[0].prompt += ' altered';
+    await replaceCheckpointFixture(ledger, state);
+    await assert.rejects(reuseRlm(question, options), { dimension: 'provenance' });
+  }
+  await replaceCheckpointFixture(ledger, valid);
+  assert.equal((await reuseRlm('question', options)).status, 'reused');
+  assert.equal(model.requests.length, 1);
 });

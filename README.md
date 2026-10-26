@@ -357,7 +357,9 @@ and counters outside 0–1000000000 refuse at the boundary. Completed call count
 are 1–1000000000; reused results require exactly one logical call and zero new
 usage. Every emitted accounting coordinate is validated before success.
 
-Every reuse replays the original graph before creating a new native run, then
+Every reuse authenticates call digests and recorded model prompts (including
+question, depth, slice and evidence declarations), replays the original graph
+before creating a new native run, then
 revalidates its captured source dependencies before checkpoint publication. A
 root depends on every item in its scoped snapshot, including membership. A child
 depends conservatively on the complete SDK row for each supplied fragment,

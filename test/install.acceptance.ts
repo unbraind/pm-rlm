@@ -25,10 +25,10 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
   const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
-  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|PUBLIC-EVALUATION|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE|ADAPTIVE-DECOMPOSITION|RECONCILIATION)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|public-eval-suite|public-eval-results|ledger-scale|answer-evidence-validation|adaptive-validation|reconciliation-validation)\.json$|CHANGELOG\.md$|examples\/reconciliation-plan\.json$)/;
+  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|PUBLIC-EVALUATION|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE|ADAPTIVE-DECOMPOSITION|RECONCILIATION)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|public-eval-suite|public-eval-results|ledger-scale|answer-evidence-validation|adaptive-validation|reconciliation-validation|verified-subanswer-reuse-validation)\.json$|CHANGELOG\.md$|examples\/(?:reconciliation-plan\.json|verified-subanswer-reuse\.ts)$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
-  for (const path of ['docs/PUBLIC-EVALUATION.md', 'docs/public-eval-suite.json', 'docs/public-eval-results.json', 'docs/ANSWER-EVIDENCE.md', 'docs/answer-evidence-validation.json', 'docs/ADAPTIVE-DECOMPOSITION.md', 'docs/adaptive-validation.json', 'docs/RECONCILIATION.md', 'docs/reconciliation-validation.json', 'examples/reconciliation-plan.json']) assert.ok(packed[0].files.some(file => file.path === path));
+  for (const path of ['docs/PUBLIC-EVALUATION.md', 'docs/public-eval-suite.json', 'docs/public-eval-results.json', 'docs/ANSWER-EVIDENCE.md', 'docs/answer-evidence-validation.json', 'docs/ADAPTIVE-DECOMPOSITION.md', 'docs/adaptive-validation.json', 'docs/RECONCILIATION.md', 'docs/reconciliation-validation.json', 'examples/reconciliation-plan.json', 'examples/verified-subanswer-reuse.ts', 'docs/verified-subanswer-reuse-validation.json']) assert.ok(packed[0].files.some(file => file.path === path));
     const consumer = join(scratch, manager); mkdirSync(consumer);
     writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'rlm-consumer-fixture', private: true, type: 'module', dependencies: { 'pm-rlm': `file:${join(scratch, packed[0].filename)}`, '@unbrained/pm-cli': manifest.devDependencies['@unbrained/pm-cli'] } }));
     execute(consumer, manager === 'npm' ? ['install', '--prefer-offline', '--ignore-scripts', '--no-audit', '--no-fund'] : ['install', '--ignore-scripts'], manager, env);
@@ -38,17 +38,29 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
     execute(consumer, [...prefix, 'init', '--prefix', 'rlm-consumer', '--defaults', '--agent-guidance', 'skip'], executable, hostEnv);
     execute(consumer, [...prefix, 'package', 'install', join(scratch, packed[0].filename)], executable, hostEnv);
     const help = execute(consumer, [...prefix, 'rlm', '--help'], executable, hostEnv);
-    for (const command of ['run', 'adaptive', 'reconcile', 'eval', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
+    for (const command of ['run', 'reuse', 'adaptive', 'reconcile', 'eval', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
-    writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm } from 'pm-rlm';
+    writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm, reuseRlm, RlmLedger } from 'pm-rlm';
 import assert from 'node:assert/strict';
 let step = 0;
-const result = await runRlm('Packed tree fixture', { workspace: process.env.PM_PATH!, author: 'rlm-consumer', model: { name: 'packed-test-only', complete: async request => { if (step++ === 0) return { text: '{"action":"count","filter":{}}', tokens_in: 20, tokens_out: 10 }; assert.ok(request.prompt.includes('"data":0')); return { text: 'Answer: {"action":"finish","answer":"packed result"}', tokens_in: 20, tokens_out: 10 }; } } });
+const reuse_identity = { tool_policy: 'snapshot-v1', model_policy: 'packed-fixture-v1', consent: 'public-fixture:1' };
+const result = await runRlm('Packed tree fixture', { workspace: process.env.PM_PATH!, author: 'rlm-consumer', reuse_identity, model: { name: 'packed-test-only', complete: async request => { if (step++ === 0) return { text: '{"action":"count","filter":{}}', tokens_in: 20, tokens_out: 10 }; assert.ok(request.prompt.includes('"data":0')); return { text: 'Answer: {"action":"finish","answer":"packed result"}', tokens_in: 20, tokens_out: 10 }; } } });
+const state = await new RlmLedger(process.env.PM_PATH!).load(result.run);
+const reused = await reuseRlm('Packed tree fixture', { workspace: process.env.PM_PATH!, scope: state.scope, settings: state.settings, reuse_identity, selection: { run: result.run, call: result.run } });
+assert.equal(reused.status, 'reused'); assert.equal(step, 2);
+if (reused.status !== 'reused') throw new Error('Packed reuse refused');
+assert.equal(reused.tokens_in, 0); assert.equal(reused.tokens_out, 0); assert.equal(reused.reserved_tokens, 0); assert.equal(reused.reuse.run, result.run);
 console.log(JSON.stringify(result));
 `);
     const run = JSON.parse(execute(consumer, ['create-run.ts'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as { run: string; answer: string };
     assert.equal(run.answer, 'packed result');
+    const identity = JSON.stringify({ tool_policy: 'snapshot-v1', model_policy: 'packed-fixture-v1', consent: 'public-fixture:1' });
+    for (const format of [[], ['--json']]) {
+      const output = execute(consumer, [...prefix, 'rlm', 'reuse', 'Packed tree fixture', '--from', run.run, '--call', run.run, '--identity', identity, '--model', 'packed-test-only', ...format], executable, hostEnv);
+      const receipt = (format.length === 0 ? decodeToon(output) : JSON.parse(output)) as { status: string; model_calls: number; tokens_in: number; answer_preview: string };
+      assert.equal(receipt.status, 'reused'); assert.equal(receipt.model_calls, 0); assert.equal(receipt.tokens_in, 0); assert.equal(receipt.answer_preview, 'packed result');
+    }
     const tree = JSON.parse(execute(consumer, [...prefix, 'rlm', 'tree', run.run, '--json'], executable, hostEnv)) as { run: string; token_usage: string; calls: { id: string; parent: string; depth: number; status: string; result: string; used_tokens: number; reserved_tokens: number }[] };
     assert.equal(tree.token_usage, 'reported_or_estimated');
     assert.equal(tree.run, run.run); assert.equal(tree.calls.length, 1);

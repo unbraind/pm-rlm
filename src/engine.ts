@@ -47,6 +47,15 @@ function result(state: RlmState): RlmResult {
   const responses = state.calls.flatMap(call => call.steps.flatMap(step => step.response === undefined ? [] : [step.response]));
   return { ...(state.reuse === undefined ? {} : { reuse: state.reuse }), ...(state.components === undefined ? {} : { components: JSON.parse(state.calls[0].result!) as RlmAnswerComponent[] }), token_usage: 'reported_or_estimated', run: state.run, answer: state.calls[0].result!, calls: state.calls.length, reserved_tokens: state.reserved_tokens, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0) };
 }
+/** Bind opted-in call identities to the exact prompts that were reserved before inference. */
+export function validateReuseTranscript(state: RlmState): void {
+  for (const call of state.calls) {
+    if (call.digest !== promptDigest(call.subgoal, call.slice, state.settings)) throw new RlmReuseError('provenance');
+    for (const [index, step] of call.steps.entries()) {
+      if (step.prompt !== modelPrompt({ ...call, steps: call.steps.slice(0, index) }, state.components)) throw new RlmReuseError('provenance');
+    }
+  }
+}
 /** Complete answers use one deterministic representation with no unchecked free-text summary. */
 function completion(state: RlmState, call: RlmCall, action: Extract<RlmAction, { action: 'finish' | 'answer' }>, before: number): string {
   if (action.action === 'answer') return validateAnswer(state, call, action.components, before);
