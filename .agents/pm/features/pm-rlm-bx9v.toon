@@ -1,0 +1,35 @@
+id: pm-rlm-bx9v
+title: Reuse explicitly selected verified subanswers across runs
+description: "Opt-in cross-run reuse built on existing digests and core ledger records. Acceptance: matching source scope, snapshot, question, tool/model policy and consent identities reuse with zero new model calls; changing one source revision invalidates only dependent results; retain original provenance without double-counting usage. Provide typed SDK and CLI, compact TOON/JSON, typed refusals and remedies, README/example, non-git public-tracker validation, seeded model-based state tests and concurrency interleavings."
+type: Feature
+status: in_progress
+priority: 2
+tags: []
+created_at: "2026-10-26T00:07:55.801Z"
+updated_at: "2026-10-26T00:48:45.451Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+parent: pm-rlm-a1ih
+comments[6]{created_at,author,text}:
+  "2026-10-26T00:09:03.255Z",codex-agent,"Overlap rechecked: core CLI supplies certified full reads, native item/history transactions and locks, not verified model subanswer reuse. pm-rlm prompt digests reuse within a run; replay verifies recorded work. pm-memory embedding caches and purpose consent are distinct; pm-context freshness manifests invalidate packet sections but do not authenticate RLM answers; pm-swarm coordinates native resources. Implement an explicit selected-call reuse command atop existing checkpoint records, immutable snapshots, replay verification and SDK CAS. Identity is opt-in at original execution, freezes history access, and binds tool/model policy plus consent revision. No cache discovery or implicit reuse."
+  "2026-10-26T00:22:09.768Z",codex-agent,"Implemented explicit selected original-call reuse, opt-in immutable policy/consent identities, native checkpoint provenance, zero new usage and bounded CLI previews. Native resume/replay reverify provenance. Root dependencies cover scope membership; child dependencies cover supplied source rows. Foreign rows skip with a remedy. Public-tracker copy measurement: 23 public items, 2 scoped, 3 original logical calls / 5 scripted protocol requests, 2 reused subanswers / 0 new requests, one changed revision caused one dependent refusal while one independent child reused, new counters all zero, compact JSON 944 bytes; source archive unchanged. Fixture validates protocol and provenance, not model quality. First publication interleavings passed 10 before/after boundaries; native custom-status and peer-completion tests added."
+  "2026-10-26T00:35:23.852Z",codex-agent,"Validation progress: 500 seeded checkpoint operation sequences passed against exact SDK-read state, preserving CRLF/whitespace inputs and native relationships while replaying older snapshots. The final sequence generator also exercises legacy-v1 input to v2 publication; full CI will rerun all 500. One non-git tracker passed peer transitions at all 82 dynamically traced source/target/storage lease, load, save, materialization, completion and unlock boundaries (83 tests including the parent). Custom randomized status registries, peer success/started targets and pending-intent recovery are covered. Linked pm test run: node --test test/reuse.test.ts passed 7/7. Targeted reuse source coverage measured 100% statements/branches/functions/lines; full npm and Bun release gates remain CI work. Native test-result tracking was disabled, so results are recorded here without changing its policy."
+  "2026-10-26T00:42:06.857Z",codex-agent,"Behavioral revert proof: changed only the snapshot branch in the equality guard so snapshot changes were accepted; node --test --test-name-pattern='one source revision invalidates' test/reuse.test.ts failed with Missing expected rejection for dimension snapshot. Restored the exact source bytes afterward. Added a deterministic real-filesystem stale-release interleaving (SDK operations remain real): pause after old ownership is read, race a second release and a new peer lease; serialized cleanup passed 1/1. Full boundary interleavings passed 83/83 (82 injected boundaries plus parent), and CLI/SDK linked tests passed 7/7."
+  "2026-10-26T00:44:48.583Z",codex-agent,"Lease-cleanup revert proof passed: restored only the former unlocked release callback, retaining the rest of the feature. The deterministic real-I/O regression failed because the stale callback deleted the newer peer lease (ENOENT). Restored the exact source and retained the positive 1/1 proof. The property model now interchanges native v1 and v2 checkpoint inputs, alternates parent/dependency relationships through SDK updates, samples unchanged native ledger fields against an SDK-read reference, and replays older snapshots against current target revisions. No new importer, sync format or content-only idempotency key was introduced. CI must certify the final full source scope at unchanged thresholds."
+  "2026-10-26T00:48:45.451Z",codex-agent,"Ready for CI release-gate validation. Final local typecheck, lint, duplication (0 percent), docstring gate (32 files, 140 declarations), generated changelog and changelog check passed. Added strict output usage validation: all accounting coordinates are finite bounded integers; reused roots require one logical call and exactly zero new charges, independently of original informational provenance. Both request and output extremes are exercised. Recovery/peer/duplicate-release targeted checks passed 3/3 after restoring source; model-independent state and concurrency fixtures use real SDK trackers. Publishing the feature branch and a ready PR; no merge or release is authorized."
+files[7]{path,scope}:
+  src/commands.ts,project
+  src/engine.ts,project
+  src/ledger.ts,project
+  src/reuse-contract.ts,project
+  src/reuse.ts,project
+  test/reuse-state.test.ts,project
+  test/reuse.test.ts,project
+tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  node --test test/reuse.test.ts,project,300,codex-agent,"2026-10-26T00:33:22.984Z",local_mutation,feat/verified-subanswer-reuse
+docs[3]{path,scope}:
+  docs/verified-subanswer-reuse-validation.json,project
+  examples/verified-subanswer-reuse.ts,project
+  README.md,project
+body: ""

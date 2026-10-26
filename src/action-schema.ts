@@ -14,6 +14,7 @@ export interface ActionSchema {
   minimum?: number;
   maximum?: number;
   minLength?: number;
+  maxItems?: number;
   pattern?: string;
 }
 /** Build a closed object without duplicating required-field definitions. */
@@ -49,7 +50,7 @@ export function acceptsSchema(schema: ActionSchema, value: unknown): boolean {
       const entries = value as Record<string, unknown>;
       return schema.required!.every(key => Object.hasOwn(entries, key)) && Object.keys(entries).every(key => Object.hasOwn(schema.properties!, key) && acceptsSchema(schema.properties![key], entries[key]));
     }
-    case 'array': return Array.isArray(value) && value.every(entry => acceptsSchema(schema.items!, entry));
+    case 'array': return Array.isArray(value) && (schema.maxItems === undefined || value.length <= schema.maxItems) && Array.from({ length: value.length }, (_, index) => Object.hasOwn(value, index) && acceptsSchema(schema.items!, value[index])).every(Boolean);
     case 'integer': return typeof value === 'number' && Number.isSafeInteger(value) && value >= schema.minimum! && value <= schema.maximum!;
     case 'string': return typeof value === 'string' && (schema.minLength === undefined || [...value].length >= schema.minLength) && (schema.enum === undefined || schema.enum.includes(value)) && (schema.pattern === undefined || new RegExp(schema.pattern, 'u').test(value));
   }
