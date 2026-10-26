@@ -6,13 +6,14 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-25T23:23:47.260Z"
-updated_at: "2026-10-26T01:03:12.246Z"
+updated_at: "2026-10-26T01:11:29.339Z"
 assignee: codex-agent
 claim_principal: codex-agent
 author: codex-agent
-comments[2]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-25T23:23:51.749Z",codex-agent,"Normalize daily scheduling and PM_RELEASE_APPROVED job gates while preserving release decisions, generated changelogs and release notes. Verify OIDC publishing without a stored npm token, manifest metadata, packed allowlists and private-data scans. No open homepage/author PR was found during orientation. No publishing, trust setup, approval variable changes or merges are authorized."
   "2026-10-26T01:03:12.232Z",codex-agent,"Opening the release-readiness PR after package allowlist/privacy verification and focused regression proofs so complete npm and Bun CI can run in parallel with local full-gate verification. Pending checks are explicitly not treated as passing evidence. No timeout, threshold, dependency pin or test case is being relaxed."
+  "2026-10-26T01:11:29.339Z",codex-agent,"Pack verification: npm pack --dry-run --json and the actual npm pack --ignore-scripts artifact agree on 103 allowlisted files (dist: 76; docs: 17; examples: 1; root files: 9). Every packed member was scanned for absolute home paths, npm/GitHub/cloud tokens, private keys, hosted-data locations, private addresses and historical owner email addresses: PASS with zero matches. Regression proof: five independent workflow mutations (approval, provenance, token environment, daily schedule and OR bypass) plus the original manifest each fail the new contract check; restored contract passes 4/4. The linked test also passes through pm test --run --progress. Next gates: npm run release:check and bun run release:check with isolated HOME and Git configuration."
 files[3]{path,scope}:
   .github/workflows/release.yml,project
   package.json,project
