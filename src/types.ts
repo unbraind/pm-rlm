@@ -1,3 +1,4 @@
+import type { RlmReuseIdentity, RlmReuseProvenance, RlmReuseSelection } from './reuse-contract.ts';
 import type { RlmErrorCode } from './errors.ts';
 import type { ListedItem, PmCompleteListCertificate } from '@unbrained/pm-cli/sdk';
 
@@ -118,6 +119,12 @@ export interface RlmCall {
 /** Hydrated run checkpoint; v2 storage manifests resolve immutable blobs into this compatible shape. */
 export interface RlmState {
   version: 1;
+  /** Explicit caller authorization; absent on legacy runs that cannot be reused. */
+  reuse_identity?: RlmReuseIdentity;
+  /** Selected original answer; transcript and usage stay in the original ledger. */
+  reuse?: RlmReuseProvenance;
+  /** Durable explicit intent; recovery revalidates before satisfying this root. */
+  reuse_selection?: RlmReuseSelection;
   /** Missing/v1 keeps JSON-key ordering; v2 uses scalar type then value ordering. */
   aggregate_version?: 1 | 2;
   parser_version?: 1 | 2 | 3;
@@ -137,6 +144,8 @@ export interface RlmState {
 /** Completed run summary: exact call count, accounting charge and reported-or-estimated model counters. */
 export interface RlmResult {
   token_usage: 'reported_or_estimated';
+  /** Present only for explicit cross-run reuse, with zero newly charged usage. */
+  reuse?: RlmReuseProvenance;
   run: string;
   answer: string;
   /** Verified per-component evidence, absent on execution-only runs. */

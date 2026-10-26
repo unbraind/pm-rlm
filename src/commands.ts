@@ -1,3 +1,5 @@
+import { compactReuseResult, reuseRlm } from './reuse.ts';
+import { parseReuseIdentity, RlmReuseError } from './reuse-contract.ts';
 import { readFile } from 'node:fs/promises';
 import { evaluateRlm, RlmEvalError } from './evaluation.ts';
 import { reconcileRlm, parseReconcileArms, RlmReconcileError } from './reconcile.ts';
@@ -10,6 +12,7 @@ import { parseFilter } from './environment.ts';
 import { evidenceRlm, resumeRlm, replayRlm, runRlm, treeRlm } from './engine.ts';
 import { integer, RlmError, text } from './errors.ts';
 import { RLM_FIELDS } from './ledger.ts';
+import type { RlmReuseIdentity } from './reuse-contract.ts';
 import type { RlmSettings } from './types.ts';
 
 /** Validate a CLI string without changing the supplied question, model or JSON. */
@@ -51,7 +54,7 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     if (command === 'tree') return await treeRlm(ctx.pm_root, argument, ctx.options.full === true);
     if (command === 'resume') return { ...await resumeRlm(ctx.pm_root, argument, undefined, ctx.global.author) };
     if (command === 'replay') return { ...await replayRlm(ctx.pm_root, argument) };
-    if (command !== 'run' && command !== 'adaptive' && command !== 'reconcile') throw new RlmError('invalid', 'Unknown rlm command');
+    if (command !== 'reuse' && command !== 'run' && command !== 'adaptive' && command !== 'reconcile') throw new RlmError('invalid', 'Unknown rlm command');
     const settings: Partial<RlmSettings> = {};
     for (const [option, setting] of [['maxDepth', 'max_depth'], ['maxCalls', 'max_calls'], ['budgetTokens', 'budget_tokens']] as const) {
       if (ctx.options[option] !== undefined && !(['adaptive', 'reconcile'].includes(command) && setting === 'budget_tokens')) settings[setting] = numericOperand(ctx.options[option]);
@@ -63,6 +66,15 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
       try { decoded = JSON.parse(operand(ctx.options.scope)); }
       catch (error) { if (error instanceof SyntaxError) throw new RlmError('invalid', 'Invalid --scope JSON'); throw error; }
       scope = parseFilter(decoded);
+    }
+    let reuse_identity: RlmReuseIdentity | undefined;
+    if (ctx.options.identity !== undefined) {
+      try { reuse_identity = parseReuseIdentity(JSON.parse(operand(ctx.options.identity))); }
+      catch { throw new RlmReuseError('identity'); }
+    }
+    if (command === 'reuse') {
+      const result = await reuseRlm(argument, { workspace: ctx.pm_root, scope, settings, reuse_identity: parseReuseIdentity(reuse_identity), selection: { run: operand(ctx.options.from), call: operand(ctx.options.call) }, author: ctx.global.author });
+      return ctx.options.full === true ? { ...result } : compactReuseResult(result);
     }
     if (command === 'reconcile') {
       let declaration: Record<string, unknown>;
@@ -78,10 +90,10 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
       if (ctx.options.budgetTokens === undefined) throw new RlmAdaptiveError('invalid', 'Missing declared budget', 'Supply --budget-tokens as an unsigned decimal integer, including zero');
       return { ...await adaptiveRlm(argument, { workspace: ctx.pm_root, structure: parseQuestionStructure(structure), remaining_tokens: numericOperand(ctx.options.budgetTokens), scope, settings, author: ctx.global.author }) };
     }
-    return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
+    return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, reuse_identity, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';
-    const remedy = error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError ? error.remedy : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
+    const remedy = error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError ? error.remedy : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
     throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (remedy === undefined ? '' : '; remedy: ' + remedy) : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
   }
 }
@@ -95,15 +107,15 @@ export function register(api: ExtensionApi): void {
     examples: [`pm rlm eval suite.json --sources '{"sample":"source/.agents/pm"}' --id trial-1 --model gemma3:4b --json`],
     run: ctx => runCommand('eval', ctx),
   }));
-  for (const name of ['run', 'adaptive', 'reconcile', 'tree', 'resume', 'replay', 'evidence']) {
-    const starts = name === 'run' || name === 'adaptive' || name === 'reconcile';
-    const options = starts ? ['scope', name === 'reconcile' ? 'plan' : name === 'adaptive' ? 'structure' : 'components', 'model', 'max-depth', 'max-calls', 'budget-tokens'] : [];
+  for (const name of ['run', 'reuse', 'adaptive', 'reconcile', 'tree', 'resume', 'replay', 'evidence']) {
+    const starts = name === 'reuse' || name === 'run' || name === 'adaptive' || name === 'reconcile';
+    const options = starts ? ['scope', ...(name === 'reuse' ? [] : [name === 'reconcile' ? 'plan' : name === 'adaptive' ? 'structure' : 'components']), 'model', 'max-depth', 'max-calls', 'budget-tokens', ...(['run', 'reuse'].includes(name) ? ['identity'] : []), ...(name === 'reuse' ? ['from', 'call'] : [])] : [];
     api.registerCommand(defineCommand({
       name: `rlm ${name}`, description: `${name} a durable recursive language model run`,
       intent: 'Project management = context management for recursive agents',
       arguments: [{ name: starts ? 'question' : 'run', required: true }],
-      flags: [...options.map(option => ({ long: `--${option}`, description: option, value_name: 'value', value_type: 'string' as const })), ...(name === 'tree' ? [{ long: '--full', description: 'Include the complete checkpoint', value_type: 'boolean' as const }] : [])],
-      examples: name === 'reconcile' ? [`pm rlm reconcile "Explain issues" --plan '{"structure":[{"name":"summary","question":"What is documented?"}],"arms":[{"groups":[["summary"]],"budget_tokens":25000},{"groups":[["summary"]],"budget_tokens":25000}]}' --budget-tokens 50000 --json`] : name === 'adaptive' ? [`pm rlm adaptive "Explain issues" --structure '[{"name":"summary","question":"What do the issues describe?"}]' --budget-tokens 50000 --json`] : [`pm rlm ${name} ${starts ? '"Count open Issues"' : 'run-id'} --json`],
+      flags: [...options.map(option => ({ long: `--${option}`, description: option, value_name: 'value', value_type: 'string' as const })), ...(['tree', 'reuse'].includes(name) ? [{ long: '--full', description: 'Include the complete checkpoint', value_type: 'boolean' as const }] : [])],
+      examples: name === 'reuse' ? [`pm rlm reuse "Count scoped issues" --from original-run --call original-call --identity '{"tool_policy":"snapshot-v1","model_policy":"pinned-model-v1","consent":"public-review:1"}' --json`] : name === 'reconcile' ? [`pm rlm reconcile "Explain issues" --plan '{"structure":[{"name":"summary","question":"What is documented?"}],"arms":[{"groups":[["summary"]],"budget_tokens":25000},{"groups":[["summary"]],"budget_tokens":25000}]}' --budget-tokens 50000 --json`] : name === 'adaptive' ? [`pm rlm adaptive "Explain issues" --structure '[{"name":"summary","question":"What do the issues describe?"}]' --budget-tokens 50000 --json`] : [`pm rlm ${name} ${starts ? '"Count open Issues"' : 'run-id'} --json`],
       run: ctx => runCommand(name, ctx),
     }));
   }
