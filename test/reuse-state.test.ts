@@ -18,6 +18,15 @@ import { replaceCheckpointFixture } from './checkpoint-fixture.ts';
 const identity = { tool_policy: 'snapshot-v1', model_policy: 'fixture-v1', consent: 'public:1' };
 const finish = '{"action":"finish","answer":"answer"}';
 
+/** Exercise one nested call, with an optional typed child interruption. */
+function nestedModel(failChild = false): ScriptedModel {
+  return new ScriptedModel(request => {
+    const input: { question: string; transcript: unknown[] } = JSON.parse(request.prompt.slice(request.prompt.lastIndexOf('\n') + 1));
+    if (failChild && input.question === 'nested') throw new RlmError('model', 'fixture stopped');
+    return input.question === 'question' && input.transcript.length === 0 ? JSON.stringify({ action: 'spawn', subgoal: 'nested', slice: { fragments: [], estimated_tokens: 2 } }) : finish;
+  });
+}
+
 /** Fixed seed, portable unsigned arithmetic and no dependence on platform randomness. */
 function random(seed: number): () => number {
   return () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
@@ -346,11 +355,7 @@ test('pending reuse recovery revalidates changed sources and model-free matching
 /** Provenance retains pending failed-child charges and sanitizes operational failures. */
 test('reuse preserves failed-child accounting and typed operational remedies', async t => {
   const { workspace } = await tracker(t);
-  const model = new ScriptedModel(request => {
-    const input: { question: string; transcript: unknown[] } = JSON.parse(request.prompt.slice(request.prompt.lastIndexOf('\n') + 1));
-    if (input.question === 'nested') throw new RlmError('model', 'fixture stopped');
-    return input.transcript.length === 0 ? JSON.stringify({ action: 'spawn', subgoal: 'nested', slice: { fragments: [], estimated_tokens: 2 } }) : finish;
-  });
+  const model = nestedModel(true);
   const run = await runRlm('question', { workspace, model, reuse_identity: identity });
   const ledger = new RlmLedger(workspace);
   const origin = await ledger.load(run.run);
@@ -421,15 +426,16 @@ test('duplicate release callbacks cannot delete a newer peer lease after reading
 /** A metadata edit must never relabel an old model request as a newly matching question. */
 test('selected source digests questions and depth are authenticated against their recorded prompts', async t => {
   const { workspace } = await tracker(t);
-  const model = new ScriptedModel(() => finish);
+  const model = nestedModel();
   const run = await runRlm('question', { workspace, model, reuse_identity: identity });
   const ledger = new RlmLedger(workspace);
   const valid = await ledger.load(run.run);
   const options = { workspace, settings: valid.settings, reuse_identity: identity, selection: { run: run.run, call: run.run } };
-  for (const variant of ['digest', 'question', 'depth', 'prompt']) {
+  for (const variant of ['digest', 'child-digest', 'question', 'depth', 'prompt']) {
     const state = structuredClone(valid);
     let question = 'question';
     if (variant === 'digest') state.calls[0].digest = 'a'.repeat(64);
+    if (variant === 'child-digest') state.calls[1].digest = 'a'.repeat(64);
     if (variant === 'question') { question = 'forged question'; state.calls[0].subgoal = question; state.calls[0].digest = promptDigest(question, state.calls[0].slice, state.settings); }
     if (variant === 'depth') state.calls[0].depth = 1;
     if (variant === 'prompt') state.calls[0].steps[0].prompt += ' altered';
@@ -438,7 +444,7 @@ test('selected source digests questions and depth are authenticated against thei
   }
   await replaceCheckpointFixture(ledger, valid);
   assert.equal((await reuseRlm('question', options)).status, 'reused');
-  assert.equal(model.requests.length, 1);
+  assert.equal(model.requests.length, 3);
 });
 
 /** A source run may not label inference with model settings changed by a peer before acquisition. */
