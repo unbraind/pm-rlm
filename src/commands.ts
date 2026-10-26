@@ -1,6 +1,7 @@
 import { compactReuseResult, reuseRlm } from './reuse.ts';
 import { parseReuseIdentity, RlmReuseError } from './reuse-contract.ts';
 import { readFile } from 'node:fs/promises';
+import type { RlmEvalMetrics, RlmEvalResult, RlmEvalSummary } from './evaluation-types.ts';
 import { evaluateRlm, RlmEvalError } from './evaluation.ts';
 import { reconcileRlm, parseReconcileArms, RlmReconcileError } from './reconcile.ts';
 import { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from './adaptive.ts';
@@ -36,6 +37,13 @@ function componentOperand(value: unknown): string[] {
   return parseComponents(decoded);
 }
 
+/** Keep unknown counters explicit even when host TOON compaction omits object nulls. */
+function evaluationOutput(result: RlmEvalResult): Record<string, unknown> {
+  /** Convert only metric nulls; known numbers and nonnumeric provenance remain intact. */
+  const metrics = (value: RlmEvalMetrics | RlmEvalSummary): Record<string, unknown> => Object.fromEntries(Object.entries(value).map(([key, count]) => [key, count === null ? 'unknown' : count]));
+  return { ...result, summary: { truncated: metrics(result.summary.truncated), recursive: metrics(result.summary.recursive) }, ...(result.rows === undefined ? {} : { rows: result.rows.map(row => ({ ...row, truncated: metrics(row.truncated), recursive: metrics(row.recursive) })) }) };
+}
+
 /** Dispatch commands through the same SDK engine used by embedded clients. */
 export async function runCommand(command: string, ctx: CommandHandlerContext): Promise<Record<string, unknown>> {
   try {
@@ -48,7 +56,7 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
         if (input === null || typeof input !== 'object' || Array.isArray(input) || Object.values(input).some(value => typeof value !== 'string')) throw new Error();
         sources = input as Record<string, string>;
       } catch { throw new RlmEvalError('invalid', 'Invalid evaluation input', 'Supply a readable suite JSON file and --sources as a JSON object of source id to tracker root'); }
-      return { ...await evaluateRlm(suite, { workspace: ctx.pm_root, sources, id: operand(ctx.options.id), model: operand(ctx.options.model), full: ctx.options.full === true, endpoint: ctx.options.endpoint === undefined ? undefined : operand(ctx.options.endpoint), author: ctx.global.author }) };
+      return evaluationOutput(await evaluateRlm(suite, { workspace: ctx.pm_root, sources, id: operand(ctx.options.id), model: operand(ctx.options.model), full: ctx.options.full === true, endpoint: ctx.options.endpoint === undefined ? undefined : operand(ctx.options.endpoint), author: ctx.global.author }));
     }
     if (command === 'evidence') return { ...await evidenceRlm(ctx.pm_root, argument) };
     if (command === 'tree') return await treeRlm(ctx.pm_root, argument, ctx.options.full === true);

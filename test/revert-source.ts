@@ -10,10 +10,28 @@ export function replaceFixed(source: string, fixed: string, previous: string, na
   return source.replaceAll(fixed, () => previous);
 }
 
+/** Scale each existing test deadline once; reject invalid configuration before spawning. */
+export function testTimeout(milliseconds: number): number {
+  const scale = Number(process.env.PM_RLM_TEST_TIMEOUT_SCALE ?? '1');
+  assert.ok(Number.isFinite(scale) && scale > 0, 'PM_RLM_TEST_TIMEOUT_SCALE must be a positive finite number');
+  const timeout = Math.ceil(milliseconds * scale);
+  assert.ok(Number.isSafeInteger(timeout) && timeout > 0, 'Scaled test timeout must be a positive safe integer');
+  return timeout;
+}
+
+/** Keep missing time-limit evidence distinct from an observed regression assertion. */
+export function assertChildCompleted(result: { error?: Error & { code?: string } }, timeout: number): void {
+  if (result.error?.code === 'ETIMEDOUT') {
+    throw new Error(`Regression child timed out after ${timeout} ms; no assertion proof observed. Increase PM_RLM_TEST_TIMEOUT_SCALE for a loaded host.`, { cause: result.error });
+  }
+  assert.equal(result.error, undefined);
+}
+
 /** Demand a real targeted assertion failure even when invoked inside Node's test runner. */
 export function assertRegression(testFile: string, pattern: string, timeout = 120000, failure = /AssertionError|ERR_ASSERTION/): void {
-  const result = spawnSync(process.execPath, ['--test', '--test-name-pattern', pattern, testFile], { env: testEnvironment(process.env), encoding: 'utf8', timeout });
-  assert.equal(result.error, undefined);
+  const limit = testTimeout(timeout);
+  const result = spawnSync(process.execPath, ['--test', '--test-name-pattern', pattern, testFile], { env: testEnvironment(process.env), encoding: 'utf8', timeout: limit });
+  assertChildCompleted(result, limit);
   assert.equal(result.status, 1, result.stdout + result.stderr);
   assert.match(result.stdout + result.stderr, failure, result.stdout + result.stderr);
 }

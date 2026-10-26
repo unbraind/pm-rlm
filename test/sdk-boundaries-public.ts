@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { chmod, copyFile, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -8,6 +9,10 @@ import { copyVerifiedRevision, publicSource } from './live.ts';
 import { gitEnvironment, testEnvironment } from '../scripts/environment.ts';
 
 const root = resolve(import.meta.dirname, '..');
+const missing = ['pm-rlm', 'pm-lint'].filter(repo => !existsSync(join(publicSource(repo), '.git')));
+if (missing.length > 0) {
+  console.log(`SKIP SDK public parity: missing fleet checkouts (${missing.join(', ')}). See README.md for fixture prerequisites; no parity evidence generated.`);
+} else {
 const scratch = await mkdtemp(join(tmpdir(), 'rlm-sdk-parity-'));
 const env = { ...gitEnvironment(process.env), GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1' };
 const lockedDirectories: string[] = [];
@@ -64,4 +69,5 @@ try {
 } finally {
   for (const path of lockedDirectories) await chmod(path, 0o755);
   await rm(scratch, { recursive: true, force: true });
+}
 }
