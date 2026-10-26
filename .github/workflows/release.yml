@@ -1,7 +1,9 @@
 name: Daily Release
 
 on:
-  # New packages stay unreleased until the maintainer approves.
+  schedule:
+    - cron: "23 3 * * *"
+  # New packages stay unreleased until the maintainer sets the repository variable PM_RELEASE_APPROVED=true.
   # Scheduled releases deliberately remain disabled.
   workflow_dispatch:
 
@@ -15,7 +17,7 @@ concurrency:
 
 jobs:
   prepare:
-    if: github.ref == 'refs/heads/main' && vars.PM_RLM_RELEASE_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -226,7 +228,7 @@ jobs:
 
   release:
     needs: prepare
-    if: github.ref == 'refs/heads/main' && vars.PM_RLM_RELEASE_ENABLED == 'true' && needs.prepare.outputs.should_release == 'true'
+    if: github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' && needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       # Only protected metadata PRs, tag pushes and GitHub releases need writes.
@@ -879,7 +881,7 @@ jobs:
     # tag exists, so the sole missing step is the GitHub release. Everything
     # else - version bump, changelog commit, npm publish, tag push - is a
     # should_release path and is never taken from here.
-    if: github.ref == 'refs/heads/main' && vars.PM_RLM_RELEASE_ENABLED == 'true' && needs.prepare.outputs.resume_release_notes == 'true'
+    if: github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' && needs.prepare.outputs.resume_release_notes == 'true'
     runs-on: ubuntu-latest
     # Creating the GitHub release for the already-pushed tag is the only write
     # this job performs; the version, tag and npm artifact are already
