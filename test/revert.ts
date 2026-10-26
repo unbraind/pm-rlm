@@ -1,5 +1,5 @@
 /** Behavioral revert proofs: each removed invariant must make its regression fail. */
-import { assertRegression, replaceFixed } from './revert-source.ts';
+import { assertChildCompleted, assertRegression, replaceFixed, testTimeout } from './revert-source.ts';
 import { testEnvironment } from '../scripts/environment.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -64,7 +64,8 @@ const mutations = [
 ];
 /** Rebuild only proofs whose consumers load the compiled tarball, restoring that build too. */
 function buildPackage(): void {
-  const child = spawnSync('npm', ['run', 'build'], { env: testEnvironment(process.env), encoding: 'utf8', timeout: 120000 });
+  const child = spawnSync('npm', ['run', 'build'], { env: testEnvironment(process.env), encoding: 'utf8', timeout: testTimeout(120000) });
+  assertChildCompleted(child, testTimeout(120000));
   assert.equal(child.status, 0, child.stdout + child.stderr);
 }
 for (const mutation of mutations) {

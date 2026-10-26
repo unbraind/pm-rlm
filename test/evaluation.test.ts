@@ -27,6 +27,14 @@ export async function fixture(t: Parameters<typeof tracker>[0]) {
   const options: RlmEvalOptions = { workspace: target.workspace, sources: { sample: source.workspace }, id: 'trial', model: model.name, mode: 'stub', stub: model, full: true };
   return { source, target, suite, model, options };
 }
+/** Capture native host rendering with no Git executable or inherited test context. */
+async function nativeEvaluation(target: { root: string; workspace: string }, file: string, sources: Record<string, string>, options: string[]): Promise<string> {
+  const child = spawn(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'eval', file, '--sources', JSON.stringify(sources), ...options], { cwd: target.root, env: { ...testEnvironment(process.env), PM_PATH: target.workspace, PATH: join(target.root, 'no-tools'), GIT_CEILING_DIRECTORIES: target.root } });
+  let out = ''; let error = '';
+  child.stdout.on('data', chunk => { out += String(chunk); }); child.stderr.on('data', chunk => { error += String(chunk); });
+  const [code] = await once(child, 'exit'); assert.equal(code, 0, error + out);
+  return out;
+}
 /** Both arms share a model; completed receipts are reused and source bytes stay untouched. */
 test('evaluation measures both arms and reuses completed receipts in a non-git tracker', async t => {
   const { source, target, suite, model, options } = await fixture(t);
@@ -43,6 +51,7 @@ test('evaluation measures both arms and reuses completed receipts in a non-git t
   assert.equal(result.mode, 'stub');
   for (const arm of [result.summary.truncated, result.summary.recursive]) {
     assert.equal(arm.correct, 20); assert.equal(arm.accuracy, 1); assert.equal(arm.calls, 20);
+    assert.equal(arm.children, 0); assert.equal(arm.unknown_children_arms, 0);
     assert.ok(arm.tokens! > 0); assert.ok(arm.wall_ms! >= 0); assert.equal(arm.failed_requests, 0);
   }
   assert.equal(model.requests.length, 40);
@@ -102,6 +111,11 @@ test('evaluation preserves foreign and malformed records with an explicit skip r
     assert.equal((await evaluateRlm(suite, options)).status, 'skipped');
   }
   assert.equal(result.summary.recursive.questions, 20); assert.equal(result.summary.recursive.correct, 0);
+  for (const arm of [result.summary.truncated, result.summary.recursive]) {
+    assert.equal(arm.children, null); assert.equal(arm.unknown_children_arms, 20);
+    assert.equal(arm.calls, null); assert.equal(arm.failed_requests, null);
+    assert.equal(arm.tokens, null); assert.equal(arm.wall_ms, null);
+  }
 });
 /** Every transport failure stays in the denominator; unavailable usage remains unknown. */
 test('evaluation counts malformed answers, model failures and failed recursive attempts honestly', async t => {
@@ -152,6 +166,10 @@ test('evaluation crash boundaries converge without duplicate records or lost com
     assert.equal((await target.client.listAllComplete()).items.length, interrupted ? 20 : 21);
     assert.equal(result.summary.recursive.correct, interrupted ? 19 : 20);
     if (interrupted) { assert.equal(result.rows![0].recursive.refusal, 'interrupted'); assert.equal(result.summary.recursive.tokens, null); assert.equal(result.summary.recursive.calls, null); assert.equal(result.summary.recursive.wall_ms, null); assert.equal(result.summary.recursive.failed_requests, null); }
+    assert.equal(result.rows![0].recursive.children, interrupted ? null : 0);
+    assert.equal(result.summary.recursive.children, interrupted ? null : 0);
+    assert.equal(result.summary.recursive.unknown_children_arms, interrupted ? 1 : 0);
+    assert.equal(result.summary.truncated.unknown_children_arms, boundary === 'baseline_reserved' ? 1 : 0);
     const calls = model.requests.length;
     assert.deepEqual((await evaluateRlm(suite, options)).summary, result.summary); assert.equal(model.requests.length, calls);
   }
@@ -205,10 +223,7 @@ test('evaluation host emits native TOON and JSON without Git and preserves forei
   const file = join(target.root, 'suite.json'); await writeFile(file, JSON.stringify(suite));
   await target.client.create({ id: 'rlm-eval-trial', title: 'Foreign', type: 'Task' });
   for (const format of [[], ['--json']]) {
-    const child = spawn(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'eval', file, '--sources', JSON.stringify(options.sources), '--id', 'trial', '--model', 'fixture-local', ...format], { cwd: target.root, env: { ...testEnvironment(process.env), PM_PATH: target.workspace, PATH: join(target.root, 'no-tools'), GIT_CEILING_DIRECTORIES: target.root } });
-    let out = ''; let error = '';
-    child.stdout.on('data', chunk => { out += String(chunk); }); child.stderr.on('data', chunk => { error += String(chunk); });
-    const [code] = await once(child, 'exit'); assert.equal(code, 0, error + out);
+    const out = await nativeEvaluation(target, file, options.sources, ['--id', 'trial', '--model', 'fixture-local', ...format]);
     const result = (format.length ? JSON.parse(out) : decodeToon(out)) as { status: string; reason: string; rows?: unknown };
     assert.equal(result.status, 'skipped'); assert.equal(result.reason, 'foreign_record_preserved'); assert.equal(result.rows, undefined);
   }
@@ -233,4 +248,48 @@ test('evaluation records child reach and unknown usage after a child transport f
   assert.equal(result.summary.recursive.tokens, null);
   assert.equal(result.summary.recursive.calls, 23);
   assert.equal(result.summary.recursive.correct, 20);
+});
+
+/** Native renderers and reused legacy receipts preserve missing child evidence and mixed totals. */
+test('evaluation interrupted children stay unknown in native JSON TOON and reused aggregates', async t => {
+  const { target, suite, options } = await fixture(t);
+  await installExtension(target.workspace);
+  const { endpoint } = await httpFixture(t, (request, response) => {
+    response.end(JSON.stringify(request.url === '/api/tags' ? { models: [{ name: 'fixture-local' }] } : { response: '{"answer":"1","action":"finish"}', prompt_eval_count: 10, eval_count: 5 }));
+  });
+  const local = { ...options, mode: undefined, stub: undefined, model: 'fixture-local', endpoint };
+  await assert.rejects(evaluateRlm(suite, { ...local, on_boundary: step => { if (step === 'baseline_reserved') throw new Error('interrupted'); } }), { code: 'incomplete' });
+  await assert.rejects(evaluateRlm(suite, { ...local, on_boundary: step => { if (step === 'row_settled') throw new Error('paused after unknown row'); } }), { code: 'incomplete' });
+  const receipt = (await target.client.get('rlm-eval-trial')).item;
+  const state = JSON.parse(String(receipt.description)) as { complete: boolean; rows: NonNullable<RlmEvalResult['rows']> };
+  assert.equal(state.rows[0].recursive.children, null);
+  assert.equal(state.rows[0].truncated.children, null);
+  // Supply known observations beside the real interrupted row without further inference.
+  while (state.rows.length < suite.questions.length) {
+    const row = structuredClone(state.rows[0]); row.id = suite.questions[state.rows.length].id;
+    for (const arm of [row.truncated, row.recursive]) Object.assign(arm, { correct: true, refusal: '', children: 0, calls: 1, tokens_in: 10, tokens_out: 5, wall_ms: 1, failed_requests: 0 });
+    state.rows.push(row);
+  }
+  state.complete = true;
+  await target.client.update(receipt.id, { description: JSON.stringify(state) });
+  const file = join(target.root, 'suite.json'); await writeFile(file, JSON.stringify(suite));
+  for (const format of [['--json'], []]) {
+    const out = await nativeEvaluation(target, file, options.sources, ['--id', 'trial', '--model', 'fixture-local', '--endpoint', endpoint, '--full', ...format]);
+    const result = (format.length ? JSON.parse(out) : decodeToon(out)) as RlmEvalResult;
+    for (const arm of ['truncated', 'recursive'] as const) {
+      assert.equal(result.rows![0][arm].children, 'unknown');
+      for (const counter of ['children', 'calls', 'tokens', 'wall_ms', 'failed_requests'] as const) assert.equal(result.summary[arm][counter], 'unknown');
+      assert.equal(result.summary[arm].unknown_children_arms, 1);
+      assert.equal(result.summary[arm].correct, 19);
+    }
+  }
+  state.rows[0].recursive.children = 0; // Legacy interrupted metric must also become unknown.
+  state.rows[1].recursive.children = 2;
+  state.rows[2].recursive.refusal = 'interrupted'; state.rows[2].recursive.children = 0;
+  await target.client.update(receipt.id, { description: JSON.stringify(state) });
+  const reused = await evaluateRlm(suite, local);
+  assert.equal(reused.rows![0].recursive.children, null);
+  assert.equal(reused.rows![1].recursive.children, 2);
+  assert.equal(reused.summary.recursive.children, null);
+  assert.equal(reused.summary.recursive.unknown_children_arms, 2);
 });
