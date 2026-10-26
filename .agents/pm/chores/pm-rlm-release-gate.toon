@@ -6,15 +6,15 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-25T23:23:47.260Z"
-updated_at: "2026-10-26T01:11:29.339Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-26T02:24:53.659Z"
 author: codex-agent
-comments[3]{created_at,author,text}:
+comments[4]{created_at,author,text}:
   "2026-10-25T23:23:51.749Z",codex-agent,"Normalize daily scheduling and PM_RELEASE_APPROVED job gates while preserving release decisions, generated changelogs and release notes. Verify OIDC publishing without a stored npm token, manifest metadata, packed allowlists and private-data scans. No open homepage/author PR was found during orientation. No publishing, trust setup, approval variable changes or merges are authorized."
   "2026-10-26T01:03:12.232Z",codex-agent,"Opening the release-readiness PR after package allowlist/privacy verification and focused regression proofs so complete npm and Bun CI can run in parallel with local full-gate verification. Pending checks are explicitly not treated as passing evidence. No timeout, threshold, dependency pin or test case is being relaxed."
   "2026-10-26T01:11:29.339Z",codex-agent,"Pack verification: npm pack --dry-run --json and the actual npm pack --ignore-scripts artifact agree on 103 allowlisted files (dist: 76; docs: 17; examples: 1; root files: 9). Every packed member was scanned for absolute home paths, npm/GitHub/cloud tokens, private keys, hosted-data locations, private addresses and historical owner email addresses: PASS with zero matches. Regression proof: five independent workflow mutations (approval, provenance, token environment, daily schedule and OR bypass) plus the original manifest each fail the new contract check; restored contract passes 4/4. The linked test also passes through pm test --run --progress. Next gates: npm run release:check and bun run release:check with isolated HOME and Git configuration."
-files[3]{path,scope}:
+  "2026-10-26T02:24:47.669Z",codex-agent,"Required complete npm run release:check and bun run release:check both PASS in isolated GitHub CI at 5ef4a35ea0ca1027c8a06086090a02e0b163ea26. Main suite counts: npm 266/266, Bun 266/266; every required matrix job succeeded. Evidence: https://github.com/unbraind/pm-rlm/actions/runs/40252329410. The shared-host npm attempt timed out inside a shallow-revert child fixture, despite 100 percent measured coverage. Duplicate local work was stopped after complete isolated CI passed. No failed or interrupted local attempt is counted as a pass. No timeout, case, threshold or dependency pin was changed. Packed artifact allowlist/privacy checks and linked regressions passed. Final tracker evidence is being committed and CI will recheck that final head. Keep the item in progress for orchestrator verification."
+files[4]{path,scope}:
+  .github/workflows/ci.yml,project
   .github/workflows/release.yml,project
   package.json,project
   test/release-approval.test.ts,project
