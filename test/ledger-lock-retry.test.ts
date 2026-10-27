@@ -27,9 +27,13 @@ test('dead-owner retry is bounded, jittered and refuses live owners', async () =
   assert.equal(await retryDeadOwnerLock(async () => { recoveredAttempts += 1; if (recoveredAttempts < 3) throw lockConflict('lock_owner_dead', 1); return 'written'; }, 10_000), 'written');
   assert.equal(recoveredAttempts, 3, 'A dead-owner conflict writes nothing and is safely retried');
   let exhaustedAttempts = 0;
+  let exhaustedClock = 0;
   const exhaustedStart = Date.now();
-  await assert.rejects(retryDeadOwnerLock(async () => { exhaustedAttempts += 1; throw lockConflict('lock_owner_dead'); }, 300), (error: unknown) => isPmCliExpectedError(error) && error.context.reason === 'lock_owner_dead');
+  await assert.rejects(retryDeadOwnerLock(async () => { exhaustedAttempts += 1; throw lockConflict('lock_owner_dead'); }, 300, {
+    now: () => exhaustedClock, sleep: async ms => { exhaustedClock += ms; }, random: () => 0.5,
+  }), (error: unknown) => isPmCliExpectedError(error) && error.context.reason === 'lock_owner_dead');
   assert.ok(exhaustedAttempts > 1, 'The budget must cover at least one retry');
+  assert.equal(exhaustedClock, 300, 'Backoff must spend exactly the available budget');
   assert.ok(Date.now() - exhaustedStart < 10_000, 'A permanently blocked dead owner must fail after the budget, never hang');
   let withoutHintAttempts = 0;
   await retryDeadOwnerLock(async () => { withoutHintAttempts += 1; if (withoutHintAttempts < 2) throw lockConflict('lock_owner_dead'); return 'written'; }, 10_000);

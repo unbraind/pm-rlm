@@ -5,7 +5,8 @@ import { join } from 'node:path';
 import { readdir } from 'node:fs/promises';
 import { RlmBlobs } from './blobs.ts';
 import { resolveRuntimeStatusRegistry, commitItemMutations, isPmCliExpectedError, acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
-import { DEFAULT_DEAD_OWNER_RETRY_MS, retryDeadOwnerLock } from './lock-retry.ts';
+import { DEFAULT_DEAD_OWNER_RETRY_MS, retryDeadOwnerLock, retryWithinBudget } from './lock-retry.ts';
+import type { RetryTiming } from './lock-retry.ts';
 import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
@@ -44,8 +45,10 @@ export function settleStep(state: RlmState, step: RlmStep, response: ModelRespon
 }
 /** Crash-recovery tuning for ledger mutations that a dead previous writer's lock still blocks. */
 export interface RlmLedgerOptions {
-  /** Total millisecond budget for retrying mutations a dead owner's commit-fence cleanup gate still blocks (unbraind/pm-cli#1609); zero disables retries. */
+  /** Total millisecond budget for retrying mutations a dead owner's commit-fence cleanup gate still blocks (unbraind/pm-cli#1609); zero refuses without starting a mutation. */
   deadOwnerRetryMs?: number;
+  /** Optional monotonic clock, sleeper and jitter boundaries for deterministic recovery scheduling. */
+  retryTiming?: Partial<RetryTiming>;
 }
 /** Atomic SDK manifests, immutable payloads, process-owned leases and idempotent call materialization. */
 export class RlmLedger {
@@ -57,10 +60,12 @@ export class RlmLedger {
   private readonly leases = new Map<string, string>();
   private readonly reads = new WeakMap<RlmState, { lease: string | undefined; checkpoint: string }>();
   private readonly deadOwnerRetryMs: number;
+  private readonly retryTiming: Partial<RetryTiming>;
   /** Bind every mutation to the supplied tracker and an attributable author. */
   constructor(workspace: string, author = 'pm-rlm', options: RlmLedgerOptions = {}) {
     this.workspace = workspace; this.author = author;
     this.deadOwnerRetryMs = integer(options.deadOwnerRetryMs ?? DEFAULT_DEAD_OWNER_RETRY_MS, 0);
+    this.retryTiming = options.retryTiming ?? {};
     this.client = new PmClient({ pmRoot: workspace, author, noExtensions: true });
   }
   /** Persist package schema through native SDK schema mutations. */
@@ -193,9 +198,8 @@ export class RlmLedger {
     await this.mutate(() => this.client.release(call.id));
   }
   /** Retry one SDK mutation while a dead previous writer's commit-fence cleanup gate still blocks takeover. */
-  /** Retry one SDK mutation while a dead previous writer's commit-fence cleanup gate still blocks takeover. */
   private mutate<T>(operation: () => Promise<T>): Promise<T> {
-    return retryDeadOwnerLock(operation, this.deadOwnerRetryMs);
+    return retryDeadOwnerLock(operation, this.deadOwnerRetryMs, this.retryTiming);
   }
   /** Refuse snapshots read outside this lease or superseded by another checkpoint publication. */
   private async assertCurrent(state: RlmState): Promise<string> {
@@ -224,18 +228,12 @@ export class RlmLedger {
   }
   /** Serialize publication and collection across all runs in this non-git tracker. */
   private async storage<T>(operation: (blobs: RlmBlobs) => Promise<T>): Promise<T> {
-    const deadline = Date.now() + 60000;
-    for (;;) {
-      let unlock: () => Promise<void>;
-      try { unlock = await this.lease('__blob_store'); }
-      catch (error) {
-        if (!(error instanceof RlmError) || error.code !== 'busy' || Date.now() >= deadline) throw error;
-        await new Promise(resolve => { setTimeout(resolve, 25); });
-        continue;
-      }
-      try { return await operation(new RlmBlobs(this.workspace)); }
-      finally { await unlock(); }
-    }
+    const unlock = await retryWithinBudget(() => this.lease('__blob_store'), 60_000, {
+      delayMs: error => error instanceof RlmError && error.code === 'busy' ? 25 : undefined,
+      exhaustedError: new RlmError('busy', 'Storage lease retry budget exhausted'),
+    }, this.retryTiming);
+    try { return await operation(new RlmBlobs(this.workspace)); }
+    finally { await unlock(); }
   }
   /** Collect unreachable payloads while retaining current and verified historical checkpoint references. */
   async gc(): Promise<{ removed: number; bytes: number }> {
