@@ -444,3 +444,6 @@ protocol fixture, changes one copied source revision and measures dependent
 refusal and independent reuse. Build with `npm run build`, then run `node examples/verified-subanswer-reuse.ts`
 from a checkout containing `origin/main`. Its report makes no inference-quality
 claim and fingerprints the original archive before and after.
+
+Release jobs with write permissions are restricted to `unbraind/pm-rlm` at job
+level, so a fork cannot run publication with its own approval variable.

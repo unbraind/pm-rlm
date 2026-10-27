@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   prepare:
-    if: github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true'
+    if: github.repository == 'unbraind/pm-rlm' && github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -228,7 +228,7 @@ jobs:
 
   release:
     needs: prepare
-    if: github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' && needs.prepare.outputs.should_release == 'true'
+    if: github.repository == 'unbraind/pm-rlm' && github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' && needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     permissions:
       # Only protected metadata PRs, tag pushes and GitHub releases need writes.
@@ -881,7 +881,7 @@ jobs:
     # tag exists, so the sole missing step is the GitHub release. Everything
     # else - version bump, changelog commit, npm publish, tag push - is a
     # should_release path and is never taken from here.
-    if: github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' && needs.prepare.outputs.resume_release_notes == 'true'
+    if: github.repository == 'unbraind/pm-rlm' && github.ref == 'refs/heads/main' && vars.PM_RELEASE_APPROVED == 'true' && needs.prepare.outputs.resume_release_notes == 'true'
     runs-on: ubuntu-latest
     # Creating the GitHub release for the already-pushed tag is the only write
     # this job performs; the version, tag and npm artifact are already
