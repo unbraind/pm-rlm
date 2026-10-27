@@ -265,6 +265,7 @@ function runC8(root: string, config: CoverageGateConfig, inventory: SourceInvent
       join(root, "coverage"),
       process.execPath,
       "--test",
+      "--test-concurrency=2",
       ...config.tests,
     ],
     { cwd: root, env, stdio: "inherit" },
