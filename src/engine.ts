@@ -30,15 +30,17 @@ export interface RlmRunOptions {
   question_item?: string;
   on_call_complete?: (call: RlmCall) => void | Promise<void>;
 }
-/** Empty slice for a root call whose scope lives outside the model prompt. */
-const EMPTY_SLICE: RlmSlice = { fragments: [], estimated_tokens: 2 };
+/** Current producer policy shared with immutable child-contract verification. */
+export const RLM_VERSIONS = { parser_version: 3, aggregate_version: 2 } as const;
+/** Fresh empty slice for a root whose authorized scope lives outside its prompt. */
+export function emptyRootSlice(): RlmSlice { return { fragments: [], estimated_tokens: estimateTokens([]) }; }
 /** Construct prompts identically for reservation planning and live execution. */
 function modelPrompt(call: RlmCall, components?: string[], observation?: unknown): string {
   return `${PROTOCOL}${components === undefined ? '' : '\n' + EVIDENCE_PROTOCOL + JSON.stringify(components)}\n${JSON.stringify({ question: call.subgoal, depth: call.depth, slice: call.slice, transcript: call.steps.map((step, index) => ({ action: step.response!.text, observation: index === call.steps.length - 1 && observation !== undefined ? observation : step.observation })) })}`;
 }
 /** Compute exact first-step admission through the engine's native reservation primitive. */
 export function initialRlmCharge(question: string, components: string[], settings: RlmSettings): number {
-  const call: RlmCall = { id: '', depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: '', steps: [] };
+  const call: RlmCall = { id: '', depth: 0, subgoal: question, slice: emptyRootSlice(), digest: '', steps: [] };
   const state = { settings, reserved_tokens: 0 };
   return reserveStep(state, call, modelPrompt(call, components)).reserved;
 }
@@ -143,9 +145,10 @@ export class RlmEngine {
   private state: RlmState;
   private readonly contract?: string;
   private readonly selection?: RlmReuseSelection;
+  private readonly strictUsage: boolean;
   private readonly onComplete?: (call: RlmCall) => void | Promise<void>;
   /** Bind one recovered or new state to its transport and explicit tracker. */
-  constructor(ledger: RlmLedger, state: RlmState, model: RlmModel, onComplete?: (call: RlmCall) => void | Promise<void>) { this.ledger = ledger; this.state = state; this.model = model; this.onComplete = onComplete; this.contract = state.reuse_identity === undefined ? undefined : reuseTargetContract(state); this.selection = state.reuse_selection === undefined ? undefined : { ...state.reuse_selection }; }
+  constructor(ledger: RlmLedger, state: RlmState, model: RlmModel, onComplete?: (call: RlmCall) => void | Promise<void>, strictUsage = false) { this.strictUsage = strictUsage; this.ledger = ledger; this.state = state; this.model = model; this.onComplete = onComplete; this.contract = state.reuse_identity === undefined ? undefined : reuseTargetContract(state); this.selection = state.reuse_selection === undefined ? undefined : { ...state.reuse_selection }; }
   /** Expose a durable copy for observational embedded tooling. */
   snapshot(): RlmState { return structuredClone(this.state); }
   /** Reserve a logical child before materialization; digest reuse survives process failure. */
@@ -204,8 +207,8 @@ export class RlmEngine {
     state.reserved_tokens += charge;
     return observation;
   }
-  /** Verify execution refusals without writes, rebuilding the budget in recursive execution order. */
-  async validateRecorded(): Promise<void> {
+  /** Verify execution without writes, optionally checking exact accounting reconstructed in call order. */
+  async validateRecorded(strictUsage = this.strictUsage): Promise<void> {
     if (this.state.reuse !== undefined) { await validateReuseState(this.ledger.workspace, this.state); return; }
     const state = { ...this.state, reserved_tokens: 0 };
     const visited = new Set<string>();
@@ -215,6 +218,7 @@ export class RlmEngine {
       visited.add(call.id);
       let completed = false;
       for (const [index, step] of call.steps.entries()) {
+        if (strictUsage && step.settled === true && step.reserved !== step.response!.tokens_in + step.response!.tokens_out) throw new RlmError('replay', 'Settled charge differs from recorded usage');
         state.reserved_tokens += step.response !== undefined && step.settled !== true
           ? step.response.tokens_in + step.response.tokens_out
           : step.reserved;
@@ -276,6 +280,7 @@ export class RlmEngine {
       if (state.components !== undefined && call.result !== undefined && !completed) throw new RlmError('replay', 'Completed evidence call has no verified component answer');
     };
     await visit(state.calls[0]);
+    if (strictUsage && state.reserved_tokens !== this.state.reserved_tokens) throw new RlmError('replay', 'Recorded budget differs from its step charges');
   }
   /** Reuse persisted outputs and observations; unfinished inference alone is retried. */
   private async execute(call: RlmCall): Promise<string> {
@@ -358,7 +363,8 @@ export class RlmEngine {
   }
 }
 /** Prepare a native run before execution so controllers can retain its terminal id and evidence. */
-export async function prepareRlmRun(question: string, options: RlmRunOptions, corpus?: Awaited<ReturnType<typeof readCorpus>>) {
+export async function prepareRlmRun(question: string, options: RlmRunOptions, corpus?: Awaited<ReturnType<typeof readCorpus>>, runId?: string) {
+  if (runId !== undefined && !/^[A-Za-z0-9_-]{1,160}$/.test(runId)) throw new RlmError('invalid', 'Invalid explicit run id');
   text(question);
   const reuse_identity = options.reuse_identity === undefined ? undefined : parseReuseIdentity(options.reuse_identity);
   const reuse_selection = options.reuse_selection === undefined ? undefined : parseReuseSelection(options.reuse_selection);
@@ -375,10 +381,11 @@ export async function prepareRlmRun(question: string, options: RlmRunOptions, co
   assertLedgerPrivacy({ question, items: snapshot, settings }, options.workspace, settings.key_env);
   const ledger = new RlmLedger(options.workspace, options.author);
   await ledger.registerFields();
-  const run = await ledger.newRunId();
-  const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
-  const state: RlmState = { version: 1, parser_version: 3, aggregate_version: 2, run, question, settings, scope, snapshot, certificate: corpus.complete_list, ...(options.snapshot_only === true || reuse_identity !== undefined ? { snapshot_only: true } : {}), ...(reuse_identity === undefined ? {} : { reuse_identity }), ...(reuse_selection === undefined ? {} : { reuse_selection }), calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
-  state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice: EMPTY_SLICE, digest: promptDigest(question, EMPTY_SLICE, settings), steps: [] });
+  const run = runId ?? await ledger.newRunId();
+  const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', parent: 'none', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
+  const state: RlmState = { version: 1, ...RLM_VERSIONS, run, question, settings, scope, snapshot, certificate: corpus.complete_list, ...(options.snapshot_only === true || reuse_identity !== undefined ? { snapshot_only: true } : {}), ...(reuse_identity === undefined ? {} : { reuse_identity }), ...(reuse_selection === undefined ? {} : { reuse_selection }), calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
+  const slice = emptyRootSlice();
+  state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice, digest: promptDigest(question, slice, settings), steps: [] });
   const unlock = await ledger.lease(run);
   try { await ledger.materialize(state, state.calls[0]); } finally { await unlock(); }
   return { ledger, engine: new RlmEngine(ledger, state, options.model ?? new HttpModel(settings), options.on_call_complete), run };

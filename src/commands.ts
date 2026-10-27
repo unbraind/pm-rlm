@@ -1,4 +1,6 @@
 import { compactReuseResult, reuseRlm } from './reuse.ts';
+import { compactRepairResult, repairRlm, resumeRepairRlm } from './repair.ts';
+import { parseRepairRequest, RlmRepairError } from './repair-contract.ts';
 import { parseReuseIdentity, RlmReuseError } from './reuse-contract.ts';
 import { readFile } from 'node:fs/promises';
 import type { RlmEvalMetrics, RlmEvalResult, RlmEvalSummary } from './evaluation-types.ts';
@@ -48,6 +50,17 @@ function evaluationOutput(result: RlmEvalResult): Record<string, unknown> {
 export async function runCommand(command: string, ctx: CommandHandlerContext): Promise<Record<string, unknown>> {
   try {
     const argument = operand(ctx.args[0]);
+    if (command === 'repair' || command === 'repair-resume') {
+      const options = { workspace: ctx.pm_root, author: ctx.global.author };
+      let result;
+      if (command === 'repair-resume') result = await resumeRepairRlm(argument, options);
+      else {
+        let parts: unknown;
+        try { parts = JSON.parse(operand(ctx.options.parts)); } catch { throw new RlmRepairError(); }
+        result = await repairRlm(parseRepairRequest({ source: argument, parts, budget_tokens: numericOperand(ctx.options.budgetTokens) }), options);
+      }
+      return ctx.options.full === true ? { ...result } : compactRepairResult(result);
+    }
     if (command === 'eval') {
       let suite: unknown; let sources: Record<string, string>;
       try {
@@ -101,12 +114,18 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, reuse_identity, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';
-    const remedy = error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError ? error.remedy : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
+    const remedy = error instanceof RlmRepairError || error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError ? error.remedy : ['repair', 'repair-resume'].includes(command) ? 'Supply --parts JSON and unsigned --budget-tokens for repair, or a repair id for repair-resume; inspect tracker integrity' : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
     throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (remedy === undefined ? '' : '; remedy: ' + remedy) : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
   }
 }
 /** Register ledger fields and native commands, preserving host TOON and JSON rendering. */
 export function register(api: ExtensionApi): void {
+  for (const name of ['repair', 'repair-resume']) api.registerCommand(defineCommand({
+    name: `rlm ${name}`, description: 'Repair declared evidence gaps with a fresh explicit budget',
+    arguments: [{ name: 'run', required: true }],
+    flags: [...(name === 'repair' ? ['parts', 'budget-tokens'].map(option => ({ long: `--${option}`, description: option, value_name: 'value', value_type: 'string' as const })) : []), { long: '--full', description: 'Include full supported answers and witness references', value_type: 'boolean' as const }],
+    examples: [`pm rlm ${name} run-id --json`], run: ctx => runCommand(name, ctx),
+  }));
   api.registerItemFields(RLM_FIELDS);
   api.registerCommand(defineCommand({
     name: 'rlm eval', description: 'Measure recursive and truncated answers on a frozen public question suite',

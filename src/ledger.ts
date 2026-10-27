@@ -4,7 +4,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { readdir } from 'node:fs/promises';
 import { RlmBlobs } from './blobs.ts';
-import { resolveRuntimeStatusRegistry, commitItemMutations, isPmCliExpectedError, acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, writeFileAtomic } from '@unbrained/pm-cli/sdk';
+import { resolveRuntimeStatusRegistry, commitItemMutations, mutateItem, acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, resolveTransactionSchema, resolveItemTypeRegistry, writeFileAtomic } from '@unbrained/pm-cli/sdk';
 import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
@@ -50,6 +50,7 @@ export class RlmLedger {
   private readonly author: string;
   private readonly leases = new Map<string, string>();
   private readonly reads = new WeakMap<RlmState, { lease: string | undefined; checkpoint: string }>();
+  private readonly versions = new WeakMap<RlmState, number>();
   /** Bind every mutation to the supplied tracker and an attributable author. */
   constructor(workspace: string, author = 'pm-rlm') {
     this.workspace = workspace; this.author = author;
@@ -72,6 +73,7 @@ export class RlmLedger {
   /** Recover a checkpoint through certified SDK reads; optional native history reads never grant write authority. */
   async load(run: string, at?: string): Promise<RlmState> {
     const lease = this.leases.get(run);
+    const version = (await sdkRead(() => readHistoryEntries(getHistoryPath(this.workspace, run), run))).length;
     // Historical manifests pin every committed version, including one read before a concurrent save.
     const blobs = new RlmBlobs(this.workspace);
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
@@ -123,9 +125,11 @@ export class RlmLedger {
       }
       // Preserve by-value JSON semantics even when multiple references share a cached payload.
       const state = JSON.parse(JSON.stringify(decoded)) as RlmState;
+      if (at === undefined && lease !== undefined && (await readHistoryEntries(getHistoryPath(this.workspace, run), run)).length !== version) throw new RlmError('busy', 'Run changed while loading; reload inside the run lease');
+      this.versions.set(state, version);
       if (at === undefined) this.reads.set(state, { lease, checkpoint: root.rlm_state });
       return state;
-    } catch { throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
+    } catch (error) { if (error instanceof RlmError && error.code === 'busy') throw error; throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
   }
   /** Save reservations, model outputs, observations and completed digests in one atomic SDK item update. */
   async save(state: RlmState): Promise<void> {
@@ -133,12 +137,21 @@ export class RlmLedger {
     await this.storage(async blobs => {
       const expected = await this.assertCurrent(state);
       const checkpoint = await blobs.encode(state);
-      try {
-        await commitItemMutations({ pmRoot: this.workspace, author: this.author, transactionId: `rlm-checkpoint-${randomUUID()}`, mutations: [{ op: 'update', id: state.run, match: { key: 'rlm_state', value: expected }, options: { rlmState: checkpoint, message: 'Checkpoint recursive run' } }] });
-      } catch (error) {
-        if (isPmCliExpectedError(error) && error.code === 'upsert_match_changed') throw new RlmError('busy', 'Stale checkpoint refused by SDK compare-and-set');
-        throw error;
-      }
+      const settings = await readSettings(this.workspace);
+      const schema = await resolveTransactionSchema(this.workspace, settings);
+      const hydrated = { ...settings, schema: schema.schema, item_types: { definitions: [...settings.item_types.definitions, ...schema.typeDefinitionsFromFile] } };
+      let version = this.versions.get(state)!;
+      await mutateItem({ pmRoot: this.workspace, settings: hydrated, id: state.run, op: 'update', author: this.author, message: 'Checkpoint recursive run', skipNoop: true, typeToFolder: resolveItemTypeRegistry(hydrated).type_to_folder,
+        mutate: async document => {
+          const current = (await readHistoryEntries(getHistoryPath(this.workspace, state.run), state.run)).length;
+          if (document.metadata.rlm_state !== expected || document.metadata.rlm_run !== state.run || !document.metadata.tags.includes('rlm:call') || document.metadata.parent !== state.calls[0].parent || current !== version) throw new RlmError('busy', 'Stale checkpoint refused by SDK history compare-and-set');
+          if (document.metadata.rlm_state === checkpoint) return { changedFields: [] };
+          document.metadata.rlm_state = checkpoint;
+          version = current + 1;
+          return { changedFields: ['rlm_state'] };
+        },
+      });
+      this.versions.set(state, version);
       this.reads.set(state, { lease: this.leases.get(state.run), checkpoint });
     });
   }
@@ -157,13 +170,16 @@ export class RlmLedger {
         ...(checkpoint === undefined ? {} : { rlmState: checkpoint }),
       } });
       await this.client.claim(call.id);
-      if (checkpoint !== undefined) this.reads.set(state, { lease: this.leases.get(state.run), checkpoint });
+      if (checkpoint !== undefined) {
+        this.versions.set(state, (await readHistoryEntries(getHistoryPath(this.workspace, state.run), state.run)).length);
+        this.reads.set(state, { lease: this.leases.get(state.run), checkpoint });
+      }
     });
   }
   /** Repair completion evidence after a crash without repeating model inference or comments. */
   async complete(snapshot: RlmState, requestedCall: RlmCall): Promise<void> {
     assertLedgerPrivacy(requestedCall, this.workspace, snapshot.settings.key_env);
-    await this.assertCurrent(snapshot);
+    await this.assertCurrent(snapshot, false);
     const state = await this.load(snapshot.run);
     const call = state.calls.find(entry => entry.id === requestedCall.id);
     if (call === undefined || (call.result === undefined && call.failure === undefined)) throw new RlmError('invalid', 'Completion requires a terminal checkpoint call');
@@ -183,15 +199,20 @@ export class RlmLedger {
       await this.client.close(call.id, 'Call terminated; evidence recorded', { validateClose: 'off' });
     }
     await this.client.release(call.id);
+    const version = (await readHistoryEntries(getHistoryPath(this.workspace, state.run), state.run)).length;
+    this.versions.set(snapshot, version);
+    this.versions.set(state, version);
   }
   /** Refuse snapshots read outside this lease or superseded by another checkpoint publication. */
-  private async assertCurrent(state: RlmState): Promise<string> {
+  private async assertCurrent(state: RlmState, checkVersion = true): Promise<string> {
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
     const expected = this.reads.get(state);
     const token = this.leases.get(state.run);
+    const root = corpus.items.find(item => item.id === state.run);
     const raw = await sdkRead(() => readFileIfExists(join(this.workspace, 'runtime', `rlm-${state.run}.json`)));
     const owner = raw === null ? undefined : await sdkRead(() => record(JSON.parse(raw)));
-    if (token === undefined || expected?.lease !== token || owner?.token !== token || corpus.items.find(item => item.id === state.run)?.rlm_state !== expected.checkpoint) throw new RlmError('busy', 'Stale checkpoint refused; reload inside the run lease');
+    if (token === undefined || expected?.lease !== token || owner?.token !== token || root?.rlm_state !== expected.checkpoint || root.rlm_run !== state.run || !root.tags.includes('rlm:call') || root.parent !== state.calls[0].parent) throw new RlmError('busy', 'Stale checkpoint refused; reload inside the run lease');
+    if (checkVersion && (await readHistoryEntries(getHistoryPath(this.workspace, state.run), state.run)).length !== this.versions.get(state)) throw new RlmError('busy', 'Checkpoint history advanced; reload inside the run lease');
     return expected.checkpoint;
   }
   /** Mark only unfinished calls failed; preserve and report completed or previously failed calls. */
