@@ -1,0 +1,18 @@
+id: pm-rlm-packed-timing
+title: Keep packed npm evaluation within its unchanged subprocess bound
+description: "During toolchain candidate validation, the standalone packed npm consumer completed installation and earlier SDK/CLI exercises, then its eval-sdk.ts subprocess exceeded 300000 ms. The packed Bun consumer passed. Diagnose startup, storage and shared-load costs without changing the 20-question evaluation, assertions or deadlines."
+type: Task
+status: open
+priority: 3
+tags: []
+created_at: "2026-10-26T21:57:04.245Z"
+updated_at: "2026-10-26T21:57:19.470Z"
+author: codex-agent
+acceptance_criteria: Both packed consumers complete all existing checks within unchanged bounds; distinguish assertion failures from timeouts.
+comments[1]{created_at,author,text}:
+  "2026-10-26T21:57:19.467Z",codex-agent,"Separate npm run test:install result: npm consumer failed after 996076.562189 ms because eval-sdk.ts exceeded its unchanged 300000 ms subprocess limit; Bun consumer passed all installed SDK/CLI checks in 375765.42913 ms. Total 2 cases, 1 pass and 1 failure, no cancellations or skips. This is a timeout receipt, not evidence of a failed evaluation assertion. No deadline or test change was applied."
+files[1]{path,scope}:
+  test/install.acceptance.ts,project
+tests[1]{command,scope,provenance{author,created_at,source_kind}}:
+  "npm run test:install",project,codex-agent,"2026-10-26T21:57:14.488Z",local_mutation
+body: ""

@@ -1,0 +1,14 @@
+id: pm-rlm-sdk-dead-fence
+title: SDK commit fence delays dead-owner crash recovery beyond the default lock wait
+description: SDK 2026.10.23 introduces a commit fence whose orphaned cleanup gate prevents automatic dead-owner lock takeover within the default three-second wait. The full deterministic minimal reproduction and CI evidence are recorded on pm-rlm-tc1023. Preserve the package crash-safety assertions and require an upstream SDK fix rather than package retries.
+type: Issue
+status: open
+priority: 1
+tags: []
+created_at: "2026-10-26T18:17:31.287Z"
+updated_at: "2026-10-26T22:08:18.501Z"
+author: codex-agent
+comments[2]{created_at,author,text}:
+  "2026-10-26T20:58:15.019Z",codex-agent,"Contract check: upstream issue https://github.com/unbraind/pm-cli/issues/1549 separates mutation-lease fencing from already-completed dead-owner recovery. The published SDK source returns from cleanup-gate recovery while the gate age is at most 10000 ms, before inspecting its recorded owner. Thus a provably killed fence owner still blocks the default 3000 ms acquisition, as the minimal reproduction shows. This supports treating the recovery delay as an SDK regression rather than adding a package retry layer. The original issue concerns preventing stale overwrite; this follow-up concerns crash recovery after that fix."
+  "2026-10-26T22:08:18.501Z",codex-agent,"Exact pushed commit 5dd620a08ddf93ccf2a13047340932459ddf0fc4 reproduces the upstream recovery failure in Node 26 CI: https://github.com/unbraind/pm-rlm/actions/runs/40408966320/job/121874051444 . The root-write SIGKILL test reports lock_conflict with reason lock_owner_dead, waited_ms 3013, owner_handoffs 0, while raw four-metric coverage remains 100%. This confirms the SDK-only fence plus SIGKILL reproduction already recorded on pm-rlm-tc1023. Regenerated changelog is preserved and production ledger source remains identical to the dependency bump. This PR remains blocked on upstream default-wait dead-owner recovery; do not add package retries, extend waits, skip the crash test or lower thresholds."
+body: ""
