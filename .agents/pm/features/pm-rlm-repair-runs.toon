@@ -6,11 +6,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-27T14:27:23.277Z"
-updated_at: "2026-10-27T18:10:58.825Z"
+updated_at: "2026-10-27T20:13:32.907Z"
 author: codex-agent
 acceptance_criteria: "One unsupported part among ten causes work only for that part and invalidated dependencies; budget exhaustion retains the supported answer with named gaps; no missing part is silently dropped. Typed SDK and CLI, compact TOON/JSON, strict schemas and remedies, no-git real public corpus validation, seeded state and interleaving evidence, npm and Bun CI gates."
 parent: pm-rlm-a1ih
-comments[8]{created_at,author,text}:
+comments[10]{created_at,author,text}:
   "2026-10-27T14:28:00.396Z",codex-agent,"Design: explicit caller component DAG and source dependencies; native run per targeted component, fresh shared accounting, persistent revision-fenced repair controller, current SDK source revalidation before inference/retry, transitive skip propagation, original evidence retained with origin run references. No new import, export or sync command; journal interchange and native ledger round trips will be model-tested. Tests use only deterministic model adapters, real SDK trackers."
   "2026-10-27T14:51:10.363Z",codex-agent,"Public protocol-fixture validation passed on a verified read-only copy of unbraind/pm-lint at f2c20efa78139f4071f3dd08d317bea05337fe28: 12 source items, 54941 source JSON bytes, 30 unchanged read-only files. Ten components: one scheduled, nine reused, ten supported, one logical child, two model requests, 8181 charged tokens; resume adds zero requests. Zero budget retains nine supported answers and one named gap. Compact JSON is 2918 bytes. No external inference or runtime Git."
   "2026-10-27T15:02:24.481Z",codex-agent,"The behavioral revert proof passed in a disposable source copy: the zero-budget retention regression passes fixed code, fails when supported-component reuse is removed from the execution function, and passes after restoration (1/1). New state tests cover 500 seeded journal sequences, older inputs, native relationships and fields, random custom status roles/focus, source ABA changes, and competing executors at controller and SDK transaction transitions. Source reads now use public locateItem/readLocatedItem and runtime schema/type registry APIs rather than repeated full command projections."
@@ -19,7 +19,9 @@ comments[8]{created_at,author,text}:
   "2026-10-27T17:52:52.505Z",codex-agent,"Final five behavioral reverts pass in a disposable copy: retained supported answers, native checkpoint ABA fencing, controller ABA fencing, late peer-child usage charged exactly once, and dense evidence declarations. Every case passes fixed code, fails the reverted behavior with an assertion, and passes after restoration (5/5). Typecheck, lint and the unchanged zero-duplication gate pass after consolidating SDK test read-back helpers."
   "2026-10-27T18:05:35.045Z",codex-agent,"Final accounting regression and its disposable revert pass (1/1), supplementing the previous five reverts. New repair children opt into the native engine verifier: stored totals must equal reconstructed charges, and settled reservations must equal recorded usage. Legacy native readers keep their policy. Fifteen initial-contract fault cases plus late peer completion pass (17/17); the final public measurement remains one scheduled, nine reused, ten supported, 8181 charged tokens, zero resume requests, and 2918 compact JSON bytes. The superseded local broad targeted run was stopped after about fifty minutes on the saturated host; its unfinished interleaving result is not approval. The final CI release gates will run the updated shared-tracker test, which retains native audit history while removing completed fixture rows between injections."
   "2026-10-27T18:10:58.824Z",codex-agent,"Final schema fuzz passes 1/1 and the public read-only measurement passes with unchanged numbers after strict accounting. Changelog generation/check pass. Strict tracker health passes with an isolated home and Git identity configuration, including extension, integrity, history and storage checks; the ambient home alone discovers a newer external extension and reports host-version skew, so that ambient result is not used as CI evidence. The agent claim is released and the item remains in_progress for orchestrator verification. Full npm and Bun release evidence will be collected from the branch CI workflow before reporting readiness."
-files[21]{path,scope}:
+  "2026-10-27T18:46:17.921Z",codex-agent,"CI on f0df94b failed: the PR Node 26 suite reported 447/451 passing, with a killed primitive writer leaving an SDK item lock that command completion did not recover, two outdated behavioral-revert transforms, and the enclosing shallow-proof failure. Measured coverage was 100 statements/functions/lines and 99.1 overall branches, with repair branches 93.19. Follow-up uses the supported native lock policy before completion; the real root-write SIGKILL regression now passes 1/1. Both old revert transforms are updated for the history fence and captured read version. New source-chain, malformed-birth, child-integrity, publication/read/final-receipt and busy/transport regressions pass 5/5; the configured loopback HTTP model and source-contract checks pass 2/2. New SDK step boundaries are observable and included by the generated interleaving test. The committed pre-follow-up interleaving test passed all 33 transitions, and final-head npm/Bun global installs passed 2/2. Fresh full npm/Bun gates remain required; no green release-gate claim is made. Prior runs: https://github.com/unbraind/pm-rlm/actions/runs/40557881142 and https://github.com/unbraind/pm-rlm/actions/runs/40557876926. The queue rules CI wait cutoff has been reached; the follow-up will request a fresh run and report it pending."
+  "2026-10-27T20:12:01.336Z",codex-agent,"Follow-up integrity checks bind continued children to the producer question, model policy and allowance. Uncertain usage blocks new inference while preserving completed peers; a later resume reads native peer completion even after a saved gap. Foreign subcalls and unreachable native records are refused before materialization. Four additional disposable behavioral reverts each pass fixed, fail reverted with an assertion, and pass restored (4/4), supplementing six prior cases. Native ownership, graph and positive-budget older-journal smoke checks pass 3/3. The seeded 500-sequence model now includes four completed native children among twelve producer journals; the earlier zero-budget edition passed 500 sequences with 235 older replays, while this expanded edition and additional interleaving boundaries await fresh CI. Typecheck, lint, complete docstrings and unchanged zero-duplication checks pass. PR https://github.com/unbraind/pm-rlm/pull/39 remains ready for review; the first CI result is failed (447/451), and fresh npm/Bun full gates will be requested after this commit and reported pending at the existing queue-rule cutoff. The item stays in_progress and this agent releases its claim."
+files[24]{path,scope}:
   index.ts,project
   package.json,project
   README.md,project
@@ -32,8 +34,11 @@ files[21]{path,scope}:
   src/repair-contract.ts,project
   src/repair.ts,project
   test/install.acceptance.ts,project
+  test/ledger-storage-revert.ts,project
+  test/reconcile-revert.ts,project
   test/repair-fixture.ts,project
   test/repair-install.acceptance.ts,project
+  test/repair-integrity.test.ts,project
   test/repair-proof.ts,project
   test/repair-public.ts,project
   test/repair-refusals.test.ts,project
@@ -41,13 +46,16 @@ files[21]{path,scope}:
   test/repair.test.ts,project
   test/review-r4-revert.ts,project
   test/round4.test.ts,project
-tests[6]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[9]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "node --test --test-concurrency=2 --test-name-pattern=\"repair schema fuzz\" test/repair-refusals.test.ts",project,codex-agent,"2026-10-27T15:08:57.294Z",local_mutation,feat/evidence-directed-repair-runs
   node test/repair-proof.ts,project,codex-agent,"2026-10-27T17:39:31.216Z",local_mutation,feat/evidence-directed-repair-runs
   node test/repair-public.ts,project,codex-agent,"2026-10-27T17:39:31.216Z",local_mutation,feat/evidence-directed-repair-runs
   npm run typecheck,project,codex-agent,"2026-10-27T17:39:31.216Z",local_mutation,feat/evidence-directed-repair-runs
   npm run lint,project,codex-agent,"2026-10-27T17:39:31.216Z",local_mutation,feat/evidence-directed-repair-runs
   node test/repair-proof.ts 'native repair charges',project,codex-agent,"2026-10-27T18:05:43.095Z",local_mutation,feat/evidence-directed-repair-runs
+  node --test --test-concurrency=1 test/repair-integrity.test.ts,project,codex-agent,"2026-10-27T18:46:28.188Z",local_mutation,feat/evidence-directed-repair-runs
+  node --test --test-concurrency=1 --test-name-pattern='SIGKILL during root' test/ledger-storage.test.ts,project,codex-agent,"2026-10-27T18:46:28.188Z",local_mutation,feat/evidence-directed-repair-runs
+  node test/repair-proof.ts unreachable,project,codex-agent,"2026-10-27T20:13:08.983Z",local_mutation,feat/evidence-directed-repair-runs
 docs[3]{path,scope}:
   docs/EVIDENCE-DIRECTED-REPAIR.md,project
   docs/repair-validation.json,project

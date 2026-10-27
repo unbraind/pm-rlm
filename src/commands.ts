@@ -124,7 +124,7 @@ export function register(api: ExtensionApi): void {
     name: `rlm ${name}`, description: 'Repair declared evidence gaps with a fresh explicit budget',
     arguments: [{ name: 'run', required: true }],
     flags: [...(name === 'repair' ? ['parts', 'budget-tokens'].map(option => ({ long: `--${option}`, description: option, value_name: 'value', value_type: 'string' as const })) : []), { long: '--full', description: 'Include full supported answers and witness references', value_type: 'boolean' as const }],
-    examples: [`pm rlm ${name} run-id --json`], run: ctx => runCommand(name, ctx),
+    examples: [name === 'repair' ? `pm rlm repair run-id --parts '[{"name":"summary","question":"What is documented?","depends_on":[],"sources":["source-item-id"]}]' --budget-tokens 50000 --json` : 'pm rlm repair-resume run-id --json'], run: ctx => runCommand(name, ctx),
   }));
   api.registerItemFields(RLM_FIELDS);
   api.registerCommand(defineCommand({

@@ -160,7 +160,12 @@ export class RlmLedger {
     assertLedgerPrivacy({ state, call }, this.workspace, state.settings.key_env);
     await this.storage(async blobs => {
       const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
-      if (corpus.items.some(item => item.id === call.id)) { await this.assertCurrent(state); return; }
+      const existing = corpus.items.find(item => item.id === call.id);
+      if (existing !== undefined) {
+        await this.assertCurrent(state);
+        if (existing.rlm_run !== state.run || !existing.tags.includes('rlm:call') || existing.parent !== call.parent) throw new RlmError('scope', 'Foreign native call refused');
+        return;
+      }
       if (call.depth !== 0) await this.assertCurrent(state);
       else if (!this.leases.has(state.run)) throw new RlmError('busy', 'Run creation requires its lease');
       const checkpoint = call.depth === 0 ? await blobs.encode(state) : undefined;
@@ -184,6 +189,10 @@ export class RlmLedger {
     const call = state.calls.find(entry => entry.id === requestedCall.id);
     if (call === undefined || (call.result === undefined && call.failure === undefined)) throw new RlmError('invalid', 'Completion requires a terminal checkpoint call');
     await this.materialize(state, call);
+    const settings = await readSettings(this.workspace);
+    // Reconcile this call's dead SDK writer through its native lock policy before command materialization.
+    const releaseItem = await acquireLock(this.workspace, call.id, settings.locks.ttl_seconds, this.author, false, settings.governance.force_required_for_stale_lock, settings.locks.wait_ms);
+    await releaseItem();
     await this.client.comments(call.id, { add: call.failure === undefined ? `RLM result:\n${call.result}` : `RLM refusal:\n${JSON.stringify(call.failure)}`, ifAbsent: true });
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete()));
     const row = corpus.items.find(item => item.id === call.id)!;

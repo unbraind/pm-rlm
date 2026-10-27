@@ -21,11 +21,11 @@ async function checkpoint(workspace: string, run: string): Promise<RlmRepairChec
 test('500 seeded repair journal round trips preserve SDK state across older inputs whitespace and relationships', async t => {
   const { workspace, request, ids, client } = await repairFixture(t);
   const next = seeded(0x52657061);
-  const controllers: { run: string; inputs: RlmRepairCheckpoint[]; native: GetResult['item']; expectedDescription: string | undefined; history: number[] }[] = [];
+  const controllers: { run: string; inputs: RlmRepairCheckpoint[]; native: GetResult['item']; expectedDescription: string | undefined; history: number[]; child?: { id: string; allowance: number; charged: number; native: GetResult['item'] } }[] = [];
   for (let index = 0; index < 12; index++) {
     const parts = structuredClone(request.parts);
     parts[0].question = [`What is known?\r\n keep  spaces `, ` What\n is known?\t`, `Unicode é 😀 ${index}`][index % 3];
-    const result = repaired(await repairRlm({ ...request, parts, budget_tokens: 0 }, { workspace }));
+    const result = repaired(await repairRlm({ ...request, parts, budget_tokens: index % 3 === 0 ? 1000000 : 0 }, { workspace, model: repairModel(ids[2]) }));
     const inputs: RlmRepairCheckpoint[] = [];
     const entries = await readHistoryEntries(getHistoryPath(workspace, result.run), result.run);
     for (let version = 1; version <= entries.length; version++) {
@@ -36,7 +36,14 @@ test('500 seeded repair journal round trips preserve SDK state across older inpu
     }
     await client.update(result.run, { parent: ids[index % 3], dep: [`id=${ids[(index + 1) % 3]},kind=related`], body: 'native body\r\n  exact whitespace  ' });
     const native = (await client.get(result.run, { depth: 'full' })).item;
-    controllers.push({ run: result.run, inputs, native, expectedDescription: native.description, history: [] as number[] });
+    let child: typeof controllers[number]['child'];
+    if (result.status === 'complete') {
+      const state = await new RlmLedger(workspace).load(result.components[2].run);
+      const charged = state.calls.flatMap(call => call.steps).reduce((sum, step) => sum + step.reserved + ((step.observation as { estimated_tokens?: number } | undefined)?.estimated_tokens ?? 0), 0);
+      assert.equal(state.reserved_tokens, charged);
+      child = { id: state.run, allowance: inputs.at(-1)!.targets[2].allowance, charged, native: (await client.get(state.run, { depth: 'full' })).item };
+    }
+    controllers.push({ run: result.run, inputs, native, expectedDescription: native.description, history: [] as number[], child });
   }
   let replays = 0;
   const model = new ScriptedModel(() => assert.fail('A retained answer must not invoke a model'));
@@ -51,25 +58,37 @@ test('500 seeded repair journal round trips preserve SDK state across older inpu
     const imported = parseRepairCheckpoint(JSON.parse(next() % 2 === 0 ? exported.replaceAll('\n', '\r\n') : exported));
     assert.deepEqual(parseRepairRequest(imported.request), controller.inputs[selected].request);
     const reference = structuredClone(imported);
-    // Independent zero-budget model: supported parts complete; each other pending part is a named budget gap.
-    for (const target of reference.targets) if (target.phase === 'pending') {
-      target.phase = target.kind === 'reuse' ? 'complete' : 'gap';
-      target.reason = target.kind === 'reuse' ? '' : 'budget';
-      reference.revision++;
+    // Independent model: retain completed native work; only missing intent and progress are published.
+    for (const target of reference.targets) {
+      if (target.kind === 'repair' && controller.child !== undefined) {
+        if (target.child === '') { target.child = controller.child.id; target.allowance = controller.child.allowance; target.phase = 'running'; reference.revision++; }
+        if (target.phase !== 'complete') { target.phase = 'complete'; target.reason = ''; reference.revision++; }
+      } else if (target.phase === 'pending') {
+        target.phase = target.kind === 'reuse' ? 'complete' : 'gap';
+        target.reason = target.kind === 'reuse' ? '' : 'budget';
+        reference.revision++;
+      }
     }
     const targetRevision = hashHistoryStream(await readHistoryEntries(getHistoryPath(workspace, controller.run), controller.run));
     await commitItemMutations({ pmRoot: workspace, author: 'repair-property', transactionId: `repair-property-${sequence}-${targetRevision}`, mutations: [{ op: 'update', id: controller.run, match: { key: 'description', value: controller.expectedDescription }, options: { description: 'RLM repair v1\n' + JSON.stringify(imported) } }] });
     const recovered = repaired(await resumeRepairRlm(controller.run, { workspace, model }));
-    assert.equal(recovered.calls, 0); assert.equal(recovered.reused, 2); assert.deepEqual(recovered.gaps, ['part2']);
+    assert.equal(recovered.calls, controller.child === undefined ? 0 : 1); assert.equal(recovered.reused, 2); assert.deepEqual(recovered.gaps, controller.child === undefined ? ['part2'] : []);
+    assert.equal(recovered.budget.charged, controller.child?.charged ?? 0);
     const actual = (await new PmClient({ pmRoot: workspace, noExtensions: true }).get(controller.run, { depth: 'full' })).item;
     assert.deepEqual(parseRepairCheckpoint(JSON.parse(actual.description!.slice('RLM repair v1\n'.length))), reference, `seed=0x52657061 sequence=${sequence}`);
+    if (controller.child !== undefined) {
+      const observed = (await client.get(controller.child.id, { depth: 'full' })).item;
+      const { updated_at: _observedTime, ...observedFields } = observed;
+      const { updated_at: _nativeTime, ...nativeFields } = controller.child.native;
+      assert.deepEqual(observedFields, nativeFields, 'Native child fields and relationships survive older controller imports');
+    }
     controller.expectedDescription = actual.description;
     for (const field of ['id', 'title', 'type', 'status', 'tags', 'parent', 'body', 'assignee', 'dependencies']) assert.deepEqual(actual[field], controller.native[field], `native ${field} sequence=${sequence}`);
   }
   assert.ok(replays > 200);
   assert.equal(model.requests.length, 0);
   for (const id of ids) assert.equal((await client.get(id, { depth: 'full' })).item.parent, undefined);
-  t.diagnostic(`500 sequences; ${replays} older-input replays; 12 real producer journals; native fields read back after actual package recovery; replayed checkpoint counters cannot reset native history`);
+  t.diagnostic(`500 sequences; ${replays} older-input replays; 12 real producer journals including four completed native children; native fields read back after actual package recovery; replayed checkpoint counters cannot reset native history`);
 });
 
 /** Compete at every traced controller transition on the same real non-git tracker. */

@@ -280,6 +280,7 @@ export class RlmEngine {
       if (state.components !== undefined && call.result !== undefined && !completed) throw new RlmError('replay', 'Completed evidence call has no verified component answer');
     };
     await visit(state.calls[0]);
+    if (strictUsage && visited.size !== this.state.calls.length) throw new RlmError('replay', 'Native call graph contains unreachable records');
     if (strictUsage && state.reserved_tokens !== this.state.reserved_tokens) throw new RlmError('replay', 'Recorded budget differs from its step charges');
   }
   /** Reuse persisted outputs and observations; unfinished inference alone is retried. */

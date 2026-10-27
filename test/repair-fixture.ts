@@ -1,20 +1,22 @@
+import assert from 'node:assert/strict';
+import { repairRlm } from '../src/repair.ts';
 import { runRlm } from '../src/engine.ts';
 import { ScriptedModel, tracker } from './helpers.ts';
 import type { TestContext } from 'node:test';
-import type { ModelRequest, RlmSettings } from '../src/types.ts';
+import type { ModelRequest, RlmSettings, RlmState, RlmModel } from '../src/types.ts';
 import type { PmClient } from '@unbrained/pm-cli/sdk';
 import { parseRepairCheckpoint } from '../src/repair-contract.ts';
-import type { RlmRepairPart, RlmRepairResult, RlmRepairSkipped, RlmRepairCheckpoint } from '../src/repair-contract.ts';
+import type { RlmRepairPart, RlmRepairResult, RlmRepairSkipped, RlmRepairCheckpoint, RlmRepairRequest } from '../src/repair-contract.ts';
 
 /** Decode the native model prompt shared by all deterministic repair fixtures. */
 export function repairPrompt(request: ModelRequest): { transcript: { observation: { data: { digest: string } } }[]; question: string } {
   return JSON.parse(request.prompt.slice(request.prompt.lastIndexOf('\n') + 1));
 }
 /** Deterministic evidence adapter, replacing inference only and reading actual witness receipts. */
-export function repairModel(id: string): ScriptedModel {
+export function repairModel(id: string, component?: string): ScriptedModel {
   return new ScriptedModel(request => {
     const input = repairPrompt(request);
-    const part = (JSON.parse(input.question) as { part: { name: string } }).part.name;
+    const part = component ?? (JSON.parse(input.question) as { part: { name: string } }).part.name;
     return JSON.stringify(input.transcript.length === 0 ? { action: 'witness', id, start: 0, end: 20 } : { action: 'answer', components: [{ component: part, status: 'supported', answer: `answer ${part}`, reason: '', witnesses: [{ step: 0, digest: input.transcript[0].observation.data.digest }] }] });
   });
 }
@@ -44,4 +46,36 @@ export async function repairChild(client: PmClient, run: string, component: stri
 export async function repairJournal(client: PmClient, run: string): Promise<RlmRepairCheckpoint> {
   const item = (await client.get(run, { depth: 'full' })).item;
   return parseRepairCheckpoint(JSON.parse(item.description!.slice('RLM repair v1\n'.length)));
+}
+
+/** Route independent fixture components to their own native witness source. */
+export function repairPartsModel(ids: string[]): ScriptedModel {
+  return new ScriptedModel(async input => {
+    const name = (JSON.parse(repairPrompt(input).question) as { part: { name: string } }).part.name;
+    return (await repairModel(ids[Number(name.slice(4))]).complete(input)).text;
+  });
+}
+
+/** Produce completed native evidence with optional declared downstream invalidation. */
+export async function completedRepairFixture(t: TestContext, size = 3, dependent = false) {
+  const setup = await repairFixture(t, size);
+  if (dependent) setup.request.parts[0].depends_on = [setup.request.parts.at(-1)!.name];
+  const model = repairPartsModel(setup.ids);
+  const complete = repaired(await repairRlm(setup.request, { workspace: setup.workspace, model }));
+  return { ...setup, model, complete };
+}
+/** Import native progress through the real SDK for corruption and replay tests. */
+export async function writeNativeCheckpoint(client: PmClient, id: string, state: RlmState): Promise<void> {
+  await client.run('update', { id, options: { rlmState: JSON.stringify(state) } });
+}
+
+/** Crash exactly at one durable boundary and read the resulting intent through the SDK. */
+export async function interruptedRepair(workspace: string, request: RlmRepairRequest, model: RlmModel, stop: string, client: PmClient) {
+  let run = ''; let stopped = false;
+  await assert.rejects(repairRlm(request, { workspace, model, on_transition: (name, id) => {
+    if (name === 'created') run = id;
+    if (name === stop) { stopped = true; throw new Error('Interrupted native transition'); }
+  } }));
+  assert.ok(stopped, 'The declared transition must actually be reached');
+  return { run, journal: await repairJournal(client, run) };
 }

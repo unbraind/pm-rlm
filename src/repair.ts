@@ -84,6 +84,10 @@ async function source(ledger: RlmLedger, run: string, options: RlmRepairOptions,
     return { state, answers: answer.components, revision: expected, proofs: new Map(answer.components.map(part => [part.component, { run, state }])) };
   } finally { await unlock(); }
 }
+/** Bind component execution and continuation to one producer-owned prompt format. */
+function repairQuestion(question: string, part: RlmRepairPart, dependencies: RlmRepairComponent[]): string {
+  return JSON.stringify({ question, part: { name: part.name, question: part.question }, dependencies });
+}
 /** Read a stopped repair without inference or writes; each bad child becomes only its named gap. */
 async function priorSource(ledger: RlmLedger, run: string, checkpoint: RlmRepairCheckpoint, options: RlmRepairOptions, ancestors: Set<string>): Promise<RepairSource> {
   if (checkpoint.targets.some(target => target.phase === 'pending' || target.phase === 'running')) throw new RlmRepairError('evidence');
@@ -104,6 +108,8 @@ async function priorSource(ledger: RlmLedger, run: string, checkpoint: RlmRepair
         if (!ownedCall(native, target.child, run)) throw new RlmRepairError('evidence');
         const state = await childCheckpoint(ledger, target.child);
         if (state === undefined || state.calls[0].parent !== run || JSON.stringify(state.scope) !== JSON.stringify({ ids: part.sources })) throw new RlmRepairError('evidence');
+        const dependencies = part.depends_on.map((name): RlmRepairComponent => ({ ...answers.get(name)!, run: proofs.get(name)!.run, disposition: checkpoint.targets.find(target => target.component === name)!.kind === 'reuse' ? 'reused' : 'repaired', remedy: '' }));
+        if (state.calls[0].subgoal !== repairQuestion(base.state.question, part, dependencies) || !childPolicy(state, base.state.settings) || state.settings.budget_tokens !== target.allowance || target.allowance > Math.min(checkpoint.request.budget_tokens, base.state.settings.budget_tokens)) throw new RlmRepairError('evidence');
         const completed = await replayRlm(ledger.workspace, target.child);
         if (completed.components?.length !== 1 || completed.components[0].component !== part.name) throw new RlmRepairError('evidence');
         answer = completed.components[0]; proofs.set(part.name, { run: target.child, state });
@@ -139,6 +145,7 @@ async function save(ledger: RlmLedger, run: string, checkpoint: RlmRepairCheckpo
       return { changedFields: ['description'] };
     },
   });
+  await boundary(options, 'journal:written', run);
   const current = await itemHead(ledger, run);
   if (current.length !== expected.length + 1) throw new RlmRepairError('busy');
   await boundary(options, 'journal:applied', run);
@@ -223,8 +230,10 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
     let native = await row(ledger, run);
     if (!ownedRepair(native)) return { ...FOREIGN };
     const initialHead = await itemHead(ledger, run);
+    await boundary(options, 'head', run);
     native = await row(ledger, run);
     if (!ownedRepair(native)) return { ...FOREIGN };
+    await boundary(options, 'native', run);
     if ((await itemHead(ledger, run)).digest !== initialHead.digest) throw new RlmRepairError('busy');
     const checkpoint = await readCheckpoint(ledger, run, native!.description!);
     await boundary(options, 'read', run);
@@ -251,10 +260,11 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
       if (target.child !== '' && childRow === undefined && (await readHistoryEntries(getHistoryPath(ledger.workspace, target.child), target.child)).length > 0) { target.phase = 'skipped'; target.reason = 'missing_child'; charged = limit; uncertain = true; }
       if (childRow !== undefined && !foreign) {
         const state = await childCheckpoint(ledger, target.child);
-        if (state === undefined || state.calls[0].parent !== run || state.components?.length !== 1 || state.components[0] !== part.name || state.settings.budget_tokens !== target.allowance || target.allowance > limit - charged || state.settings.max_calls > origin.state.settings.max_calls - calls || state.reserved_tokens > target.allowance || state.calls.length > state.settings.max_calls || !childPolicy(state, origin.state.settings)) { target.phase = 'skipped'; target.reason = 'child_evidence'; charged = limit; uncertain = true; }
+        if (state === undefined || state.calls[0].parent !== run || state.components?.length !== 1 || state.components[0] !== part.name || state.settings.budget_tokens !== target.allowance || target.allowance > (uncertain ? limit : limit - charged) || state.settings.max_calls > origin.state.settings.max_calls - (uncertain ? 0 : calls) || state.reserved_tokens > target.allowance || state.calls.length > state.settings.max_calls || !childPolicy(state, origin.state.settings)) { target.phase = 'skipped'; target.reason = 'child_evidence'; charged = limit; uncertain = true; }
         else {
           if (!uncertain) { accountedTokens = state.reserved_tokens; charged += accountedTokens; }
           accountedCalls = state.calls.length; calls += accountedCalls;
+          if (state.calls[0].result !== undefined && !changed && !blocked) { target.phase = 'complete'; target.reason = ''; }
           if (uncertain && state.calls[0].result === undefined) { target.phase = 'skipped'; target.reason = 'budget'; }
         }
       }
@@ -265,7 +275,7 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
         outputs.set(part.name, { ...originals.get(part.name)!, run: origin.proofs.get(part.name)!.run, disposition: 'reused', remedy: '' });
       } else if (target.phase === 'gap') outputs.set(part.name, gap(part.name, target.reason));
       else {
-        const question = JSON.stringify({ question: origin.state.question, part: { name: part.name, question: part.question }, dependencies: part.depends_on.map(name => outputs.get(name)) });
+        const question = repairQuestion(origin.state.question, part, part.depends_on.map(name => outputs.get(name)!));
         const settings = { ...origin.state.settings, budget_tokens: limit - charged, max_calls: origin.state.settings.max_calls - calls };
         if (target.child === '') {
           try {
@@ -292,7 +302,7 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
             const before = await childCheckpoint(ledger, target.child);
             const live = (await readCorpus(sourceLedger.workspace)).items.filter(item => part.sources.includes(item.id));
             const changedBefore = await changedSources(sourceLedger, checkpoint, part.sources);
-            if (before === undefined || (!changedBefore && (before.settings.budget_tokens !== target.allowance || target.allowance > limit - charged + accountedTokens || before.settings.max_calls > origin.state.settings.max_calls - calls + accountedCalls || before.reserved_tokens > target.allowance || before.calls.length > before.settings.max_calls || before.calls[0].parent !== run || before.components?.length !== 1 || before.components[0] !== part.name || before.calls[0].subgoal !== question || JSON.stringify(before.scope) !== JSON.stringify({ ids: part.sources }) || JSON.stringify(before.snapshot) !== JSON.stringify(live) || !childPolicy(before, origin.state.settings)))) {
+            if (before === undefined || (!changedBefore && (before.settings.budget_tokens !== target.allowance || target.allowance > (uncertain ? limit : limit - charged + accountedTokens) || before.settings.max_calls > origin.state.settings.max_calls - (uncertain ? 0 : calls - accountedCalls) || before.reserved_tokens > target.allowance || before.calls.length > before.settings.max_calls || before.calls[0].parent !== run || before.components?.length !== 1 || before.components[0] !== part.name || before.calls[0].subgoal !== question || JSON.stringify(before.scope) !== JSON.stringify({ ids: part.sources }) || JSON.stringify(before.snapshot) !== JSON.stringify(live) || !childPolicy(before, origin.state.settings)))) {
               target.phase = 'skipped'; target.reason = 'child_evidence'; charged = limit; uncertain = true; outputs.set(part.name, gap(part.name, target.reason));
             } else {
             let answer: RlmAnswerComponent | undefined;

@@ -13,7 +13,7 @@ proveRevert({ name: 'cleanup reads only inside its lease', file: 'src/ledger.ts'
     const unlock = await this.lease(run);
     try {`, pattern: '^cleanup resume interleavings' }, concurrency);
 proveRevert({ name: 'cleanup preserves terminal calls', file: 'src/ledger.ts', before: "if (call.result !== undefined || call.failure !== undefined) skipped.push(call.id);", after: "if (false) skipped.push(call.id);", pattern: '^cleanup resume interleavings' }, concurrency);
-proveRevert({ name: 'native SDK compare-and-set', file: 'src/ledger.ts', before: "match: { key: 'rlm_state', value: expected }, ", after: '', pattern: '^SDK compare-and-set' }, concurrency);
+proveRevert({ name: 'native SDK compare-and-set', file: 'src/ledger.ts', before: "document.metadata.rlm_state !== expected || document.metadata.rlm_run !== state.run || !document.metadata.tags.includes('rlm:call') || document.metadata.parent !== state.calls[0].parent || current !== version", after: 'false', pattern: '^SDK compare-and-set' }, concurrency);
 proveRevert({ name: 'completion uses durable counters', file: 'src/ledger.ts', before: 'const state = await this.load(snapshot.run);', after: 'const state = snapshot;', pattern: '^completion materialization' }, concurrency);
 proveRevert({ name: 'read provenance captured before asynchronous work', file: 'src/ledger.ts', before: 'this.reads.set(state, { lease, checkpoint: root.rlm_state });', after: 'this.reads.set(state, { lease: this.leases.get(run), checkpoint: root.rlm_state });', pattern: '^load captures lease provenance' }, concurrency);
 console.log('10/10 paired reconciliation behavioral revert proofs passed');

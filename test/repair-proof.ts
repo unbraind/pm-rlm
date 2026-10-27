@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { cp, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { assertChildCompleted, testTimeout } from './revert-source.ts';
 import { testEnvironment } from '../scripts/environment.ts';
 
 const root = resolve(import.meta.dirname, '..');
@@ -19,6 +20,10 @@ try {
     { file: 'src/repair.ts', pattern: 'controller history rejects ABA', test: 'test/repair-refusals.test.ts', changes: [[' || current.length !== expected.length || current.digest !== expected.digest', '']] },
     { file: 'src/repair.ts', pattern: 'late native child completion', test: 'test/repair-refusals.test.ts', changes: [['after.reserved_tokens - accountedTokens', 'after.reserved_tokens - (existing === undefined ? 0 : before.reserved_tokens)']] },
     { file: 'src/engine.ts', pattern: 'native repair charges', test: 'test/repair-refusals.test.ts', changes: [['if (strictUsage && step.settled === true', 'if (false && step.settled === true'], ['if (strictUsage && state.reserved_tokens', 'if (false && state.reserved_tokens']] },
+    { file: 'src/repair.ts', pattern: 'prior repair contract', test: 'test/repair-integrity.test.ts', changes: [["if (state.calls[0].subgoal !== repairQuestion(base.state.question, part, dependencies) || !childPolicy(state, base.state.settings) || state.settings.budget_tokens !== target.allowance || target.allowance > Math.min(checkpoint.request.budget_tokens, base.state.settings.budget_tokens))", 'if (false)']] },
+    { file: 'src/repair.ts', pattern: 'stopped budget gap', test: 'test/repair-integrity.test.ts', changes: [['(uncertain ? limit : limit - charged)', '(limit - charged)'], ['(uncertain ? limit : limit - charged + accountedTokens)', '(limit - charged + accountedTokens)'], ['if (state.calls[0].result !== undefined && !changed && !blocked)', 'if (false)']] },
+    { file: 'src/ledger.ts', pattern: 'foreign native subcalls', test: 'test/repair-integrity.test.ts', changes: [["if (existing.rlm_run !== state.run || !existing.tags.includes('rlm:call') || existing.parent !== call.parent)", 'if (false)']] },
+    { file: 'src/engine.ts', pattern: 'repair rejects unreachable native records', test: 'test/repair-integrity.test.ts', changes: [["if (strictUsage && visited.size !== this.state.calls.length)", 'if (false)']] },
     { file: 'src/evidence.ts', pattern: 'repair schema fuzz', test: 'test/repair-refusals.test.ts', changes: [['Array.from(value).every', 'value.every']] },
   ];
   const selected = process.argv[2] === undefined ? proofs : proofs.filter(proof => proof.pattern.includes(process.argv[2]));
@@ -29,7 +34,12 @@ try {
     let reverted = fixed;
     for (const [before, after] of proof.changes) { assert.equal(reverted.split(before).length, 2); reverted = reverted.replace(before, after); }
     /** Execute the same named regression against fixed, reverted, and restored function behavior. */
-    const run = () => spawnSync(process.execPath, ['--test', '--test-concurrency=2', '--test-name-pattern=' + proof.pattern, proof.test], { cwd: scratch, env, encoding: 'utf8', timeout: 300000 });
+    const run = () => {
+      const timeout = testTimeout(300000);
+      const result = spawnSync(process.execPath, ['--test', '--test-concurrency=1', '--test-reporter=spec', '--test-name-pattern=' + proof.pattern, proof.test], { cwd: scratch, env, encoding: 'utf8', timeout });
+      assertChildCompleted(result, timeout);
+      return result;
+    };
     const baseline = run(); assert.equal(baseline.status, 0, baseline.stdout + baseline.stderr);
     try {
       await writeFile(path, reverted);

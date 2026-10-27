@@ -50,17 +50,21 @@ before writes. Names and questions retain their exact bytes, including CRLF.
 
 Recovery holds the controller's process-owned lease for the complete
 read/modify/write sequence. Native child execution uses its own lease and
-checkpoint verification. Controller checkpoints compare the actual SDK history revision inside the SDK
+checkpoint verification. Completion reconciles a dead SDK checkpoint writer
+through the native lock policy before materializing command metadata. Controller checkpoints compare the actual SDK history revision inside the SDK
 item lock. Native append-only history records each operation with an identity
 bound to that history head; importing an older serialized counter cannot reuse
-a newer operation. Initial declarations and source coordinates remain immutable.
+a newer operation. Initial declarations and source coordinates remain immutable. Continued native
+proofs must match the same producer-owned question, model policy and allowance.
 Pending child identities are persisted before materialization. Retry reads
 current SDK rows and verified growing history coordinates, including ABA edits,
 before inference. Changed sources skip the target and every downstream part;
 a new repair is required for new source revisions or additional budget. A peer's
 completed child is reused without inference. Foreign records are skipped without
 mutation; an unverifiable child conservatively consumes the remaining allowance
-so unrelated work cannot overspend it. Call counts include verified native calls. Child recovery uses the native engine
+so unrelated work cannot overspend it. Already completed peers retain their
+verified answers, and resuming a stopped receipt rechecks later native peer
+completion. Call counts include verified native calls. Child recovery uses the native engine
 accounting verifier to match the stored total to reconstructed step charges and
 settled reservations to their recorded usage.
 No source item or original ledger is updated. Complete checkpoints
@@ -88,7 +92,8 @@ adapters and a pinned read-only public tracker copy. It measures selective
 execution, retained answers, accounting and recovery, not inference quality or
 provider billing. Native checkpoint v1/v2 interchange remains covered by the
 existing 500-sequence SDK state test; repair journals add 500 seeded sequences
-over real producer checkpoints, replaying older inputs and recovering each
+over real producer checkpoints, including completed native children and zero-budget
+receipts, replaying older inputs and recovering each
 through the package. CRLF and whitespace variants, native relationships and
 fields are compared after fresh SDK read-back against an independent state model. Interleaving tests compete at every observable controller
 transition on one non-git tracker and exercise native child peer completion.
