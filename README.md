@@ -2,7 +2,7 @@
 
 pm is context management for agents. Recursive Language Models keep a large context in an environment, inspect it through tools, delegate subgoals, and compose the results. `pm-rlm` makes a pm workspace that environment and its durable execution ledger. Each recursive call is a visible Task with its parent, model, digest, usage, claim and result evidence.
 
-This package is **unreleased**. Publication needs maintainer approval; the release workflow has no schedule and is guarded by `PM_RLM_RELEASE_ENABLED`. The deterministic model exists only in the test suite. Model weights are not bundled.
+This package is **unreleased**. Publication needs maintainer approval; the release workflow has no schedule and is guarded by `PM_RELEASE_APPROVED`. The deterministic model exists only in the test suite. Model weights are not bundled.
 
 Install from a reviewed local artifact now:
 
@@ -34,6 +34,32 @@ The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are
 | `tree --full` | `pm rlm tree run-id --full --json` | Entire ledger checkpoint, including snapshot and recorded outputs |
 | `resume` | `pm rlm resume run-id` | Recovered answer; completed digests and recorded model responses are reused |
 | `replay` | `pm rlm replay run-id --json` | Re-executed recorded actions and verified byte-identical answer, without inference or writes |
+
+## Install and release approval
+
+The first npm release is pending the maintainer's interactive bootstrap. After
+that first publish, the maintainer configures npm trusted publishing for
+`release.yml` and sets the repository variable `PM_RELEASE_APPROVED` to `true`.
+The daily workflow and manual dispatch both require this variable and `main`.
+Publishing uses OIDC with provenance; no stored npm token is needed.
+
+Once published, install the package and compatible pm host, then activate the
+extension in an initialized pm project:
+
+```sh
+npm install pm-rlm @unbrained/pm-cli
+npx --no-install pm package install ./node_modules/pm-rlm
+
+bun add pm-rlm @unbrained/pm-cli
+bunx --bun --no-install pm package install ./node_modules/pm-rlm
+
+pm package install npm:pm-rlm
+pm rlm --help
+```
+
+The package exports its SDK through `main` and `types` and registers commands
+with pm. It has no standalone `bin`: use `npx pm` or `bunx --bun pm` through
+the installed host. npm/Bun dependency installation alone does not activate it.
 
 ## Ledger storage
 
@@ -418,3 +444,10 @@ protocol fixture, changes one copied source revision and measures dependent
 refusal and independent reuse. Build with `npm run build`, then run `node examples/verified-subanswer-reuse.ts`
 from a checkout containing `origin/main`. Its report makes no inference-quality
 claim and fingerprints the original archive before and after.
+
+Every workflow job granted write permissions, including CodeQL, Dependabot and
+reusable workflow calls, requires the exact repository `unbraind/pm-rlm`.
+The approval variable controls GitHub releases; it does not impose a local npm
+publishing hold. Maintainers run the prepublish checks and authenticate with npm
+for local publication. The first local publish uses `--provenance=false`; daily
+GitHub OIDC releases keep provenance enabled.
