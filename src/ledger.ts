@@ -100,7 +100,7 @@ export class RlmLedger {
     // Historical manifests pin every committed version, including one read before a concurrent save.
     const blobs = new RlmBlobs(this.workspace);
     const corpus = await sdkRead(async () => certifyCompleteListResult(await this.client.listAllComplete({ includeBody: true })));
-    const root = at === undefined ? corpus.items.find(item => item.id === run) : (await sdkRead(() => this.client.get(run, { at, fields: 'rlm_state' }))).item;
+    const root = at === undefined ? corpus.items.find(item => item.id === run) : record(record(await sdkRead(() => this.client.get(run, { at, fields: 'rlm_state', outputBudget: 'unbounded', outputLimit: 'unbounded' }))).item);
     if (root === undefined || typeof root.rlm_state !== 'string') throw new RlmError('invalid', 'Run checkpoint was not found');
     try {
       const decoded = await blobs.decode(root.rlm_state);

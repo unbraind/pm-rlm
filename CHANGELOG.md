@@ -19,6 +19,10 @@
 - Tolerant action envelopes and corrective refusal feedback ([pm-rlm-v2parse](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-v2parse.toon))
 - Typed snapshot aggregation and one measured cloud comparison ([pm-rlm-v2agg](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-v2agg.toon))
 
+### Changed
+
+- Repair the ledger storage revert proof for the toolchain update ([pm-rlm-b602](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-b602.toon))
+
 ### Fixed
 
 - SDK commit fence delays dead-owner crash recovery beyond the default lock wait ([pm-rlm-sdk-dead-fence](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-sdk-dead-fence.toon))
