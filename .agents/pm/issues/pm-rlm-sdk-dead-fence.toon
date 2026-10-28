@@ -1,14 +1,87 @@
 id: pm-rlm-sdk-dead-fence
 title: SDK commit fence delays dead-owner crash recovery beyond the default lock wait
-description: SDK 2026.10.23 introduces a commit fence whose orphaned cleanup gate prevents automatic dead-owner lock takeover within the default three-second wait. The full deterministic minimal reproduction and CI evidence are recorded on pm-rlm-tc1023. Preserve the package crash-safety assertions and require an upstream SDK fix rather than package retries.
+description: "Work around pinned SDK commit-fence dead-owner recovery regression (unbraind/pm-cli#1609) in every crash-sensitive ledger and resumable evaluation mutation. Enforce a monotonic deadline before every mutation retry and cap sleep by retry hint, bounded jittered backoff and remaining budget. Share the deadline guard with storage busy retries. Preserve typed live-owner refusals, strict SIGKILL crash-safety assertions, non-git operation, public SDK and CLI outputs, and packed npm/native Bun consumers. Default budget 15 seconds; zero starts no mutation. Remove this workaround after the upstream fix ships and the dependency pin advances."
 type: Issue
-status: open
+status: in_progress
 priority: 1
-tags: []
+tags[2]: "gh:unbraind/pm-cli#1609","pr:unbraind/pm-rlm#36"
 created_at: "2026-10-26T18:17:31.287Z"
-updated_at: "2026-10-26T22:08:18.501Z"
+updated_at: "2026-10-27T20:23:38.118Z"
 author: codex-agent
-comments[2]{created_at,author,text}:
+comments[17]{created_at,author,text}:
   "2026-10-26T20:58:15.019Z",codex-agent,"Contract check: upstream issue https://github.com/unbraind/pm-cli/issues/1549 separates mutation-lease fencing from already-completed dead-owner recovery. The published SDK source returns from cleanup-gate recovery while the gate age is at most 10000 ms, before inspecting its recorded owner. Thus a provably killed fence owner still blocks the default 3000 ms acquisition, as the minimal reproduction shows. This supports treating the recovery delay as an SDK regression rather than adding a package retry layer. The original issue concerns preventing stale overwrite; this follow-up concerns crash recovery after that fix."
   "2026-10-26T22:08:18.501Z",codex-agent,"Exact pushed commit 5dd620a08ddf93ccf2a13047340932459ddf0fc4 reproduces the upstream recovery failure in Node 26 CI: https://github.com/unbraind/pm-rlm/actions/runs/40408966320/job/121874051444 . The root-write SIGKILL test reports lock_conflict with reason lock_owner_dead, waited_ms 3013, owner_handoffs 0, while raw four-metric coverage remains 100%. This confirms the SDK-only fence plus SIGKILL reproduction already recorded on pm-rlm-tc1023. Regenerated changelog is preserved and production ledger source remains identical to the dependency bump. This PR remains blocked on upstream default-wait dead-owner recovery; do not add package retries, extend waits, skip the crash test or lower thresholds."
+  "2026-10-27T12:11:59.162Z",glm-agent,"Decision update (owner-directed): instead of waiting for the upstream fix to unbraind/pm-cli#1609, this branch ships a package-side bounded retry for dead-owner lock conflicts. Acceptance: (1) every ledger SDK mutation treats lock_conflict with reason lock_owner_dead as retryable with bounded backoff and jitter, total budget 15s configurable through ledger options; live-owner lock_conflict still fails fast with the typed error. (2) The SIGKILL root-write test stays strict (previous budget/transcript intact AND next writer succeeds); add a live-owner fails-fast test and a bounded-budget test (permanently dead owner fails with the typed error after the budget, never hangs). (3) README storage/recovery note citing pm-cli#1609, removable once upstream ships. (4) Changelog regenerated the repo's way. Prefer the SDK lock-wait option over a hand-rolled loop if the pinned SDK exposes one."
+  "2026-10-27T12:40:12.725Z",glm-agent,"Revert proof (behavioural): with only the retry wrapper reverted (RlmLedger.mutate made a passthrough, no other change), the new bounded-budget regression test fails with 'The retry budget must be spent before failing' because the permanently fenced dead-owner lock surfaces the SDK lock_conflict immediately. The pre-fix SIGKILL root-write failure is the red main run (lock_conflict lock_owner_dead after waiting 3002ms from RlmLedger.complete). Timing note: locally the SIGKILL root test can pass even without the retry because the post-kill checkpoint read is slow enough under host load that the commit-fence gate is already within its ten-second expiry window when resume starts, so the SDK's internal three-second wait reaches the takeover; CI's faster gap is what failed. The new tests pin the semantics deterministically regardless of that gap."
+  "2026-10-27T12:58:35.548Z",glm-agent,"Design notes: (1) Every RlmLedger SDK mutation now runs through a bounded dead-owner retry: schema field registration, checkpoint save (commitItemMutations), call materialize (create + claim), complete (comments, usage transaction, close, release) and both run-lease acquireLock calls; the SDK's own lock-wait option cannot be used because the item-lock wait comes from workspace settings (locks.wait_ms) while the only per-call lockWaitMs options apply to workspace transaction locks, and raising the process-global PM_LOCK_WAIT_MS would also slow live-owner refusals, violating fails-fast. (2) The retry matches only lock_conflict with reason lock_owner_dead; live-owner and owner-unknown conflicts plus every other error rethrow immediately. (3) The deterministic evaluation item (rlm-eval-<id>, resumable across crashes) also retries its create and description CAS through the same helper. Orchestration parents in adaptive/reconcile/engine are excluded: they are freshly generated ids created in the same live process, so no dead-owner takeover is needed there. (4) Budget default 15s, configurable as RlmLedgerOptions.deadOwnerRetryMs; backoff follows the SDK's published retry_after_ms hint doubled per attempt, capped at 2s, with 50-150% jitter."
+  "2026-10-27T12:59:55.376Z",glm-agent,"Removal note: the package-side bounded dead-owner retry (src/lock-retry.ts, RlmLedgerOptions.deadOwnerRetryMs) and the README storage-section note citing unbraind/pm-cli#1609 can be removed once the upstream pm-cli fix ships and this package's pin is bumped past it; the SIGKILL crash test will keep proving crash safety without the retry. PR: https://github.com/unbraind/pm-rlm/pull/36"
+  "2026-10-27T13:31:34.871Z",glm-agent,"CI status at handoff: the PR's CI and CodeQL runs were still queued after the 30-minute polling budget (runner congestion), so no result is recorded yet. Pending runs: https://github.com/unbraind/pm-rlm/actions/runs/40508362808 (CI) and https://github.com/unbraind/pm-rlm/actions/runs/40508362746 (CodeQL). Local verification before push: retry test file 4/4 pass, SIGKILL storage drill 2/2 pass (root case green with the retry), lint, docstring, duplication, typecheck and identity gates pass, src/lock-retry.ts at 100% coverage, changelog regenerated and check passes."
+  "2026-10-27T18:44:15.667Z",codex-sol,"Continuation after review block on PR #36. General rule: an elapsed retry budget must forbid every subsequent mutation attempt, and every sleep must be capped by the retry hint, jittered bounded backoff and remaining budget. Preserve the existing implementation and tracker history; origin/main is already an ancestor of this branch. Audit all SDK mutations, CLI/output paths and packed npm/native Bun consumers; inject monotonic clock, sleeper and jitter for exact adversarial deadline tests and behavioral revert proof. GitHub currently has no inline review threads or submitted reviews; the supplied blocking finding is the actionable review input. No additional non-blocking findings are published there."
+  "2026-10-27T18:51:38.374Z",codex-sol,"Class audit: src/lock-retry.ts and the storage busy loop in src/ledger.ts were the only explicit timed mutation-retry loops; both now use retryWithinBudget. All ledger mutations and resumable evaluation create/CAS paths inherit the corrected guard. Engine/adaptive/reconcile parent writes use new identities and contain no retry loops. CLI commands and JSON/TOON rendering dispatch to these same SDK paths. Existing packed npm/native Bun acceptance now exercises expiry through the shipped RlmLedger API in addition to its SDK/CLI and JSON/TOON scenarios. Real non-git trackers cover zero-budget side-effect refusal and storage late-wakeup refusal. No SDK mock is used. The pinned PmClientOptions has no item-lock-wait option; CommitItemMutationsOptions.lockWaitMs is documented as the workspace writer lock only. Current public SDK release is 2026.10.27; dependency pins remain unchanged. Timing tests now inject the clock instead of changing wall-clock globals, preserving all existing assertions and adding exact budget assertions."
+  "2026-10-27T18:52:15.232Z",codex-sol,"Revert proof: node test/lock-retry-revert.ts passed 4/4 proofs. Disposable copies independently removed the pre-attempt guard, removed the remaining-budget sleep cap, removed hint/jitter ceilings, and restored the storage loop to its previous post-failure-only deadline shape while keeping the injected scheduler. Every variant produced an assertion failure (exit 1), then passed (exit 0) after exact restoration. The package worktree was never mutated by the proofs. Focused deadline and real-lock tests pass 11/11; the schedule sweep covers 693 budget/hint/jitter/late-wakeup combinations. Existing tests retain all assertions; clock injection removes host-load timing assumptions. The SIGKILL blob drill has passed; root drill and full gates follow."
+  "2026-10-27T18:54:24.555Z",codex-sol,"Focused validation complete: node --test --test-concurrency=2 --test-reporter=spec --test-name-pattern=\"SIGKILL|storage lease serializes\" test/ledger-storage.test.ts passed 3/3, including both strict partial-write SIGKILL drills and storage serialization. The root drill independently observed a partial native write and verified the prior transcript/budget plus successful resume. pm test pm-rlm-sdk-dead-fence --run --only-index 3 --progress also passed 11/11 with the updated worker kept alive until SIGKILL. Revert proofs passed 4/4. Changelog regeneration and check pass. Full npm and Bun release gates are run serially with at most two workers, isolated HOME/Git config and inherited credentials removed."
+  "2026-10-27T18:57:36.203Z",codex-sol,"Additional CI defect found and fixed in the same class audit: prior head CI https://github.com/unbraind/pm-rlm/actions/runs/40512870525 failed on both Node versions because test/revert.ts still matched the unwrapped completion comment. Updated its exact behavioral mutation to keep the retry wrapper and reintroduce only the forbidden SDK-read error conversion; no assertion was removed or weakened. Registered the new retry proof in the exhaustive shallow-clone inventory (13 scripts). The full gate was stopped before relying on results because shallow-clone proofs require the changed implementation and scripts to be committed. Initial gate launcher rejected NODE_OPTIONS worker configuration before tests; corrected with CPU affinity so Node uses at most two test workers. Full gates restart on the committed snapshot."
+  "2026-10-27T19:34:35.569Z",codex-sol,"Committed implementation and complete proof inventory as f5c5b73. Strict tracker health with CI-style isolated HOME and required merge drivers passes (authority ok, no failing findings). Full npm release:check has passed identity, typecheck, lint, duplication and docstrings, plus evaluation failure accounting and every shared-tracker interleaving boundary; the longer crash-boundary and remaining suite checks are still running. No test assertion has failed so far. Full gates remain serial; Bun follows npm. Final tracker-only evidence and claim release will be committed before the final push and exact-head CI check."
+  "2026-10-27T20:16:48.224Z",codex-sol,"Validation direction update under the queue rule to avoid exhausting the turn on local full runs: the full local npm gate was progressing but had not completed after over an hour, so its complete owned process tree was stopped (exit 143; not a test pass or a test failure). Evaluation failure-accounting and all shared-tracker interleaving boundaries had passed; later file results were buffered, so no full totals or package-wide coverage are claimed. Both full release commands will run through the existing manual CI workflow, which explicitly runs bun run release:check and npm run release:check on Node 26, plus the Node 22/26 matrix checks. Added explicit --test-concurrency=2 to the coverage, npm test and packed acceptance runners so every full run obeys the worker cap without relying on host CPU counts. No assertions or thresholds changed. Local focused coverage fixtures and behavioral revert proofs are rerun before pushing; final exact-head CI status will be reported within the existing 30-minute cutoff."
+  "2026-10-27T20:19:42.493Z",codex-sol,"Post-cap focused verification: coverage gate fixtures pass 2/2 with their unchanged full thresholds, and the retry behavioral reverts pass 4/4 again. Typecheck and lint pass after the explicit worker limit. The guard/storage implementation remains the already-committed f5c5b73 source. Before final handoff, the existing CI workflow will be manually dispatched at the pushed branch head to run both full release commands and packed npm/native Bun acceptance. Full package gates remain pending, with no full coverage percentage claimed from the stopped local run."
+  "2026-10-27T20:22:24.078Z",codex-sol,"Pushed code head 7a4b5a7d30c969fbebd75496a26ac79a7e2b43a9 to the existing PR https://github.com/unbraind/pm-rlm/pull/36 . Manual full-gate CI is queued: https://github.com/unbraind/pm-rlm/actions/runs/40577300450 (workflow_dispatch at this exact head; includes npm run release:check and bun run release:check). PR CI is queued at https://github.com/unbraind/pm-rlm/actions/runs/40577296085 and CodeQL at https://github.com/unbraind/pm-rlm/actions/runs/40577295866 . The original 30-minute polling cutoff is 2026-10-27T20:51Z and will not restart for tracker receipt commits. Full gates and packed consumers remain pending; the stopped local full run is not approval. Local passing evidence remains 11/11 retry/lock tests, 3/3 strict SIGKILL/storage checks, 4/4 disposable revert proofs, 2/2 coverage-runner fixtures, 1/1 fatal-evidence focused regression and the static checks."
+  "2026-10-27T20:23:29.784Z",codex-sol,"Implementation handoff: the deadline class is fixed in both dead-owner and storage busy retries; every attempt checks the monotonic deadline and sleeps are capped by hint/backoff/remaining budget. Exact injected schedules and the real non-git late-storage-release adversary fail on behavioral revert. The stale fatal-evidence proof is updated without weakening its assertion, and all 13 proof scripts remain required in shallow HEAD clones. Local passing commands/results: node --test --test-concurrency=2 --test-reporter=spec test/lock-retry-deadline.test.ts test/ledger-lock-retry.test.ts (11/11, also run through pm test); focused SIGKILL/storage serialization (3/3); node test/lock-retry-revert.ts (4/4 proofs, each fails reverted and passes restored); coverage-runner fixtures (2/2); fatal-child evidence regression (1/1); identity, typecheck, lint, duplication (0 clones), docstrings, build, strict isolated tracker health and changelog regeneration/check pass. Full npm/Bun release gates, package-wide coverage and packed consumers are pending CI at the URLs recorded above. This final tracker receipt/claim-release commit changes only tracker data and will refresh CI at the final head; current run links are always available at https://github.com/unbraind/pm-rlm/pull/36/checks . No full local suite or coverage pass is claimed. Claim released for orchestrator verification; item stays in_progress, never closed."
+files[15]{path,scope}:
+  index.ts,project
+  package.json,project
+  README.md,project
+  scripts/coverage-gate.ts,project
+  src/evaluation.ts,project
+  src/ledger.ts,project
+  src/lock-retry.ts,project
+  test/install.acceptance.ts,project
+  test/ledger-lock-retry.test.ts,project
+  test/ledger-storage.test.ts,project
+  test/lock-retry-deadline.test.ts,project
+  test/lock-retry-revert.ts,project
+  test/lock-retry-worker.ts,project
+  test/revert-shallow.test.ts,project
+  test/revert.ts,project
+tests[5]:
+  - command: node --test --test-reporter=spec test/ledger-lock-retry.test.ts
+    scope: project
+    provenance:
+      author: glm-agent
+      created_at: "2026-10-27T12:40:36.344Z"
+      source_kind: local_mutation
+      source_ref: fix/dead-owner-lock-recovery
+  - command: node --test --test-reporter=spec --test-name-pattern SIGKILL test/ledger-storage.test.ts
+    scope: project
+    timeout_seconds: 420
+    provenance:
+      author: glm-agent
+      created_at: "2026-10-27T12:49:12.512Z"
+      source_kind: local_mutation
+      source_ref: fix/dead-owner-lock-recovery
+  - command: node --test --test-concurrency=2 --test-reporter=spec test/lock-retry-deadline.test.ts test/ledger-lock-retry.test.ts
+    scope: project
+    timeout_seconds: 300
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-27T18:51:35.613Z"
+      source_kind: local_mutation
+      source_ref: fix/dead-owner-lock-recovery
+  - command: node test/lock-retry-revert.ts
+    scope: project
+    timeout_seconds: 300
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-27T18:52:15.720Z"
+      source_kind: local_mutation
+      source_ref: fix/dead-owner-lock-recovery
+  - command: "node --test --test-concurrency=2 --test-reporter=spec --test-name-pattern=\"coverage gate passes a fully covered fixture|coverage gate measures repository-root\" test/tooling.test.ts"
+    scope: project
+    timeout_seconds: 300
+    provenance:
+      author: codex-sol
+      created_at: "2026-10-27T20:18:57.062Z"
+      source_kind: local_mutation
+      source_ref: fix/dead-owner-lock-recovery
+docs[1]{path,scope}:
+  README.md,project
 body: ""
