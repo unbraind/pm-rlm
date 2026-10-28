@@ -143,6 +143,11 @@ test('completed evidence prompts remain authenticated during reports and repair 
   const { workspace, request, client, model, complete } = await completedRepairFixture(t, 1);
   const child = complete.components[0].run;
   const state = await new RlmLedger(workspace).load(child);
+  for (const action of [{ action: 'finish', answer: 'unwritten' }, { action: 'answer', components: [] }, { action: 'spawn', subgoal: 'unwritten', slice: emptyRootSlice() }]) {
+    const unfinished = structuredClone(state); delete unfinished.calls[0].result; delete unfinished.calls[0].steps[0].observation;
+    unfinished.calls[0].steps[0].response!.text = JSON.stringify(action);
+    await assert.rejects(new RlmEngine(new RlmLedger(workspace), unfinished, model).validateRecorded(), RlmError);
+  }
   state.calls[0].steps[0].prompt = state.calls[0].steps[0].prompt.replace('Explain source 0', 'Invent! source 0');
   assert.ok(state.calls[0].steps[0].prompt.includes('Invent! source 0'));
   await writeNativeCheckpoint(client, child, state);

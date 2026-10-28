@@ -75,11 +75,11 @@ async function source(ledger: RlmLedger, run: string, options: RlmRepairOptions,
       return { ...result, revision: expected };
     }
     const state = await ledger.load(run);
-    const answer = await replayRlm(ledger.workspace, run);
-    if (answer.components === undefined) throw new RlmRepairError('evidence');
     let initial: RlmState | undefined;
     try { initial = await ledger.load(run, '1'); } catch (error) { if (!(error instanceof RlmError) || error.code !== 'invalid') throw error; }
     if (initial !== undefined && reuseTargetContract(initial) !== reuseTargetContract(state)) throw new RlmRepairError('evidence');
+    const answer = await replayRlm(ledger.workspace, run);
+    if (answer.components === undefined) throw new RlmRepairError('evidence');
     if (await revision(ledger, run) !== expected) throw new RlmRepairError('busy');
     return { state, answers: answer.components, revision: expected, proofs: new Map(answer.components.map(part => [part.component, { run, state }])) };
   } finally { await unlock(); }
@@ -277,7 +277,7 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
         if (answer.status !== 'supported') {
           target.phase = 'skipped'; target.reason = answer.reason;
           outputs.set(part.name, gap(part.name, target.reason));
-        } else outputs.set(part.name, { ...answer, run: origin.proofs.get(part.name)!.run, disposition: 'reused', remedy: '' });
+        } else { target.phase = 'complete'; outputs.set(part.name, { ...answer, run: origin.proofs.get(part.name)!.run, disposition: 'reused', remedy: '' }); }
       } else if (target.phase === 'gap') outputs.set(part.name, gap(part.name, target.reason));
       else {
         const question = repairQuestion(origin.state.question, part, part.depends_on.map(name => outputs.get(name)!));
@@ -339,7 +339,6 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
           }
         }
       }
-      if (target.kind === 'reuse' && target.phase === 'pending') target.phase = 'complete';
       if (await changedSources(sourceLedger, checkpoint, part.sources)) { target.phase = 'skipped'; target.reason = 'source_changed'; outputs.set(part.name, gap(part.name, target.reason)); }
       if (JSON.stringify(target) !== previous) expected = await save(ledger, run, checkpoint, expected, options);
       await boundary(options, `saved:${part.name}`, run);

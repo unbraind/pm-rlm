@@ -159,17 +159,32 @@ async function readAction(context: RlmContext, action: Exclude<RlmAction, { acti
   }
 }
 /** Recompute successful reads without applying write-time privacy policy to historical data. */
-async function recordedRead(workspace: string, state: RlmState, call: RlmCall, index: number, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'answer' }>, observation: unknown) {
+async function producedRead(workspace: string, state: RlmState, call: RlmCall, index: number, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'answer' }>) {
   if (state.snapshot_only === true && action.action === 'history') throw new RlmTranscriptError('Recorded history exceeds the immutable input boundary');
   const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, state.aggregate_version ?? 1);
   const read = action.action === 'partition' ? partitionRead(state, { ...call, steps: call.steps.slice(0, index + 1) }, action)
     : action.action === 'witness' ? witnessRead(state, call, action) : await readAction(context, action);
+  return read;
+}
+/** Compare recorded reads through the producer, retaining legacy partition serialization. */
+async function recordedRead(workspace: string, state: RlmState, call: RlmCall, index: number, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'answer' }>, observation: unknown) {
+  const read = await producedRead(workspace, state, call, index, action);
   if (JSON.stringify(read) === JSON.stringify(observation)) return read;
   if (action.action === 'partition') {
-    const legacy = await context.partition(action.filter, action.maxTokens);
+    const legacy = await new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, state.aggregate_version ?? 1).partition(action.filter, action.maxTokens);
     if (JSON.stringify(legacy) === JSON.stringify(observation)) return legacy;
   }
   throw new RlmTranscriptError('Recorded environment observation differs');
+}
+/** Reconstruct interrupted read observations only in a copy used to authenticate later prompts. */
+async function proofTranscript(workspace: string, state: RlmState): Promise<RlmState> {
+  const copy = structuredClone(state);
+  for (const call of copy.calls) for (const [index, step] of call.steps.entries()) {
+    if (call.result !== undefined || step.observation !== undefined || step.response === undefined || index === call.steps.length - 1) continue;
+    const action = parseAction(step.response.text, copy.parser_version ?? 1);
+    if (action.action !== 'spawn' && action.action !== 'finish' && action.action !== 'answer') step.observation = await producedRead(workspace, copy, call, index, action);
+  }
+  return copy;
 }
 /** Recompute parser refusals before trusting their recorded code or corrective prompt text. */
 function recordedAction(state: RlmState, call: RlmCall, step: RlmStep): RlmAction | undefined {
@@ -262,7 +277,7 @@ export class RlmEngine {
     if (this.state.reuse !== undefined) { await validateReuseState(this.ledger.workspace, this.state); return; }
     validateCallGraph(this.state);
     const verifyingProof = strictUsage || this.state.components !== undefined || this.state.reuse_identity !== undefined;
-    if (verifyingProof) validateNativeTranscript(this.state);
+    if (verifyingProof) validateNativeTranscript(await proofTranscript(this.ledger.workspace, this.state));
     const state = { ...this.state, reserved_tokens: 0 };
     const visited = new Set<string>();
     /** Charge each logical call once, including children reached before a parent observation. */
@@ -466,8 +481,7 @@ export async function resumeRlm(workspace: string, run: string, model?: RlmModel
 export async function replayRlm(workspace: string, run: string): Promise<RlmResult> {
   const ledger = new RlmLedger(workspace);
   const state = await ledger.load(run);
-  await new RlmEngine(ledger, state, new HttpModel(state.settings)).validateRecorded();
-  if (state.reuse !== undefined) return result(state);
+  if (state.reuse !== undefined) { await validateReuseState(workspace, state); return result(state); }
   const visited = new Set<string>();
   /** Follow recorded spawn edges and finish actions without executing a model or writing the tracker. */
   async function replay(call: RlmCall): Promise<string | undefined> {
@@ -506,6 +520,7 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
   }
   await replay(state.calls[0]);
   if (visited.size !== state.calls.length) throw new RlmError('replay', 'Recorded call graph has unreachable calls');
+  if (state.components !== undefined || state.reuse_identity !== undefined) await new RlmEngine(ledger, state, new HttpModel(state.settings)).validateRecorded();
   return result(state);
 }
 /** Read a compact, ordered call tree, retaining the full checkpoint only when explicitly requested. */

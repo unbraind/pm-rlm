@@ -81,7 +81,10 @@ successful read observations through the same read logic as replay. Settled
 usage cannot exceed its original hold. Zero provider-reported usage remains valid
 after a full hold was admitted. Legacy native counters may conservatively retain
 earlier charges, but cannot understate recorded holds or exceed the configured
-budget; repair children require exact totals.
+budget; repair children require exact totals. On unfinished calls, recovery can
+reconstruct a missing read observation through that same producer before checking
+a later saved prompt. Completed proofs never fill missing observations. Read-only
+legacy replay retains its historical placeholder-step behavior.
 
 Native resume refuses corrupt transport state with `RlmTranscriptError`, code
 `replay`, and a safe remedy. Repair converts a damaged child into a named gap,

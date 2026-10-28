@@ -228,6 +228,11 @@ test('replay verifies every witness digest including uncited source witnesses', 
   (uncited.calls[0].steps[0].observation as { data: { text: string } }).data.text = 'changed';
   await replaceCheckpointFixture(ledger, uncited);
   await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
+  const coherent = structuredClone(uncited);
+  coherent.calls[0].steps[1].prompt = coherent.calls[0].steps[1].prompt.replace(JSON.stringify(state.calls[0].steps[0].observation), JSON.stringify(coherent.calls[0].steps[0].observation));
+  assert.notEqual(coherent.calls[0].steps[1].prompt, uncited.calls[0].steps[1].prompt);
+  await replaceCheckpointFixture(ledger, coherent);
+  await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
   delete uncited.calls[0].steps[0].observation;
   await replaceCheckpointFixture(ledger, uncited);
   await assert.rejects(resumeRlm(workspace, run.run, new ScriptedModel(() => { throw new Error('Must not infer'); })), { code: 'replay' });
