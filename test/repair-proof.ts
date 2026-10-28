@@ -15,6 +15,7 @@ try {
   const env = testEnvironment(process.env);
   for (const key of Object.keys(env)) if (/^NODE_V8_COVERAGE$/i.test(key)) delete env[key];
   const proofs = [
+    { file: 'src/repair.ts', pattern: 'uncertain repair budgets', test: 'test/repair-integrity.test.ts', changes: [["if (target.child === '' || childRow === undefined)", "if (target.child === '')"]] },
     { file: 'src/repair.ts', pattern: 'zero budget retains', test: 'test/repair.test.ts', changes: [["} else if (target.kind === 'reuse') {", '} else if (false) {']] },
     { file: 'src/ledger.ts', pattern: 'native checkpoint history refuses ABA', test: 'test/repair-refusals.test.ts', changes: [['if (checkVersion && (await readHistoryEntries', 'if (false && (await readHistoryEntries'], [' || current !== version', '']] },
     { file: 'src/repair.ts', pattern: 'controller history rejects ABA', test: 'test/repair-refusals.test.ts', changes: [[' || current.length !== expected.length || current.digest !== expected.digest', '']] },

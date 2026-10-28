@@ -1,5 +1,12 @@
 # Evidence-directed repair
 
+Every unmaterialized child needs current token and call headroom, including a
+child whose intent was saved before an interruption. A saved allowance does not
+authorize execution after an earlier child's usage becomes unverifiable.
+Recovery retains supported components, marks the affected child with a `budget`
+or `calls` gap, and creates no new native child or inference request. Completed
+native peers remain eligible for verification even when new execution is blocked.
+
 `repairRlm(request, options)` and `pm rlm repair` complete declared gaps in an
 existing evidence answer. They retain still-valid supported components and use
 one native child run per targeted component. Evidence coverage diagnoses gaps;

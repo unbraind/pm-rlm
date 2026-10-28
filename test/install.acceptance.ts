@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
 import type { RlmAdaptiveResult } from '../src/adaptive.ts';
 import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
+import { verifyPackedRepairBudget } from './repair-consumer.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
 function execute(cwd: string, args: string[], executable: string, env: NodeJS.ProcessEnv): string {
@@ -32,7 +33,7 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
     const consumer = join(scratch, manager); mkdirSync(consumer);
     writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'rlm-consumer-fixture', private: true, type: 'module', dependencies: { 'pm-rlm': `file:${join(scratch, packed[0].filename)}`, '@unbrained/pm-cli': manifest.devDependencies['@unbrained/pm-cli'] } }));
     execute(consumer, manager === 'npm' ? ['install', '--prefer-offline', '--ignore-scripts', '--no-audit', '--no-fund'] : ['install', '--ignore-scripts'], manager, env);
-    const hostEnv = { ...env, PM_PATH: join(consumer, '.agents', 'pm') };
+    const hostEnv = { ...env, PM_PATH: join(consumer, '.agents', 'pm'), GIT_CEILING_DIRECTORIES: scratch };
     const executable = manager === 'npm' ? 'npx' : 'bunx';
     const prefix = manager === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     execute(consumer, [...prefix, 'init', '--prefix', 'rlm-consumer', '--defaults', '--agent-guidance', 'skip'], executable, hostEnv);
@@ -97,6 +98,10 @@ console.log(JSON.stringify(result));
     assert.deepEqual(decodeToon(toon), expected);
 
     const repairParts = JSON.stringify([{ name: 'source', question: 'Return the source id', depends_on: [], sources: [evidenceRun.components[0].answer] }]);
+    verifyPackedRepairBudget(repository, consumer, args => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', hostEnv), [
+      args => execute(consumer, [...prefix, ...args], executable, hostEnv),
+      args => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), hostEnv),
+    ]);
     for (const render of [[], ['--json']]) {
       const output = execute(consumer, [...prefix, 'rlm', 'repair', evidenceRun.run, '--parts', repairParts, '--budget-tokens', '0', ...render], executable, hostEnv);
       const repaired = (render.length === 0 ? decodeToon(output) : JSON.parse(output)) as { run: string; reused: number; status: string; calls: number };

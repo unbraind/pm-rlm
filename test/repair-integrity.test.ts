@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { getHistoryPath, readHistoryEntries } from '@unbrained/pm-cli/sdk';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
-import { cp } from 'node:fs/promises';
+import { cp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { emptyRootSlice, prepareRlmRun, resumeRlm } from '../src/engine.ts';
 import { promptDigest, RlmLedger } from '../src/ledger.ts';
@@ -24,6 +24,21 @@ async function priorGaps(workspace: string, request: RlmRepairRequest, source: s
   const result = repaired(await repairRlm({ ...request, source, budget_tokens: 0 }, { workspace }));
   assert.deepEqual(result.gaps, ['part0', 'part2']); assert.equal(result.reused, 1);
 }
+
+/** Missing and unverifiable native revision coordinates cannot grant a controller write authority. */
+test('repair refuses empty and invalid controller history before execution', async t => {
+  const { workspace, request } = await repairFixture(t, 1);
+  const result = repaired(await repairRlm({ ...request, budget_tokens: 0 }, { workspace }));
+  const path = getHistoryPath(workspace, result.run);
+  const original = await readFile(path, 'utf8');
+  const invalid = original.split('\n').filter(Boolean).map(line => ({ ...JSON.parse(line), record_hash: '0'.repeat(64) })).map(entry => JSON.stringify(entry)).join('\n') + '\n';
+  try {
+    for (const contents of ['', invalid]) {
+      await writeFile(path, contents);
+      await assert.rejects(resumeRepairRlm(result.run, { workspace }), { code: 'incomplete' });
+    }
+  } finally { await writeFile(path, original); }
+});
 
 /** Current and historical source policy must agree, including legacy malformed birth records. */
 test('repair validates original source contracts and malformed initial checkpoints', async t => {
@@ -136,19 +151,38 @@ test('repair uses the original configured HTTP model when no adapter is injected
   assert.equal(requests, 1); assert.equal(result.reused, 2); assert.deepEqual(result.gaps, ['part2']);
 });
 
+/** A valid saved allocation still materializes exactly its intended native child. */
+test('resumed unmaterialized repair intent admits intact current headroom', async t => {
+  const { workspace, request, ids, client } = await repairFixture(t, 1);
+  const model = repairModel(ids[0]);
+  const { run, journal } = await interruptedRepair(workspace, request, model, 'intent:part0', client);
+  const result = repaired(await resumeRepairRlm(run, { workspace, model }));
+  assert.equal(result.status, 'complete'); assert.deepEqual(result.gaps, []);
+  assert.equal(result.components[0].run, journal.targets[0].child);
+  assert.equal(model.requests.length, 2); assert.equal(result.calls, 1);
+  assert.deepEqual(repaired(await resumeRepairRlm(run, { workspace, model })), result);
+  assert.equal(model.requests.length, 2);
+});
+
 /** Unknown earlier usage blocks pending work while retaining independently completed native evidence. */
 test('uncertain repair budgets retain completed peers and skip only unfinished work', async t => {
   const { workspace, request, ids, client } = await repairFixture(t);
   await client.update(ids[0], { description: 'Invalidate only this supported source' });
-  for (const stage of ['prepared', 'executed']) {
+  for (const stage of ['intent', 'prepared', 'executed']) for (const damage of stage === 'intent' ? ['foreign', 'malformed', 'missing'] : ['foreign']) {
     const model = repairPartsModel(ids);
     const { run, journal } = await interruptedRepair(workspace, request, model, `${stage}:part2`, client);
-    await client.update(journal.targets[0].child, { tags: 'foreign' });
+    if (damage === 'missing') await client.delete(journal.targets[0].child, { force: true });
+    else await client.run('update', { id: journal.targets[0].child, options: damage === 'foreign' ? { tags: 'foreign' } : { rlmState: '{}' } });
     const requests = model.requests.length;
-    const result = repaired(await resumeRepairRlm(run, { workspace, model }));
-    assert.deepEqual(result.gaps, stage === 'prepared' ? ['part0', 'part2'] : ['part0']);
+    let result: Awaited<ReturnType<typeof resumeRepairRlm>> | undefined;
+    await assert.doesNotReject(async () => { result = await resumeRepairRlm(run, { workspace, model }); }, 'Exhaustion must retain supported answers for every durable child phase');
+    assert.ok(result && result.status !== 'skipped');
+    assert.deepEqual(result.gaps, stage === 'executed' ? ['part0'] : ['part0', 'part2']);
     assert.equal(result.components[1].status, 'supported'); assert.equal(result.budget.remaining, 0);
+    assert.deepEqual(result.components.map(part => part.component), request.parts.map(part => part.name));
+    assert.equal(result.components[1].answer, 'answer part1');
     assert.equal(model.requests.length, requests);
+    if (stage === 'intent') assert.equal((await client.listAllComplete()).items.some(item => item.id === journal.targets[2].child), false);
     if (stage === 'prepared') {
       await resumeRlm(workspace, journal.targets[2].child, model);
       const afterPeer = model.requests.length;

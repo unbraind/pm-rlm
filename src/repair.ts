@@ -277,13 +277,15 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
       else {
         const question = repairQuestion(origin.state.question, part, part.depends_on.map(name => outputs.get(name)!));
         const settings = { ...origin.state.settings, budget_tokens: limit - charged, max_calls: origin.state.settings.max_calls - calls };
-        if (target.child === '') {
+        if (target.child === '' || childRow === undefined) {
           try {
             if (settings.max_calls <= 0) throw new RlmRepairError('calls');
             initialRlmCharge(question, [part.name], settings);
-            target.child = `${run}-r${checkpoint.targets.indexOf(target)}`; target.allowance = settings.budget_tokens; target.phase = 'running';
-            expected = await save(ledger, run, checkpoint, expected, options);
-            await boundary(options, `intent:${part.name}`, run);
+            if (target.child === '') {
+              target.child = `${run}-r${checkpoint.targets.indexOf(target)}`; target.allowance = settings.budget_tokens; target.phase = 'running';
+              expected = await save(ledger, run, checkpoint, expected, options);
+              await boundary(options, `intent:${part.name}`, run);
+            }
           } catch (error) {
             if (!(error instanceof RlmError) || !['budget', 'calls'].includes(error.code)) throw error;
             target.phase = 'gap'; target.reason = error.code;

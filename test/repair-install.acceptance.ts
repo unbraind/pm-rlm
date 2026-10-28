@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { npmEnvironment } from '../scripts/environment.ts';
+import { verifyPackedRepairBudget } from './repair-consumer.ts';
 
 /** Run one isolated consumer command; all diagnostics stay local to the disposable fixture. */
 function invoke(executable: string, argv: string[], cwd: string, env: NodeJS.ProcessEnv): string {
@@ -53,4 +54,5 @@ console.log(JSON.stringify({ run: result.run, parts }));
   assert.equal(receipt.status, 'partial'); assert.deepEqual(receipt.gaps, ['source']);
   const resumed = JSON.parse(invoke(binary, ['rlm', 'repair-resume', receipt.run, '--json'], project, projectEnv)) as { gaps: string[] };
   assert.deepEqual(resumed.gaps, receipt.gaps);
+  verifyPackedRepairBudget(repository, project, args => invoke(manager === 'npm' ? process.execPath : 'bun', args, project, projectEnv), [args => invoke(binary, args, project, projectEnv)]);
 });
