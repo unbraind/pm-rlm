@@ -1,7 +1,7 @@
 import { parseReuseIdentity, parseReuseSelection, parseReuseRequest, RlmReuseConflict, RlmReuseError } from './reuse-contract.ts';
 import { applyPendingReuse, reuseTargetContract, validateReuseState } from './reuse.ts';
 import { EVIDENCE_PROTOCOL, parseComponents, sourceWitness, validateAnswer, RlmEvidenceError } from './evidence.ts';
-import { assertLedgerPrivacy, estimateTokens, RlmError, text } from './errors.ts';
+import { assertLedgerPrivacy, estimateTokens, RlmError, RlmTranscriptError, text } from './errors.ts';
 import { matches, parseFilter, partitionItems, readCorpus, RlmContext } from './environment.ts';
 import { HttpModel } from './adapters.ts';
 import { promptDigest, reserveStep, settleStep, RlmLedger } from './ledger.ts';
@@ -49,14 +49,46 @@ function result(state: RlmState): RlmResult {
   const responses = state.calls.flatMap(call => call.steps.flatMap(step => step.response === undefined ? [] : [step.response]));
   return { ...(state.reuse === undefined ? {} : { reuse: state.reuse }), ...(state.components === undefined ? {} : { components: JSON.parse(state.calls[0].result!) as RlmAnswerComponent[] }), token_usage: 'reported_or_estimated', run: state.run, answer: state.calls[0].result!, calls: state.calls.length, reserved_tokens: state.reserved_tokens, tokens_in: responses.reduce((sum, response) => sum + response.tokens_in, 0), tokens_out: responses.reduce((sum, response) => sum + response.tokens_out, 0) };
 }
-/** Bind opted-in call identities to the exact prompts that were reserved before inference. */
-export function validateReuseTranscript(state: RlmState): void {
+/** Authenticate call identities and depth before deriving any prompt or admitting a cached child. */
+function validateCallGraph(state: RlmState): void {
+  const calls = new Map(state.calls.map(call => [call.id, call]));
+  if (state.calls[0]?.id !== state.run || state.calls[0].depth !== 0 || calls.size !== state.calls.length || state.calls.length > state.settings.max_calls || state.calls.some((call, index) => call.depth > state.settings.max_depth || (index > 0 && call.depth !== (calls.get(call.parent!)?.depth ?? -2) + 1))) throw new RlmTranscriptError('Recorded call graph differs from its declared bounds');
+}
+/** Authenticate one exact producer prompt against its call and completed transcript prefix. */
+function authenticStepPrompt(state: RlmState, call: RlmCall, index: number): boolean {
+  const prefix = call.steps.slice(0, index);
+  return state.calls[0].subgoal === state.question && call.digest === promptDigest(call.subgoal, call.slice, state.settings) && prefix.every(step => step.response !== undefined && step.observation !== undefined)
+    && call.steps[index].prompt === modelPrompt({ ...call, steps: prefix }, state.components);
+}
+/** Authenticate completed and pending proof records through the same prompt producer. */
+function validateNativeTranscript(state: RlmState): void {
+  validateCallGraph(state);
   for (const call of state.calls) {
-    if (call.digest !== promptDigest(call.subgoal, call.slice, state.settings)) throw new RlmReuseError('provenance');
-    for (const [index, step] of call.steps.entries()) {
-      if (step.prompt !== modelPrompt({ ...call, steps: call.steps.slice(0, index) }, state.components)) throw new RlmReuseError('provenance');
-    }
+    if (call.digest !== promptDigest(call.subgoal, call.slice, state.settings) || call.steps.some((_step, index) => !authenticStepPrompt(state, call, index))) throw new RlmTranscriptError('Recorded prompt differs from its declared call');
   }
+}
+/** Bind opted-in reuse identities to the same authenticated native transcript. */
+export function validateReuseTranscript(state: RlmState): void {
+  try { validateNativeTranscript(state); } catch { throw new RlmReuseError('provenance'); }
+}
+/** Derive every unsettled hold through the native reservation producer, without mutating the ledger. */
+function validateStepReservation(state: RlmState, call: RlmCall, step: RlmStep): void {
+  let expected: number;
+  try { expected = reserveStep({ settings: state.settings, reserved_tokens: 0 }, { ...call, steps: [] }, step.prompt).reserved; }
+  catch { throw new RlmTranscriptError('Recorded reservation cannot admit its model step'); }
+  if (step.settled === true ? step.reserved > expected : step.reserved !== expected) throw new RlmTranscriptError('Recorded reservation differs from its required amount');
+}
+/** Require full producer holds; legacy counters may conservatively retain earlier charges. */
+function validatePendingStep(state: RlmState, call: RlmCall, index: number): void {
+  validateCallGraph(state);
+  if (!authenticStepPrompt(state, call, index)) throw new RlmTranscriptError('Pending prompt differs from its declared call');
+  validateStepReservation(state, call, call.steps[index]);
+  const charged = state.calls.reduce((total, entry) => entry.steps.reduce((sum, step) => {
+    const observation = step.observation;
+    const read = typeof observation === 'object' && observation !== null && 'estimated_tokens' in observation ? observation.estimated_tokens : 0;
+    return typeof read === 'number' && Number.isSafeInteger(read) && read >= 0 ? sum + step.reserved + read : NaN;
+  }, total), 0);
+  if (!Number.isSafeInteger(charged) || !Number.isSafeInteger(state.reserved_tokens) || charged > state.reserved_tokens || state.reserved_tokens > state.settings.budget_tokens) throw new RlmTranscriptError('Pending budget understates recorded charges or exceeds its limit');
 }
 /** Complete answers use one deterministic representation with no unchecked free-text summary. */
 function completion(state: RlmState, call: RlmCall, action: Extract<RlmAction, { action: 'finish' | 'answer' }>, before: number): string {
@@ -67,6 +99,11 @@ function completion(state: RlmState, call: RlmCall, action: Extract<RlmAction, {
 /** Recompute the exact bounded source read shared by live execution and replay. */
 function witnessRead(state: RlmState, call: RlmCall, action: Extract<RlmAction, { action: 'witness' }>) {
   const data = sourceWitness(callItems(state, call), action.id, action.start, action.end);
+  return { data, estimated_tokens: estimateTokens(data), complete_list: state.certificate };
+}
+/** Keep compact partition observations identical in production and verification. */
+function partitionRead(state: RlmState, call: RlmCall, action: Extract<RlmAction, { action: 'partition' }>) {
+  const data = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens).map((slice, index) => ({ partition_step: call.steps.length - 1, index, estimated_tokens: slice.estimated_tokens }));
   return { data, estimated_tokens: estimateTokens(data), complete_list: state.certificate };
 }
 /** Return full items only when the child received their complete serialized representation. */
@@ -121,6 +158,19 @@ async function readAction(context: RlmContext, action: Exclude<RlmAction, { acti
     case 'peek': return context.peek(action.id, action.field, action.start, action.end);
   }
 }
+/** Recompute successful reads without applying write-time privacy policy to historical data. */
+async function recordedRead(workspace: string, state: RlmState, call: RlmCall, index: number, action: Exclude<RlmAction, { action: 'spawn' | 'finish' | 'answer' }>, observation: unknown) {
+  if (state.snapshot_only === true && action.action === 'history') throw new RlmTranscriptError('Recorded history exceeds the immutable input boundary');
+  const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, state.aggregate_version ?? 1);
+  const read = action.action === 'partition' ? partitionRead(state, { ...call, steps: call.steps.slice(0, index + 1) }, action)
+    : action.action === 'witness' ? witnessRead(state, call, action) : await readAction(context, action);
+  if (JSON.stringify(read) === JSON.stringify(observation)) return read;
+  if (action.action === 'partition') {
+    const legacy = await context.partition(action.filter, action.maxTokens);
+    if (JSON.stringify(legacy) === JSON.stringify(observation)) return legacy;
+  }
+  throw new RlmTranscriptError('Recorded environment observation differs');
+}
 /** Recompute parser refusals before trusting their recorded code or corrective prompt text. */
 function recordedAction(state: RlmState, call: RlmCall, step: RlmStep): RlmAction | undefined {
   try { return parseAction(step.response!.text, state.parser_version ?? 1); }
@@ -154,6 +204,7 @@ export class RlmEngine {
   /** Reserve a logical child before materialization; digest reuse survives process failure. */
   async spawn(parentId: string, subgoal: string, slice: RlmSlice): Promise<string> {
     const state = this.state;
+    validateCallGraph(state);
     const parent = state.calls.find(call => call.id === parentId);
     let call = prepareSpawn(state, parent, subgoal, slice);
     if (call === undefined) {
@@ -187,11 +238,10 @@ export class RlmEngine {
     let charge = 0;
     if (action.action === 'spawn') observation = { result: await spawn(action.subgoal, resolveSlice(state, call, action.slice)) };
     else if (action.action === 'partition') {
-      const slices = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens);
-      const data = slices.map((slice, index) => ({ partition_step: call.steps.length - 1, index, estimated_tokens: slice.estimated_tokens }));
-      charge = estimateTokens(data);
+      const read = partitionRead(state, call, action);
+      observation = read;
+      charge = read.estimated_tokens;
       if (charge > state.settings.budget_tokens - state.reserved_tokens) throw new RlmError('budget', 'Partition index exceeds remaining budget');
-      observation = { data, estimated_tokens: charge, complete_list: state.certificate };
     } else if (action.action === 'witness') {
       observation = witnessRead(state, call, action);
       charge = estimateTokens((observation as { data: unknown }).data);
@@ -210,6 +260,9 @@ export class RlmEngine {
   /** Verify execution without writes, optionally checking exact accounting reconstructed in call order. */
   async validateRecorded(strictUsage = this.strictUsage): Promise<void> {
     if (this.state.reuse !== undefined) { await validateReuseState(this.ledger.workspace, this.state); return; }
+    validateCallGraph(this.state);
+    const verifyingProof = strictUsage || this.state.components !== undefined || this.state.reuse_identity !== undefined;
+    if (verifyingProof) validateNativeTranscript(this.state);
     const state = { ...this.state, reserved_tokens: 0 };
     const visited = new Set<string>();
     /** Charge each logical call once, including children reached before a parent observation. */
@@ -218,7 +271,9 @@ export class RlmEngine {
       visited.add(call.id);
       let completed = false;
       for (const [index, step] of call.steps.entries()) {
-        if (strictUsage && step.settled === true && step.reserved !== step.response!.tokens_in + step.response!.tokens_out) throw new RlmError('replay', 'Settled charge differs from recorded usage');
+        if (step.response === undefined) validatePendingStep(this.state, call, index);
+        else if (verifyingProof) validateStepReservation(this.state, call, step);
+        if (verifyingProof && step.settled === true && step.reserved !== step.response!.tokens_in + step.response!.tokens_out) throw new RlmTranscriptError('Settled charge differs from recorded usage');
         state.reserved_tokens += step.response !== undefined && step.settled !== true
           ? step.response.tokens_in + step.response.tokens_out
           : step.reserved;
@@ -237,15 +292,14 @@ export class RlmEngine {
           if (refusal === undefined) completed = true;
           continue;
         }
-        if (action.action === 'witness' && (step.observation !== undefined || call.result !== undefined) && !(typeof step.observation === 'object' && step.observation !== null && 'refused' in step.observation)) {
-          if (JSON.stringify(witnessRead(state, call, action)) !== JSON.stringify(step.observation)) throw new RlmError('replay', 'Recorded source witness differs');
-        }
         const prefix = { ...call, steps: call.steps.slice(0, index + 1) };
         let spawnRefusal: RlmError | undefined;
         let validatingChild = false;
+        let spawned: unknown;
+        let completedSpawn = false;
         if (action.action === 'spawn') {
           try {
-            await this.observe(action, prefix, state, async (subgoal, slice) => {
+            spawned = await this.observe(action, prefix, state, async (subgoal, slice) => {
               const admitted = prepareSpawn({ ...state, calls: state.calls.filter(entry => visited.has(entry.id)) }, prefix, subgoal, slice);
               const child = admitted ?? state.calls.find(child => child.parent === call.id && child.digest === promptDigest(subgoal, slice, state.settings));
               if (child === undefined) throw new RlmError('incomplete', 'Recorded spawn has no child');
@@ -255,6 +309,7 @@ export class RlmEngine {
               validatingChild = false;
               const failure = child.failure ?? (reused ? undefined : child.completion_refusal);
               if (failure !== undefined) throw recordedChildRefusal(failure);
+              completedSpawn = child.result !== undefined;
               return child.result ?? '';
             });
           } catch (error) {
@@ -263,8 +318,8 @@ export class RlmEngine {
           }
         }
         const observation = step.observation;
-        if (typeof observation !== 'object' || observation === null) continue;
-        if ('refused' in observation) {
+        if (observation === undefined) continue;
+        if (typeof observation === 'object' && observation !== null && 'refused' in observation) {
           let refusal = spawnRefusal;
           if (action.action !== 'spawn') {
             try { await this.observe(action, prefix, state); }
@@ -273,15 +328,19 @@ export class RlmEngine {
           const legacyCodeOnly = (state.parser_version ?? 1) === 1 && !('reason' in observation);
           const remedy = refusal instanceof RlmEvidenceError ? refusal.remedy : undefined;
           if (refusal === undefined || observation.refused !== refusal.code || (!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message)) || (observation as { remedy?: unknown }).remedy !== remedy) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
-        } else if ('estimated_tokens' in observation && typeof observation.estimated_tokens === 'number') {
-          state.reserved_tokens += observation.estimated_tokens;
+        } else if (action.action === 'spawn') {
+          if (!completedSpawn || JSON.stringify(spawned) !== JSON.stringify(observation)) throw new RlmTranscriptError('Recorded child observation differs');
+        } else {
+          const read = await recordedRead(this.ledger.workspace, this.state, call, index, action, observation);
+          state.reserved_tokens += read.estimated_tokens;
         }
       }
       if (state.components !== undefined && call.result !== undefined && !completed) throw new RlmError('replay', 'Completed evidence call has no verified component answer');
     };
     await visit(state.calls[0]);
-    if (strictUsage && visited.size !== this.state.calls.length) throw new RlmError('replay', 'Native call graph contains unreachable records');
-    if (strictUsage && state.reserved_tokens !== this.state.reserved_tokens) throw new RlmError('replay', 'Recorded budget differs from its step charges');
+    if (verifyingProof && (this.state.reserved_tokens < state.reserved_tokens || this.state.reserved_tokens > this.state.settings.budget_tokens)) throw new RlmTranscriptError('Proof budget differs from its supported charges');
+    if (strictUsage && visited.size !== this.state.calls.length) throw new RlmTranscriptError('Native call graph contains unreachable records');
+    if (strictUsage && state.reserved_tokens !== this.state.reserved_tokens) throw new RlmTranscriptError('Recorded budget differs from its step charges');
   }
   /** Reuse persisted outputs and observations; unfinished inference alone is retried. */
   private async execute(call: RlmCall): Promise<string> {
@@ -298,6 +357,7 @@ export class RlmEngine {
       }
       if (step.response === undefined) {
         if (state.reuse_identity !== undefined && this.model.name !== state.settings.model) throw new RlmReuseError('settings', 'invalid');
+        validatePendingStep(state, call, index);
         const response = await this.model.complete({ prompt: step.prompt, max_output_tokens: state.settings.output_tokens, context_tokens: state.settings.context_tokens, parser_version: state.parser_version ?? 1 });
         if (typeof response.text !== 'string' || estimateTokens(response.text) > state.settings.output_tokens * 16 || !Number.isSafeInteger(response.tokens_in) || !Number.isSafeInteger(response.tokens_out) || response.tokens_in < 0 || response.tokens_out < 0) throw new RlmError('model', 'Invalid model response');
         assertLedgerPrivacy(response, this.ledger.workspace, state.settings.key_env);
@@ -433,13 +493,7 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
         if (child === undefined || await replay(child) !== (step.observation as { result: string }).result) throw new RlmError('replay', 'Recorded child result differs');
       }
       if (action.action !== 'finish' && action.action !== 'answer' && action.action !== 'spawn') {
-        const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, state.aggregate_version ?? 1);
-        const read = action.action === 'partition'
-          ? (() => { const data = partitionItems(callItems(state, call).filter(item => matches(item, action.filter)), action.maxTokens).map((slice, index) => ({ partition_step: call.steps.indexOf(step), index, estimated_tokens: slice.estimated_tokens })); return { data, estimated_tokens: estimateTokens(data), complete_list: state.certificate }; })()
-          : action.action === 'witness' ? witnessRead(state, call, action) : await readAction(context, action);
-        if (JSON.stringify(read) !== JSON.stringify(step.observation)) {
-          if (action.action !== 'partition' || JSON.stringify(await context.partition(action.filter, action.maxTokens)) !== JSON.stringify(step.observation)) throw new RlmError('replay', 'Recorded environment observation differs');
-        }
+        await recordedRead(workspace, state, call, call.steps.indexOf(step), action, step.observation);
       }
       if (action.action === 'finish' || action.action === 'answer') {
         const answer = completion(state, call, action, call.steps.indexOf(step));

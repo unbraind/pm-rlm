@@ -471,6 +471,9 @@ pm rlm repair-resume repair-run-id --json
 The SDK exports `repairRlm`, `resumeRepairRlm`, strict request/checkpoint parsers,
 `RlmRepairError`, and typed declarations/results. TOON/JSON output retains every
 component, evidence origin and budget coordinate; `--full` includes answer text.
+Saved prompts and inference holds are authenticated through their native
+producers before transport. Native transport refusals expose `RlmTranscriptError` with a
+`replay` code and remedy; repair returns a named gap for the damaged component.
 Recovery revalidates current SDK revisions, skips stale targets and their
 prerequisites' dependents, and reuses peer-completed native children. Runtime
 works without Git. See the [repair guide](docs/EVIDENCE-DIRECTED-REPAIR.md),

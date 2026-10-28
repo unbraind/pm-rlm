@@ -54,5 +54,5 @@ console.log(JSON.stringify({ run: result.run, parts }));
   assert.equal(receipt.status, 'partial'); assert.deepEqual(receipt.gaps, ['source']);
   const resumed = JSON.parse(invoke(binary, ['rlm', 'repair-resume', receipt.run, '--json'], project, projectEnv)) as { gaps: string[] };
   assert.deepEqual(resumed.gaps, receipt.gaps);
-  verifyPackedRepairBudget(repository, project, args => invoke(manager === 'npm' ? process.execPath : 'bun', args, project, projectEnv), [args => invoke(binary, args, project, projectEnv)]);
+  verifyPackedRepairBudget(repository, project, artifact, (args, pmRoot) => invoke(manager === 'npm' ? process.execPath : 'bun', args, project, { ...projectEnv, PM_PATH: pmRoot }), [(args, pmRoot) => invoke(binary, args, project, { ...projectEnv, PM_PATH: pmRoot })]);
 });

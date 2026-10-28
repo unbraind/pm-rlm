@@ -268,11 +268,16 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
           if (uncertain && state.calls[0].result === undefined) { target.phase = 'skipped'; target.reason = 'budget'; }
         }
       }
+      if (target.kind === 'reuse' && target.child === '' && !changed && !blocked && originals.get(part.name)!.status === 'supported') { target.phase = 'complete'; target.reason = ''; }
       if (changed || blocked || target.phase === 'skipped') {
         target.phase = 'skipped'; target.reason = changed ? 'source_changed' : blocked ? 'dependency_gap' : target.reason;
         outputs.set(part.name, gap(part.name, target.reason));
       } else if (target.kind === 'reuse') {
-        outputs.set(part.name, { ...originals.get(part.name)!, run: origin.proofs.get(part.name)!.run, disposition: 'reused', remedy: '' });
+        const answer = originals.get(part.name)!;
+        if (answer.status !== 'supported') {
+          target.phase = 'skipped'; target.reason = answer.reason;
+          outputs.set(part.name, gap(part.name, target.reason));
+        } else outputs.set(part.name, { ...answer, run: origin.proofs.get(part.name)!.run, disposition: 'reused', remedy: '' });
       } else if (target.phase === 'gap') outputs.set(part.name, gap(part.name, target.reason));
       else {
         const question = repairQuestion(origin.state.question, part, part.depends_on.map(name => outputs.get(name)!));

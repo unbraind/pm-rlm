@@ -13,7 +13,7 @@ import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi } from '@unbrained/pm-cli/sdk/authoring';
 import { parseFilter } from './environment.ts';
 import { evidenceRlm, resumeRlm, replayRlm, runRlm, treeRlm } from './engine.ts';
-import { integer, RlmError, text } from './errors.ts';
+import { integer, RlmError, RlmTranscriptError, text } from './errors.ts';
 import { RLM_FIELDS } from './ledger.ts';
 import type { RlmReuseIdentity } from './reuse-contract.ts';
 import type { RlmSettings } from './types.ts';
@@ -114,7 +114,7 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, reuse_identity, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';
-    const remedy = error instanceof RlmRepairError || error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError ? error.remedy : ['repair', 'repair-resume'].includes(command) ? 'Supply --parts JSON and unsigned --budget-tokens for repair, or a repair id for repair-resume; inspect tracker integrity' : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
+    const remedy = error instanceof RlmRepairError || error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError || error instanceof RlmTranscriptError ? error.remedy : ['repair', 'repair-resume'].includes(command) ? 'Supply --parts JSON and unsigned --budget-tokens for repair, or a repair id for repair-resume; inspect tracker integrity' : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
     throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (remedy === undefined ? '' : '; remedy: ' + remedy) : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
   }
 }

@@ -99,5 +99,6 @@ export function parseRepairCheckpoint(value: unknown): RlmRepairCheckpoint {
 /** Refuse nonfinite counters and inconsistent budgets before returning success. */
 export function validateRepairResult(result: RlmRepairResult): RlmRepairResult {
   if (!acceptsSchema(REPAIR_SCHEMA.accounting, { ...result.budget, calls: result.calls, reused: result.reused }) || result.budget.charged + result.budget.remaining !== result.budget.limit) throw new RlmRepairError('incomplete');
+  if (result.reused !== result.components.filter(part => part.disposition === 'reused').length || result.components.some(part => part.status === 'supported' ? part.disposition === 'gap' || part.remedy !== '' : part.disposition !== 'gap' || part.remedy.trim().length === 0)) throw new RlmRepairError('incomplete');
   return result;
 }

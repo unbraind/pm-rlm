@@ -98,9 +98,9 @@ console.log(JSON.stringify(result));
     assert.deepEqual(decodeToon(toon), expected);
 
     const repairParts = JSON.stringify([{ name: 'source', question: 'Return the source id', depends_on: [], sources: [evidenceRun.components[0].answer] }]);
-    verifyPackedRepairBudget(repository, consumer, args => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', hostEnv), [
-      args => execute(consumer, [...prefix, ...args], executable, hostEnv),
-      args => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), hostEnv),
+    verifyPackedRepairBudget(repository, consumer, join(scratch, packed[0].filename), (args, pmRoot) => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', { ...hostEnv, PM_PATH: pmRoot }), [
+      (args, pmRoot) => execute(consumer, [...prefix, ...args], executable, { ...hostEnv, PM_PATH: pmRoot }),
+      (args, pmRoot) => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), { ...hostEnv, PM_PATH: pmRoot }),
     ]);
     for (const render of [[], ['--json']]) {
       const output = execute(consumer, [...prefix, 'rlm', 'repair', evidenceRun.run, '--parts', repairParts, '--budget-tokens', '0', ...render], executable, hostEnv);

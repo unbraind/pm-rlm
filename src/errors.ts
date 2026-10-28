@@ -12,6 +12,13 @@ export class RlmError extends Error {
     this.code = code;
   }
 }
+/** Refuse unauthenticated inference without exposing its saved prompt or tracker contents. */
+export class RlmTranscriptError extends RlmError {
+  /** Safe recovery guidance independent of the rejected data. */
+  readonly remedy = 'Inspect the native ledger; restore an intact producer checkpoint or start a fresh run with the declared question, scope and budget';
+  /** Keep transport refusals typed and actionable for both SDK and CLI callers. */
+  constructor(message: string) { super('replay', message); }
+}
 /** Convert failed SDK reads into sanitized refusals while preserving existing typed failures. */
 export async function sdkRead<T>(read: () => T | Promise<T>): Promise<T> {
   try { return await read(); }

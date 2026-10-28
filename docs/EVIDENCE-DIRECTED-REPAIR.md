@@ -74,6 +74,22 @@ verified answers, and resuming a stopped receipt rechecks later native peer
 completion. Call counts include verified native calls. Child recovery uses the native engine
 accounting verifier to match the stored total to reconstructed step charges and
 settled reservations to their recorded usage.
+The verifier reconstructs every saved prompt from its declared call and completed
+prefix, checks call identity, parentage and depth against the declared bounds,
+derives pending holds through the same reservation producer, and verifies
+successful read observations through the same read logic as replay. Settled
+usage cannot exceed its original hold. Zero provider-reported usage remains valid
+after a full hold was admitted. Legacy native counters may conservatively retain
+earlier charges, but cannot understate recorded holds or exceed the configured
+budget; repair children require exact totals.
+
+Native resume refuses corrupt transport state with `RlmTranscriptError`, code
+`replay`, and a safe remedy. Repair converts a damaged child into a named gap,
+preserving independent supported answers. A saved reuse decision never promotes
+currently unavailable evidence: its component remains a gap with a remedy and is
+excluded from `reused`. Restored native proof is checked again on the next resume.
+The full SDK result and compact JSON/TOON use the same classification validator.
+
 No source item or original ledger is updated. Complete checkpoints
 are retained in append-only native item history; copy the entire tracker,
 including native ledger blobs, for recovery.

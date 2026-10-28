@@ -23,7 +23,7 @@ export { RlmLedger, reserveStep, promptDigest } from './src/ledger.ts';
 /** Expose crash-recovery tuning for ledger mutations blocked by dead previous writers. */
 export type { RlmLedgerOptions } from './src/ledger.ts';
 /** Expose typed errors and conservative token estimation. */
-export { RlmError, estimateTokens } from './src/errors.ts';
+export { RlmError, RlmTranscriptError, estimateTokens } from './src/errors.ts';
 /** Expose the configurable Ollama and compatible HTTP transport. */
 export { HttpModel } from './src/adapters.ts';
 /** Expose settings resolution with flag precedence. */

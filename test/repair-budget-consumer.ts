@@ -1,8 +1,8 @@
 /** Executed from installed npm/Bun consumers; imports only their actual packed public SDK. */
 import assert from 'node:assert/strict';
 import { PmClient } from '@unbrained/pm-cli/sdk';
-import { parseRepairCheckpoint, repairRlm, resumeRepairRlm, runRlm } from '../index.ts';
-import type { ModelRequest, RlmModel } from '../index.ts';
+import { parseRepairCheckpoint, repairRlm, resumeRepairRlm, resumeRlm, RlmLedger, RlmTranscriptError, runRlm } from '../index.ts';
+import type { ModelRequest, RlmModel, RlmRepairResult } from '../index.ts';
 
 const workspace = process.env.PM_PATH!;
 const client = new PmClient({ pmRoot: workspace, author: 'budget-consumer', noExtensions: true });
@@ -43,4 +43,41 @@ assert.ok(result.status === 'partial');
 assert.deepEqual(result.gaps, ['budget0', 'budget2']);
 assert.equal(result.components[1].answer, 'budget1'); assert.equal(result.budget.remaining, 0); assert.equal(requests, 2);
 assert.equal((await client.listAllComplete()).items.some(item => item.id === journal.targets[2].child), false);
-console.log(JSON.stringify(result));
+const receipts: RlmRepairResult[] = [result];
+const complete = await repairRlm({ source: source.run, parts, budget_tokens: 1000000 }, { workspace, model });
+assert.equal(complete.status, 'complete');
+if (complete.status !== 'complete') throw new Error('Expected completed native fixture');
+let staleRun = '';
+await assert.rejects(repairRlm({ source: complete.run, parts, budget_tokens: 0 }, { workspace, model, on_transition: (phase, id) => {
+  if (phase === 'created') { staleRun = id; throw new Error('Synthetic stopped reuse plan'); }
+} }));
+await client.update(complete.components[2].run, { tags: 'foreign' });
+const unavailable = await resumeRepairRlm(staleRun, { workspace, model });
+assert.ok(unavailable.status === 'partial'); assert.equal(unavailable.reused, 2); assert.deepEqual(unavailable.gaps, ['budget2']);
+assert.equal(unavailable.components[2].disposition, 'gap'); assert.ok(unavailable.components[2].remedy.length > 0);
+receipts.push(unavailable);
+let pendingRun = '';
+const transportFailure: RlmModel = { name: model.name, complete: async () => { throw new Error('Synthetic reserved-step interruption'); } };
+await assert.rejects(repairRlm({ source: source.run, parts, budget_tokens: 1000000 }, { workspace, model: transportFailure, on_transition: (phase, id) => { if (phase === 'created') pendingRun = id; } }));
+const description = (await client.get(pendingRun, { depth: 'full' })).item.description!;
+const pending = parseRepairCheckpoint(JSON.parse(description.split('\n').slice(1).join('\n')));
+const child = pending.targets[0].child;
+const original = await new RlmLedger(workspace).load(child);
+let unexpected = 0;
+const forbidden: RlmModel = { name: model.name, complete: async () => { unexpected++; throw new Error('Untrusted state reached the model'); } };
+for (const mode of ['reservation', 'prompt']) {
+  const state = structuredClone(original);
+  if (mode === 'reservation') { state.calls[0].steps[0].reserved = 0; state.reserved_tokens = 0; }
+  else {
+    const prompt = state.calls[0].steps[0].prompt;
+    state.calls[0].steps[0].prompt = prompt.replace('Explain evidence 0', 'Invent! evidence 0');
+    assert.notEqual(state.calls[0].steps[0].prompt, prompt); assert.equal(Buffer.byteLength(state.calls[0].steps[0].prompt), Buffer.byteLength(prompt));
+  }
+  await client.run('update', { id: child, options: { rlmState: JSON.stringify(state) } });
+  await client.update(pendingRun, { description });
+  await assert.rejects(resumeRlm(workspace, child, forbidden), (error: unknown) => error instanceof RlmTranscriptError && error.code === 'replay' && error.remedy.length > 0);
+  const refused = await resumeRepairRlm(pendingRun, { workspace, model: forbidden });
+  assert.ok(refused.status === 'partial'); assert.equal(refused.components[0].reason, 'child_evidence'); assert.deepEqual(refused.gaps, ['budget0', 'budget2']);
+  assert.equal(unexpected, 0); receipts.push(refused);
+}
+console.log(JSON.stringify(receipts));
