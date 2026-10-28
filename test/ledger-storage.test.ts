@@ -70,6 +70,22 @@ test('legacy checkpoints read unchanged and migrate lazily without rewriting his
   assert.ok((await readFile(historyPath, 'utf8')).startsWith(history));
 });
 
+/** Historical evidence must remain complete beyond the SDK's default read budget. */
+test('large legacy checkpoints remain complete in historical reads', async t => {
+  const { ledger, result } = await fixture(t);
+  const legacy = await ledger.load(result.run);
+  legacy.run = await ledger.newRunId(); legacy.calls[0].id = legacy.run;
+  await ledger.client.run('create', { options: { id: legacy.run, title: 'Legacy inline checkpoint', type: 'Task', rlmState: JSON.stringify(legacy) } });
+  await ledger.client.claim(legacy.run);
+  assert.deepEqual(await ledger.load(legacy.run), legacy);
+  assert.deepEqual(await ledger.load(legacy.run, '1'), legacy);
+  const unlock = await ledger.lease(legacy.run);
+  try { await ledger.save(await ledger.load(legacy.run)); } finally { await unlock(); }
+  await ledger.client.run('update', { id: legacy.run, options: { rlmState: JSON.stringify(legacy) } });
+  await ledger.gc();
+  assert.deepEqual(await ledger.load(legacy.run), legacy);
+});
+
 /** Hashes, paths and referenced shape validation all fail closed before model construction. */
 test('blob reads refuse tampering missing payloads invalid digests and malformed transcript graphs', async t => {
   const { workspace, ledger, result, manifest, client } = await fixture(t);
