@@ -20,6 +20,8 @@ export type { RlmQuestionPart, RlmStrategy, RlmStrategyComparison, RlmAdaptiveOp
 export { prepareRlmRun, runRlm, resumeRlm, replayRlm, evidenceRlm, treeRlm, RlmEngine } from './src/engine.ts';
 /** Expose the SDK ledger and logical reservation primitive. */
 export { RlmLedger, reserveStep, promptDigest } from './src/ledger.ts';
+/** Expose crash-recovery tuning for ledger mutations blocked by dead previous writers. */
+export type { RlmLedgerOptions } from './src/ledger.ts';
 /** Expose typed errors and conservative token estimation. */
 export { RlmError, estimateTokens } from './src/errors.ts';
 /** Expose the configurable Ollama and compatible HTTP transport. */

@@ -42,7 +42,11 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
     writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm, reuseRlm, RlmLedger } from 'pm-rlm';
+import { isPmCliExpectedError } from '@unbrained/pm-cli/sdk';
 import assert from 'node:assert/strict';
+let ticks = 0;
+const expired = new RlmLedger(process.env.PM_PATH!, 'rlm-consumer', { deadOwnerRetryMs: 10, retryTiming: { now: () => ticks++ === 0 ? 0 : 10 } });
+await assert.rejects(expired.lease('expired-packed-run'), (error: unknown) => isPmCliExpectedError(error) && error.code === 'lock_conflict');
 let step = 0;
 const reuse_identity = { tool_policy: 'snapshot-v1', model_policy: 'packed-fixture-v1', consent: 'public-fixture:1' };
 const result = await runRlm('Packed tree fixture', { workspace: process.env.PM_PATH!, author: 'rlm-consumer', reuse_identity, model: { name: 'packed-test-only', complete: async request => { if (step++ === 0) return { text: '{"action":"count","filter":{}}', tokens_in: 20, tokens_out: 10 }; assert.ok(request.prompt.includes('"data":0')); return { text: 'Answer: {"action":"finish","answer":"packed result"}', tokens_in: 20, tokens_out: 10 }; } } });

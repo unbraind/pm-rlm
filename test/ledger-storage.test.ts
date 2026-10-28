@@ -223,10 +223,13 @@ test('storage lease serializes collectors and bounds busy waits', async t => {
   await release();
   assert.equal((await collecting).removed, 0);
   const releaseAgain = await ledger.lease('__blob_store');
-  const realNow = Date.now(); let clock = realNow;
-  t.mock.method(Date, 'now', () => { clock += 60001; return clock; });
-  await assert.rejects(ledger.gc(), { code: 'busy' });
-  t.mock.restoreAll(); await releaseAgain();
+  let clock = 0;
+  const bounded = new RlmLedger(workspace, 'bounded-collector', { retryTiming: {
+    now: () => clock, sleep: async () => { clock += 60001; },
+  } });
+  await assert.rejects(bounded.gc(), { code: 'busy' });
+  assert.equal(clock, 60001);
+  await releaseAgain();
   await writeFile(join(workspace, 'runtime', 'rlm-__blob_store.json'), '{');
   await assert.rejects(ledger.gc(), { code: 'incomplete' });
 });
