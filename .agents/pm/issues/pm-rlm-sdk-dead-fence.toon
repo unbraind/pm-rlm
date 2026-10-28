@@ -2,15 +2,18 @@ id: pm-rlm-sdk-dead-fence
 title: SDK commit fence delays dead-owner crash recovery beyond the default lock wait
 description: "Work around pinned SDK commit-fence dead-owner recovery regression (unbraind/pm-cli#1609) in every crash-sensitive ledger and resumable evaluation mutation. Enforce a monotonic deadline before every mutation retry and cap sleep by retry hint, bounded jittered backoff and remaining budget. Share the deadline guard with storage busy retries. Preserve typed live-owner refusals, strict SIGKILL crash-safety assertions, non-git operation, public SDK and CLI outputs, and packed npm/native Bun consumers. Default budget 15 seconds; zero starts no mutation. Remove this workaround after the upstream fix ships and the dependency pin advances."
 type: Issue
-status: in_progress
+status: closed
 priority: 1
-tags[2]: "gh:unbraind/pm-cli#1609","pr:unbraind/pm-rlm#36"
+tags[3]: "gh:unbraind/pm-cli#1609","pr:unbraind/pm-rlm#36","upstream:pm-cli#1609"
 created_at: "2026-10-26T18:17:31.287Z"
-updated_at: "2026-10-27T20:23:38.118Z"
+updated_at: "2026-10-28T15:29:47.181Z"
+closed_at: "2026-10-28T15:29:46.633Z"
+completed_at: "2026-10-28T15:22:26.000Z"
 author: codex-agent
-comments[17]{created_at,author,text}:
+comments[18]{created_at,author,text}:
   "2026-10-26T20:58:15.019Z",codex-agent,"Contract check: upstream issue https://github.com/unbraind/pm-cli/issues/1549 separates mutation-lease fencing from already-completed dead-owner recovery. The published SDK source returns from cleanup-gate recovery while the gate age is at most 10000 ms, before inspecting its recorded owner. Thus a provably killed fence owner still blocks the default 3000 ms acquisition, as the minimal reproduction shows. This supports treating the recovery delay as an SDK regression rather than adding a package retry layer. The original issue concerns preventing stale overwrite; this follow-up concerns crash recovery after that fix."
   "2026-10-26T22:08:18.501Z",codex-agent,"Exact pushed commit 5dd620a08ddf93ccf2a13047340932459ddf0fc4 reproduces the upstream recovery failure in Node 26 CI: https://github.com/unbraind/pm-rlm/actions/runs/40408966320/job/121874051444 . The root-write SIGKILL test reports lock_conflict with reason lock_owner_dead, waited_ms 3013, owner_handoffs 0, while raw four-metric coverage remains 100%. This confirms the SDK-only fence plus SIGKILL reproduction already recorded on pm-rlm-tc1023. Regenerated changelog is preserved and production ledger source remains identical to the dependency bump. This PR remains blocked on upstream default-wait dead-owner recovery; do not add package retries, extend waits, skip the crash test or lower thresholds."
+  "2026-10-27T10:24:54.936Z",codex-agent,"PR #32 (536f54fda5d73274c9875ae12a9c1fb03050ebae) delivered the toolchain bump and generated changelog; it did not fix the SDK-only dead-owner fence recovery regression. Keep this issue open and unclaimed, linked to upstream unbraind/pm-cli#1609. The deterministic minimal reproduction and earlier Node 26 lock_owner_dead failure remain valid separate evidence. Passing later large-fixture CI is not proof of default-wait recovery. No retries, extended waits or skipped crash checks are introduced."
   "2026-10-27T12:11:59.162Z",glm-agent,"Decision update (owner-directed): instead of waiting for the upstream fix to unbraind/pm-cli#1609, this branch ships a package-side bounded retry for dead-owner lock conflicts. Acceptance: (1) every ledger SDK mutation treats lock_conflict with reason lock_owner_dead as retryable with bounded backoff and jitter, total budget 15s configurable through ledger options; live-owner lock_conflict still fails fast with the typed error. (2) The SIGKILL root-write test stays strict (previous budget/transcript intact AND next writer succeeds); add a live-owner fails-fast test and a bounded-budget test (permanently dead owner fails with the typed error after the budget, never hangs). (3) README storage/recovery note citing pm-cli#1609, removable once upstream ships. (4) Changelog regenerated the repo's way. Prefer the SDK lock-wait option over a hand-rolled loop if the pinned SDK exposes one."
   "2026-10-27T12:40:12.725Z",glm-agent,"Revert proof (behavioural): with only the retry wrapper reverted (RlmLedger.mutate made a passthrough, no other change), the new bounded-budget regression test fails with 'The retry budget must be spent before failing' because the permanently fenced dead-owner lock surfaces the SDK lock_conflict immediately. The pre-fix SIGKILL root-write failure is the red main run (lock_conflict lock_owner_dead after waiting 3002ms from RlmLedger.complete). Timing note: locally the SIGKILL root test can pass even without the retry because the post-kill checkpoint read is slow enough under host load that the commit-fence gate is already within its ten-second expiry window when resume starts, so the SDK's internal three-second wait reaches the takeover; CI's faster gap is what failed. The new tests pin the semantics deterministically regardless of that gap."
   "2026-10-27T12:58:35.548Z",glm-agent,"Design notes: (1) Every RlmLedger SDK mutation now runs through a bounded dead-owner retry: schema field registration, checkpoint save (commitItemMutations), call materialize (create + claim), complete (comments, usage transaction, close, release) and both run-lease acquireLock calls; the SDK's own lock-wait option cannot be used because the item-lock wait comes from workspace settings (locks.wait_ms) while the only per-call lockWaitMs options apply to workspace transaction locks, and raising the process-global PM_LOCK_WAIT_MS would also slow live-owner refusals, violating fails-fast. (2) The retry matches only lock_conflict with reason lock_owner_dead; live-owner and owner-unknown conflicts plus every other error rethrow immediately. (3) The deterministic evaluation item (rlm-eval-<id>, resumable across crashes) also retries its create and description CAS through the same helper. Orchestration parents in adaptive/reconcile/engine are excluded: they are freshly generated ids created in the same live process, so no dead-owner takeover is needed there. (4) Budget default 15s, configurable as RlmLedgerOptions.deadOwnerRetryMs; backoff follows the SDK's published retry_after_ms hint doubled per attempt, capped at 2s, with 50-150% jitter."
@@ -48,7 +51,7 @@ tests[5]:
     provenance:
       author: glm-agent
       created_at: "2026-10-27T12:40:36.344Z"
-      source_kind: local_mutation
+      source_kind: merge_union
       source_ref: fix/dead-owner-lock-recovery
   - command: node --test --test-reporter=spec --test-name-pattern SIGKILL test/ledger-storage.test.ts
     scope: project
@@ -56,7 +59,7 @@ tests[5]:
     provenance:
       author: glm-agent
       created_at: "2026-10-27T12:49:12.512Z"
-      source_kind: local_mutation
+      source_kind: merge_union
       source_ref: fix/dead-owner-lock-recovery
   - command: node --test --test-concurrency=2 --test-reporter=spec test/lock-retry-deadline.test.ts test/ledger-lock-retry.test.ts
     scope: project
@@ -64,7 +67,7 @@ tests[5]:
     provenance:
       author: codex-sol
       created_at: "2026-10-27T18:51:35.613Z"
-      source_kind: local_mutation
+      source_kind: merge_union
       source_ref: fix/dead-owner-lock-recovery
   - command: node test/lock-retry-revert.ts
     scope: project
@@ -72,7 +75,7 @@ tests[5]:
     provenance:
       author: codex-sol
       created_at: "2026-10-27T18:52:15.720Z"
-      source_kind: local_mutation
+      source_kind: merge_union
       source_ref: fix/dead-owner-lock-recovery
   - command: "node --test --test-concurrency=2 --test-reporter=spec --test-name-pattern=\"coverage gate passes a fully covered fixture|coverage gate measures repository-root\" test/tooling.test.ts"
     scope: project
@@ -80,8 +83,10 @@ tests[5]:
     provenance:
       author: codex-sol
       created_at: "2026-10-27T20:18:57.062Z"
-      source_kind: local_mutation
+      source_kind: merge_union
       source_ref: fix/dead-owner-lock-recovery
-docs[1]{path,scope}:
+docs[2]{path,scope}:
+  "https://github.com/unbraind/pm-cli/issues/1609",project
   README.md,project
+close_reason: "Delivered by unbraind/pm-rlm#36 (merged 2026-10-28T15:22:26Z, merge commit d2d8c064) after a codex review returned MERGE on its final head; the PR's required test (22/26) and Bun release checks passed; dead-owner and storage busy retries now stop at the mutation deadline with 4/4 behavioral reverts."
 body: ""
