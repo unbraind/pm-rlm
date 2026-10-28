@@ -1,0 +1,17 @@
+id: pm-rlm-49sb
+title: "Daily release never publishes: npm reads release-artifact/package.tgz as a GitHub repository"
+description: "The release job runs npm publish release-artifact/package.tgz. npm parses a bare dir/file.tgz spec as the GitHub shorthand owner/repo and runs git ls-remote ssh://git@github.com/release-artifact/package.tgz.git, which fails with Permission denied (publickey); after 3 attempts the job reports that nothing was published. Latest release run: https://github.com/unbraind/pm-rlm/actions/runs/40667332189 (failure). Fix: publish ./release-artifact/package.tgz so npm reads the verified local archive."
+type: Issue
+status: open
+priority: 0
+tags[3]: ci,npm,release
+created_at: "2026-10-28T15:21:46.652Z"
+updated_at: "2026-10-28T15:21:47.877Z"
+author: claude-hub
+acceptance_criteria: release.yml publishes ./release-artifact/package.tgz; no other npm or bun command passes a bare relative tarball path; the next daily release publishes to npm with provenance
+severity: high
+comments[1]{created_at,author,text}:
+  "2026-10-28T15:21:47.876Z",claude-hub,"Evidence: the failed release job log shows 'npm error command git --no-replace-objects ls-remote ssh://git@github.com/release-artifact/package.tgz.git' and 'git@github.com: Permission denied (publickey)' on each of the 3 attempts (same failure in pm-evidence, pm-hypothesis, pm-jev, pm-lint, pm-memory, pm-review, pm-rlm and pm-swarm, which all carry the scaffold line). The other uses of release-artifact/package.tgz in release.yml are shell arguments (mv, sha256sum, openssl), not npm package specs. Fleet tracking: unbraind/pm-cli-companion item pm-cli-website-l9y4."
+files[1]{path,scope}:
+  .github/workflows/release.yml,project
+body: ""
