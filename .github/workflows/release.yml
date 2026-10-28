@@ -766,7 +766,7 @@ jobs:
             exit 0
           fi
           publish_with_provenance() {
-            npm publish release-artifact/package.tgz --access public --provenance --ignore-scripts
+            npm publish ./release-artifact/package.tgz --access public --provenance --ignore-scripts
           }
           attempt=0
           while (( attempt < max_attempts )); do
