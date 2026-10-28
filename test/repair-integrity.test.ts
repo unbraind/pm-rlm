@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { cp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { emptyRootSlice, prepareRlmRun, resumeRlm } from '../src/engine.ts';
+import { emptyRootSlice, prepareRlmRun, resumeRlm, RlmEngine } from '../src/engine.ts';
 import { promptDigest, RlmLedger } from '../src/ledger.ts';
 import { blobDigest } from '../src/blobs.ts';
 import { repairRlm, resumeRepairRlm } from '../src/repair.ts';
@@ -213,6 +213,7 @@ test('repair rejects unreachable native records before any materialization', asy
   const child = complete.components[0].run; const ledger = new RlmLedger(workspace); const state = await ledger.load(child);
   const id = 'unreachable-native-record'; const slice = emptyRootSlice();
   state.calls.push({ id, parent: child, depth: 1, subgoal: 'Unreachable data', slice, digest: promptDigest('Unreachable data', slice, state.settings), steps: [], result: 'Unexpected materialization' });
+  await assert.rejects(new RlmEngine(ledger, state, model, undefined, true).validateRecorded(), { code: 'replay' });
   const count = (await client.listAllComplete()).items.length;
   await writeNativeCheckpoint(client, child, state);
   let observed: Awaited<ReturnType<typeof resumeRepairRlm>> | undefined;

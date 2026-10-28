@@ -6,13 +6,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-27T14:27:23.277Z"
-updated_at: "2026-10-28T21:56:49.445Z"
-assignee: codex-agent
-claim_principal: codex-agent
+updated_at: "2026-10-28T22:23:58.807Z"
 author: codex-agent
 acceptance_criteria: "One unsupported part among ten causes work only for that part and invalidated dependencies; budget exhaustion retains the supported answer with named gaps; no missing part is silently dropped. Typed SDK and CLI, compact TOON/JSON, strict schemas and remedies, no-git real public corpus validation, seeded state and interleaving evidence, npm and Bun CI gates."
 parent: pm-rlm-a1ih
-comments[30]{created_at,author,text}:
+comments[34]{created_at,author,text}:
   "2026-10-27T14:28:00.396Z",codex-agent,"Design: explicit caller component DAG and source dependencies; native run per targeted component, fresh shared accounting, persistent revision-fenced repair controller, current SDK source revalidation before inference/retry, transitive skip propagation, original evidence retained with origin run references. No new import, export or sync command; journal interchange and native ledger round trips will be model-tested. Tests use only deterministic model adapters, real SDK trackers."
   "2026-10-27T14:51:10.363Z",codex-agent,"Public protocol-fixture validation passed on a verified read-only copy of unbraind/pm-lint at f2c20efa78139f4071f3dd08d317bea05337fe28: 12 source items, 54941 source JSON bytes, 30 unchanged read-only files. Ten components: one scheduled, nine reused, ten supported, one logical child, two model requests, 8181 charged tokens; resume adds zero requests. Zero budget retains nine supported answers and one named gap. Compact JSON is 2918 bytes. No external inference or runtime Git."
   "2026-10-27T15:02:24.481Z",codex-agent,"The behavioral revert proof passed in a disposable source copy: the zero-budget retention regression passes fixed code, fails when supported-component reuse is removed from the execution function, and passes after restoration (1/1). New state tests cover 500 seeded journal sequences, older inputs, native relationships and fields, random custom status roles/focus, source ABA changes, and competing executors at controller and SDK transaction transitions. Source reads now use public locateItem/readLocatedItem and runtime schema/type registry APIs rather than repeated full command projections."
@@ -43,7 +41,11 @@ comments[30]{created_at,author,text}:
   "2026-10-28T21:50:56.332Z",codex-agent,"Integration update: main advanced to the approved toolchain update 5c96b92 during local acceptance. It updates the SDK/tooling pin to 2026.10.25 and fixes complete historical checkpoint reads. This will be merged before pushing and the merged SDK will receive fresh focused, static and public-data validation. The redundant old-SDK legacy rerun was stopped after its six aggregate/read and v1-compatibility tests passed; its remaining spawn matrix is not counted as a passing run. Full exact-head npm/Bun CI will execute every existing regression at unchanged thresholds. The original earlier 21/21 refusal run remains historical evidence only. Strict pinned-SDK health currently passes (advisories only)."
   "2026-10-28T21:55:29.516Z",codex-agent,The SDK read-budget audit found three production native get calls. Main fixes the native ledger historical read; repair's immutable-intent read and evaluation's saved-receipt read now also request unbounded output budget and limit. This prevents presentation truncation from becoming a false integrity decision or losing completed work. A large-intent SDK regression and source-only behavioral revert were added; these will be validated with the merged 2026.10.25 SDK. Existing authentication suite passed 8/8 on the previous pin; SDK upgrade validation remains pending. No core normalization or read mechanism is reimplemented.
   "2026-10-28T21:56:49.445Z",codex-agent,"Packed acceptance passed 2/2 through real npm-global and Bun-global pm symlinks on the previous SDK pin. Each consumer exercised all eight repair receipts with strict JSON and SDK-projected TOON comparisons, repeated child-ID substitutions, cleared intents, native checkpoint rollback, and ordinary execution-refusal replay. No assertion was removed; the original four partial-receipt checks remain exact. Command: node --test --test-concurrency=1 test/repair-install.acceptance.ts. This is compatibility evidence for the previous pin; the merged 2026.10.25 toolchain and final CI artifact will receive fresh validation."
-files[35]{path,scope}:
+  "2026-10-28T22:03:53.923Z",codex-agent,"Merged main at 5c96b92 in bfb2637 and installed the approved 2026.10.25 toolchain. Its new large-legacy migration fixture initially omitted the native ownership fields that every package producer writes, so the existing stale/foreign-write fence correctly refused its save. The fixture now supplies its original parent, rlm:call marker and rlm_run identity; all original read, historical-read, save, GC and equality assertions remain unchanged. The production ownership fence is retained. This corrects fixture provenance without granting inline foreign JSON write authority. Explicit unbounded native reads also unwrap the SDK's typed read envelope through the same SDK-record boundary used by main's ledger fix. Merged-SDK focused tests, the new large-intent behavioral revert, static checks and public measurement are running."
+  "2026-10-28T22:07:42.139Z",codex-agent,"Merged-SDK focused checks passed 4/4, including the reported 20000-token identity attack (one native child, 7951 charged), ordinary refusal replay, large legacy historical reads and large repair intents. The extra description-budget hypothesis was disproved: reverting its unbounded flags still passed the large-intent case, because this SDK's normal core-description read is already complete. I reverted those unnecessary description-consumer changes and their newly added invalid proof, while retaining the large-intent must-allow test and every original test/assertion. Only main's proven large-custom-field historical-read fix is required. The eight actual behavioral revert proofs remain unchanged and passed. Public validation on SDK 2026.10.25 also passed with exactly the original measurements: 12 items, 54941 bytes, 30 unchanged files, 1 scheduled child, 9 reused, 10 supported, 8181 tokens, no additional resume requests and 2918 compact bytes."
+  "2026-10-28T22:14:15.225Z",codex-agent,"Final local integration evidence: merged-SDK focused suite 4/4; linked large-intent must-allow test passed through pm test 1/1 on SDK 2026.10.25; typecheck, lint, zero-duplication gate, complete docstrings and build passed; strict health authority is ok with existing advisory warnings. Public non-git read-only validation reproduced all measured numbers without changing source files. Earlier compatibility evidence is retained with its version boundary: authentication 8/8, global npm/Bun packed acceptance 2/2 with eight receipts each, three seeded models of at least 500 sequences, eight genuine fixed/reverted/restored proofs, and 22 restored-intent interleaving boundaries. All supplied round-3 findings are fixed; prior prompt/hold/reuse regressions remain. No original test or assertion was weakened or deleted. The extra core-description budget hypothesis was disproved and its unnecessary changes reverted. Exact pushed-head full npm and Bun release gates remain required; run URLs, counts and any pending state will be reported on PR https://github.com/unbraind/pm-rlm/pull/39 within the 30-minute CI wait limit. Item remains in progress for orchestrator verification."
+  "2026-10-28T22:23:52.201Z",codex-agent,"Final independent-verifier audit is complete. Added direct SDK assertions to the existing unreachable-call and oversized settled-usage regressions so publisher-history protection cannot mask either verifier. No original assertion was removed. The unreachable-call behavioral revert passed fixed, failed on guard removal, then passed restored on SDK 2026.10.25; the settled-usage case passed 1/1. There are now nine genuine focused revert cases across the documented SDK pins. Fresh typecheck, lint and zero duplication passed. Reclaimed only for this final validation work and releasing again now. All round-3 blockers and prior supplied findings are fixed; final full npm/Bun release-gate evidence remains pending on the exact pushed head and will be recorded in PR 39 with run URLs and counts. No new SDK gap was found."
+files[37]{path,scope}:
   index.ts,project
   package.json,project
   README.md,project
@@ -53,6 +55,7 @@ files[35]{path,scope}:
   src/commands.ts,project
   src/engine.ts,project
   src/errors.ts,project
+  src/evaluation.ts,project
   src/evidence.ts,project
   src/ledger.ts,project
   src/repair-contract.ts,project
@@ -61,6 +64,7 @@ files[35]{path,scope}:
   test/evidence.test.ts,project
   test/install.acceptance.ts,project
   test/ledger-storage-revert.ts,project
+  test/ledger-storage.test.ts,project
   test/reconcile-revert.ts,project
   test/repair-auth.test.ts,project
   test/repair-authority.test.ts,project
@@ -79,7 +83,7 @@ files[35]{path,scope}:
   test/review-r4-revert.ts,project
   test/review-r6-revert.ts,project
   test/round4.test.ts,project
-tests[23]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+tests[26]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "node --test --test-concurrency=2 --test-name-pattern=\"repair schema fuzz\" test/repair-refusals.test.ts",project,codex-agent,"2026-10-27T15:08:57.294Z",local_mutation,feat/evidence-directed-repair-runs
   node test/repair-proof.ts,project,codex-agent,"2026-10-27T17:39:31.216Z",local_mutation,feat/evidence-directed-repair-runs
   node test/repair-public.ts,project,codex-agent,"2026-10-27T17:39:31.216Z",local_mutation,feat/evidence-directed-repair-runs
@@ -103,6 +107,9 @@ tests[23]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   node --test --test-concurrency=1 --test-name-pattern='500 seeded operation sequences' test/reuse-state.test.ts,project,codex-agent,"2026-10-28T21:04:11.325Z",local_mutation,feat/evidence-directed-repair-runs
   node --test --test-concurrency=1 --test-name-pattern='repair publisher history' test/repair-authority.test.ts,project,codex-agent,"2026-10-28T21:25:53.672Z",local_mutation,feat/evidence-directed-repair-runs
   node --test --test-concurrency=1 test/repair-install.acceptance.ts,project,codex-agent,"2026-10-28T21:27:03.315Z",local_mutation,feat/evidence-directed-repair-runs
+  node --test --test-concurrency=1 --test-name-pattern='large legacy checkpoints|repair large native intents|repair child identity replacement|^review r6 replay rejects' test/ledger-storage.test.ts test/repair-authority.test.ts test/review-r6.test.ts,project,codex-agent,"2026-10-28T22:10:25.036Z",local_mutation,feat/evidence-directed-repair-runs
+  node --test --test-concurrency=1 --test-name-pattern='repair large native intents' test/repair-authority.test.ts,project,codex-agent,"2026-10-28T22:10:25.036Z",local_mutation,feat/evidence-directed-repair-runs
+  node --test --test-concurrency=1 --test-name-pattern='settled evidence usage cannot' test/repair-auth.test.ts,project,codex-agent,"2026-10-28T22:23:45.289Z",local_mutation,feat/evidence-directed-repair-runs
 docs[3]{path,scope}:
   docs/EVIDENCE-DIRECTED-REPAIR.md,project
   docs/repair-validation.json,project

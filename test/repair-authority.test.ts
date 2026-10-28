@@ -289,8 +289,9 @@ test('repair large native intents retain complete immutable declarations', async
   request.parts.forEach((part, index) => { part.question = `Question ${index}: ` + 'x'.repeat(4000); });
   request.budget_tokens = 0;
   const result = repaired(await repairRlm(request, { workspace }).catch(error => assert.fail('Complete native intent must remain readable: ' + String(error))));
-  const native = (await client.get(result.run, { at: '1', fields: 'description', outputBudget: 'unbounded', outputLimit: 'unbounded' })).item;
-  assert.ok(Buffer.byteLength(native.description!) > 12000);
+  const native = await client.get(result.run, { at: '1', fields: 'description', outputBudget: 'unbounded', outputLimit: 'unbounded' });
+  assert.ok('item' in native);
+  assert.ok(Buffer.byteLength(native.item.description!) > 12000);
   assert.equal(result.reused, 2); assert.deepEqual(result.gaps, ['part2']);
   assert.deepEqual(repaired(await resumeRepairRlm(result.run, { workspace })), result);
 });

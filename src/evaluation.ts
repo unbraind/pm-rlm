@@ -130,7 +130,7 @@ async function executeEvaluation(suite: RlmEvalSuite, options: RlmEvalOptions): 
     let state: EvalState;
     let reason = '';
     if (existing !== null) {
-      const row = (await client.get(evaluation, { fields: 'description,tags', outputBudget: 'unbounded', outputLimit: 'unbounded' })).item;
+      const row = (await client.get(evaluation, { fields: 'description,tags' })).item;
       serialized = String(row.description);
       try { state = record(JSON.parse(serialized)) as unknown as EvalState; } catch { state = {} as EvalState; }
       if (!row.tags?.includes('rlm:evaluation') || state.owner !== 'pm-rlm/eval-v1' || !Array.isArray(state.rows) || typeof state.complete !== 'boolean') {

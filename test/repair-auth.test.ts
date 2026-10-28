@@ -173,6 +173,7 @@ test('settled evidence usage cannot exceed its producer reservation or total bud
       state.reserved_tokens += amount - step.reserved; step.reserved = amount;
       step.response!.tokens_in = amount; step.response!.tokens_out = 0;
     } else state.reserved_tokens = state.settings.budget_tokens + 1;
+    await assert.rejects(new RlmEngine(new RlmLedger(workspace), state, model, undefined, true).validateRecorded(), RlmError);
     await writeNativeCheckpoint(client, child, state);
     assert.deepEqual((await retained(resumeRepairRlm(complete.run, { workspace, model }))).gaps, ['part0']);
   }

@@ -75,7 +75,7 @@ test('large legacy checkpoints remain complete in historical reads', async t => 
   const { ledger, result } = await fixture(t);
   const legacy = await ledger.load(result.run);
   legacy.run = await ledger.newRunId(); legacy.calls[0].id = legacy.run;
-  await ledger.client.run('create', { options: { id: legacy.run, title: 'Legacy inline checkpoint', type: 'Task', rlmState: JSON.stringify(legacy) } });
+  await ledger.client.run('create', { options: { id: legacy.run, title: 'Legacy inline checkpoint', type: 'Task', parent: legacy.calls[0].parent!, tags: 'rlm:call', rlmRun: legacy.run, rlmState: JSON.stringify(legacy) } });
   await ledger.client.claim(legacy.run);
   assert.deepEqual(await ledger.load(legacy.run), legacy);
   assert.deepEqual(await ledger.load(legacy.run, '1'), legacy);

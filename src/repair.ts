@@ -36,7 +36,7 @@ function repairChildId(run: string, index: number): string { return `${run}-r${i
 /** Progress may replay, but declarations, source coordinates and initial scheduling decisions cannot change. */
 async function readCheckpoint(ledger: RlmLedger, run: string, description: string): Promise<{ checkpoint: RlmRepairCheckpoint; invalid: Set<string> }> {
   const checkpoint = parseRepairCheckpoint(JSON.parse(description.slice(MARKER.length)));
-  const initialNative = (await ledger.client.get(run, { at: '1', fields: 'description', outputBudget: 'unbounded', outputLimit: 'unbounded' })).item;
+  const initialNative = (await ledger.client.get(run, { at: '1', fields: 'description' })).item;
   const initial = parseRepairCheckpoint(JSON.parse(initialNative.description!.slice(MARKER.length)));
   /** Select only producer-owned immutable intent; current target progress is reconstructed separately. */
   const intent = (value: RlmRepairCheckpoint) => JSON.stringify([value.request, value.source_mode, value.source_revision, value.revisions, value.targets.map(target => [target.component, target.kind])]);
