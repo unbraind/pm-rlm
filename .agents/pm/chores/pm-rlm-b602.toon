@@ -1,0 +1,28 @@
+id: pm-rlm-b602
+title: Repair the ledger storage revert proof for the toolchain update
+description: Diagnose the PR 35 legacy-writer mutation proof without accepting unrelated errors as assertion evidence. Preserve storage-format regression coverage and record already merged PR 33 as independently green.
+type: Chore
+status: in_progress
+priority: 2
+tags[4]: ci,dependabot,"gh:unbraind/pm-rlm#33","gh:unbraind/pm-rlm#35"
+created_at: "2026-10-28T19:48:44.579Z"
+updated_at: "2026-10-28T20:22:05.267Z"
+assignee: codex-agent
+claim_principal: codex-agent
+author: codex-agent
+comments[4]{created_at,author,text}:
+  "2026-10-28T19:50:15.875Z",codex-agent,"Cause class under investigation: dependency incompatibility in the legacy inline-checkpoint mutation proof. The old writer reaches JSON.parse with an unterminated checkpoint instead of the required format assertion. Diagnose read versus persistence truncation with synthetic trackers; do not accept generic errors as successful revert evidence. PR 33 is already merged, with both exact-head test jobs successful at https://github.com/unbraind/pm-rlm/actions/runs/40716156064."
+  "2026-10-28T20:11:03.783Z",codex-agent,"Synthetic diagnosis confirms that complete-list evidence can reuse a clipped extension field after compact mutation output: a legacy checkpoint read was 241 characters while an unbounded point read returned all 22123 persisted characters. Added one shared complete field reader for hydration, compare-and-set checkpoint checks and garbage-collection marking. Corpus certification remains in place, all recovery assertions are retained, and old inline data stays supported. The regression creates and claims a legacy inline checkpoint through the real SDK, then checks load, migration and collection. No SDK mock, retry or timeout increase is introduced."
+  "2026-10-28T20:17:05.662Z",codex-agent,"Diagnosis correction: the 241-character read was the historical get(at=1, fields=rlm_state), not the certified complete-list read. The direct current read was the full 22123 characters. The root cause is the historical get default output budget. Discarded the uncommitted broad point-read workaround. The focused production fix only requests unbounded output for the existing historical checkpoint read and validates its result envelope. Current list reads, compare-and-set checks and GC stay on their existing paths. The new regression explicitly reads a large legacy checkpoint at history version 1, then verifies lazy migration and GC."
+  "2026-10-28T20:21:51.802Z",codex-agent,"Final focused cause class: genuine dependency read-contract incompatibility. Request the complete rlm_state value on the existing historical get(at) path; current certified reads and CAS/GC behavior are unchanged. Typecheck passes. PM-linked storage commands pass 1/1 and 2/2. Disposable behavioral proof: reverting only the historical-read fix makes the new large version-1 history regression fail; restoring it passes 2/2 with the content-addressed manifest test. Reverting the writer now reaches the intended ERR_ASSERTION rather than a JSON truncation failure. PR 33 was already auto-merged with both matrix tests green at head 2b1bdd6cbbfaf5cee81bf5392223c55b05d298dd: https://github.com/unbraind/pm-rlm/actions/runs/40716156064. No new PR 33 fix is required."
+files[4]{path,scope}:
+  src/blobs.ts,project
+  src/ledger.ts,project
+  test/ledger-storage-revert.ts,project
+  test/ledger-storage.test.ts,project
+tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "node --test --test-concurrency=2 --test-name-pattern=\"legacy checkpoints read unchanged\" test/ledger-storage.test.ts",project,codex-agent,"2026-10-28T19:51:02.440Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-cc78843e61
+  "node --test --test-concurrency=2 --test-name-pattern=\"large legacy checkpoints|legacy checkpoints read unchanged\" test/ledger-storage.test.ts",project,codex-agent,"2026-10-28T20:05:35.699Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-cc78843e61
+docs[1]{path,scope}:
+  "https://github.com/unbraind/pm-rlm/actions/runs/40724961517",project
+body: ""
