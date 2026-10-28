@@ -11,7 +11,7 @@ const oldPortable = `  assert.equal(publicSource('pm-vcs', pathToFileURL('/works
 const proofs = [
   { name: 'numeric type/value ordering', file: 'src/aggregates.ts', before: '[...groups.values()].sort((a, b) => compareScalars(a.value, b.value))', after: '[...groups.keys()].sort().map(key => groups.get(key)!)', pattern: '^review r4 scalar' },
   { name: 'new checkpoint version', file: 'src/engine.ts', before: ', aggregate_version: 2', after: '', pattern: '^review r4 checkpoint' },
-  { name: 'legacy replay version selection', file: 'src/engine.ts', before: 'state.settings.budget_tokens, state.aggregate_version ?? 1)', after: 'state.settings.budget_tokens, 2)', pattern: '^review r4 checkpoint' },
+  { name: 'legacy replay version selection', file: 'src/engine.ts', before: 'const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, state.aggregate_version ?? 1)', after: 'const context = new RlmContext(workspace, callItems(state, call), state.certificate, state.settings.budget_tokens, 2)', pattern: '^review r4 checkpoint' },
   { name: 'legacy resume version selection', file: 'src/engine.ts', before: 'state.settings.budget_tokens - state.reserved_tokens, state.aggregate_version ?? 1)', after: 'state.settings.budget_tokens - state.reserved_tokens, 2)', pattern: '^review r4 checkpoint' },
   { name: 'unknown checkpoint version refusal', file: 'src/ledger.ts', before: "      if (decoded.aggregate_version !== undefined && ![1, 2].includes(decoded.aggregate_version as number)) throw new Error('Invalid aggregate version');\n", after: '', pattern: '^review r4 checkpoint' },
   { name: 'portable assertions', file: portableFile, before: currentPortable, after: oldPortable, pattern: '^review r4 portable' },

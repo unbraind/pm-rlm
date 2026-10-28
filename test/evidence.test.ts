@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
-import { runRlm, replayRlm, resumeRlm, evidenceRlm } from '../src/engine.ts';
+import { runRlm, replayRlm, resumeRlm, evidenceRlm, RlmEngine } from '../src/engine.ts';
 import { RlmLedger } from '../src/ledger.ts';
 import { RlmError } from '../src/errors.ts';
 import { parseComponents, sourceWitness, validateAnswer, RlmEvidenceError } from '../src/evidence.ts';
@@ -136,6 +136,9 @@ for (const scenario of [
     if (remedy === undefined) delete observation.remedy;
     else observation.remedy = remedy;
     if (unfinished) { delete tampered.calls[0].result; tampered.calls[0].steps.pop(); }
+    const prefix = structuredClone(tampered);
+    delete prefix.calls[0].result; prefix.calls[0].steps = prefix.calls[0].steps.slice(0, 1);
+    await assert.rejects(new RlmEngine(ledger, prefix, model).validateRecorded(), RlmError);
     await replaceCheckpointFixture(ledger, tampered);
     const before = await Promise.all(paths.map(path => readFile(path)));
     await assert.rejects(replayRlm(workspace, run.run), { code: 'replay' });
