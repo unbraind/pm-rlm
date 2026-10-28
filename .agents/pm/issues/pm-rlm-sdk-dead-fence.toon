@@ -2,11 +2,13 @@ id: pm-rlm-sdk-dead-fence
 title: SDK commit fence delays dead-owner crash recovery beyond the default lock wait
 description: "Work around pinned SDK commit-fence dead-owner recovery regression (unbraind/pm-cli#1609) in every crash-sensitive ledger and resumable evaluation mutation. Enforce a monotonic deadline before every mutation retry and cap sleep by retry hint, bounded jittered backoff and remaining budget. Share the deadline guard with storage busy retries. Preserve typed live-owner refusals, strict SIGKILL crash-safety assertions, non-git operation, public SDK and CLI outputs, and packed npm/native Bun consumers. Default budget 15 seconds; zero starts no mutation. Remove this workaround after the upstream fix ships and the dependency pin advances."
 type: Issue
-status: in_progress
+status: closed
 priority: 1
 tags[3]: "gh:unbraind/pm-cli#1609","pr:unbraind/pm-rlm#36","upstream:pm-cli#1609"
 created_at: "2026-10-26T18:17:31.287Z"
-updated_at: "2026-10-27T20:23:38.118Z"
+updated_at: "2026-10-28T15:29:47.181Z"
+closed_at: "2026-10-28T15:29:46.633Z"
+completed_at: "2026-10-28T15:22:26.000Z"
 author: codex-agent
 comments[18]{created_at,author,text}:
   "2026-10-26T20:58:15.019Z",codex-agent,"Contract check: upstream issue https://github.com/unbraind/pm-cli/issues/1549 separates mutation-lease fencing from already-completed dead-owner recovery. The published SDK source returns from cleanup-gate recovery while the gate age is at most 10000 ms, before inspecting its recorded owner. Thus a provably killed fence owner still blocks the default 3000 ms acquisition, as the minimal reproduction shows. This supports treating the recovery delay as an SDK regression rather than adding a package retry layer. The original issue concerns preventing stale overwrite; this follow-up concerns crash recovery after that fix."
@@ -86,4 +88,5 @@ tests[5]:
 docs[2]{path,scope}:
   "https://github.com/unbraind/pm-cli/issues/1609",project
   README.md,project
+close_reason: "Delivered by unbraind/pm-rlm#36 (merged 2026-10-28T15:22:26Z, merge commit d2d8c064) after a codex review returned MERGE on its final head; the PR's required test (22/26) and Bun release checks passed; dead-owner and storage busy retries now stop at the mutation deadline with 4/4 behavioral reverts."
 body: ""
