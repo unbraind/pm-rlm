@@ -8,6 +8,9 @@ import type { RlmState } from './types.ts';
 /** SHA-256 over the exact UTF-8 JSON bytes stored on disk. */
 export function blobDigest(bytes: string | Uint8Array): string { return createHash('sha256').update(bytes).digest('hex'); }
 
+/** Native checkpoints have the same by-value JSON semantics before writing and comparing. */
+export function checkpointValue(state: RlmState): RlmState { return JSON.parse(JSON.stringify(state)) as RlmState; }
+
 /** Immutable payload store; callers hold the ledger storage lock across publication or collection. */
 export class RlmBlobs {
   private readonly directory: string;
@@ -50,7 +53,7 @@ export class RlmBlobs {
   }
   /** Encode independent payloads once; reservations remain exclusively in the atomic root manifest. */
   async encode(state: RlmState): Promise<string> {
-    const { snapshot, calls, reserved_tokens, ...metadata } = state;
+    const { snapshot, calls, reserved_tokens, ...metadata } = checkpointValue(state);
     const snapshotRef = await this.put(snapshot);
     const storedCalls = [];
     for (const call of calls) {

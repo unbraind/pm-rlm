@@ -1,3 +1,5 @@
+import { isDeepStrictEqual } from 'node:util';
+import { checkpointValue } from './blobs.ts';
 import { parseReuseIdentity, parseReuseSelection, parseReuseRequest, RlmReuseConflict, RlmReuseError } from './reuse-contract.ts';
 import { applyPendingReuse, reuseTargetContract, validateReuseState } from './reuse.ts';
 import { EVIDENCE_PROTOCOL, parseComponents, sourceWitness, validateAnswer, RlmEvidenceError } from './evidence.ts';
@@ -186,6 +188,11 @@ async function proofTranscript(workspace: string, state: RlmState): Promise<RlmS
   }
   return copy;
 }
+/** Validate spawn observation shape identically in execution verification and read-only replay. */
+function recordedSpawnResult(step: RlmStep): string {
+  if (typeof step.observation !== 'object' || step.observation === null || typeof (step.observation as { result?: unknown }).result !== 'string') throw new RlmError('replay', 'Recorded spawn step has no completed observation');
+  return (step.observation as { result: string }).result;
+}
 /** Recompute parser refusals before trusting their recorded code or corrective prompt text. */
 function recordedAction(state: RlmState, call: RlmCall, step: RlmStep): RlmAction | undefined {
   try { return parseAction(step.response!.text, state.parser_version ?? 1); }
@@ -211,6 +218,7 @@ export class RlmEngine {
   private readonly contract?: string;
   private readonly selection?: RlmReuseSelection;
   private readonly strictUsage: boolean;
+  private trustedProgress = true;
   private readonly onComplete?: (call: RlmCall) => void | Promise<void>;
   /** Bind one recovered or new state to its transport and explicit tracker. */
   constructor(ledger: RlmLedger, state: RlmState, model: RlmModel, onComplete?: (call: RlmCall) => void | Promise<void>, strictUsage = false) { this.strictUsage = strictUsage; this.ledger = ledger; this.state = state; this.model = model; this.onComplete = onComplete; this.contract = state.reuse_identity === undefined ? undefined : reuseTargetContract(state); this.selection = state.reuse_selection === undefined ? undefined : { ...state.reuse_selection }; }
@@ -220,6 +228,7 @@ export class RlmEngine {
   async spawn(parentId: string, subgoal: string, slice: RlmSlice): Promise<string> {
     const state = this.state;
     validateCallGraph(state);
+    if (state.components !== undefined || state.reuse_identity !== undefined) this.trustedProgress &&= isDeepStrictEqual(checkpointValue(state), await this.ledger.publishedState(state.run));
     const parent = state.calls.find(call => call.id === parentId);
     let call = prepareSpawn(state, parent, subgoal, slice);
     if (call === undefined) {
@@ -272,8 +281,8 @@ export class RlmEngine {
     state.reserved_tokens += charge;
     return observation;
   }
-  /** Verify execution without writes, optionally checking exact accounting reconstructed in call order. */
-  async validateRecorded(strictUsage = this.strictUsage): Promise<void> {
+  /** Verify execution without writes; observational mode skips legacy nonexecuted placeholders only. */
+  async validateRecorded(strictUsage = this.strictUsage, observational = false): Promise<void> {
     if (this.state.reuse !== undefined) { await validateReuseState(this.ledger.workspace, this.state); return; }
     validateCallGraph(this.state);
     const verifyingProof = strictUsage || this.state.components !== undefined || this.state.reuse_identity !== undefined;
@@ -286,6 +295,7 @@ export class RlmEngine {
       visited.add(call.id);
       let completed = false;
       for (const [index, step] of call.steps.entries()) {
+        if (observational && !verifyingProof && step.response === undefined) continue;
         if (step.response === undefined) validatePendingStep(this.state, call, index);
         else if (verifyingProof) validateStepReservation(this.state, call, step);
         if (verifyingProof && step.settled === true && step.reserved !== step.response!.tokens_in + step.response!.tokens_out) throw new RlmTranscriptError('Settled charge differs from recorded usage');
@@ -307,7 +317,7 @@ export class RlmEngine {
           if (refusal === undefined) completed = true;
           continue;
         }
-        const prefix = { ...call, steps: call.steps.slice(0, index + 1) };
+        const prefix = { ...call, steps: call.steps.slice(0, index + 1).filter(entry => !observational || verifyingProof || entry.response !== undefined) };
         let spawnRefusal: RlmError | undefined;
         let validatingChild = false;
         let spawned: unknown;
@@ -342,8 +352,9 @@ export class RlmEngine {
           }
           const legacyCodeOnly = (state.parser_version ?? 1) === 1 && !('reason' in observation);
           const remedy = refusal instanceof RlmEvidenceError ? refusal.remedy : undefined;
-          if (refusal === undefined || observation.refused !== refusal.code || (!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message)) || (observation as { remedy?: unknown }).remedy !== remedy) throw new RlmError('replay', `Recorded execution refusal differs at step ${call.id}:${index}`);
+          if (refusal === undefined || observation.refused !== refusal.code || (!legacyCodeOnly && (!('reason' in observation) || observation.reason !== refusal.message)) || (observation as { remedy?: unknown }).remedy !== remedy) throw new RlmTranscriptError(`Recorded execution refusal differs at step ${call.id}:${index}`);
         } else if (action.action === 'spawn') {
+          recordedSpawnResult(step);
           if (!completedSpawn || JSON.stringify(spawned) !== JSON.stringify(observation)) throw new RlmTranscriptError('Recorded child observation differs');
         } else {
           const read = await recordedRead(this.ledger.workspace, this.state, call, index, action, observation);
@@ -367,10 +378,12 @@ export class RlmEngine {
     for (;;) {
       let step = call.steps[index];
       if (step === undefined) {
+        if (!this.trustedProgress) throw new RlmTranscriptError('Imported evidence progress differs from its native publisher');
         step = reserveStep(state, call, this.prompt(call));
         await this.ledger.save(state);
       }
       if (step.response === undefined) {
+        if (!this.trustedProgress) throw new RlmTranscriptError('Imported evidence progress differs from its native publisher');
         if (state.reuse_identity !== undefined && this.model.name !== state.settings.model) throw new RlmReuseError('settings', 'invalid');
         validatePendingStep(state, call, index);
         const response = await this.model.complete({ prompt: step.prompt, max_output_tokens: state.settings.output_tokens, context_tokens: state.settings.context_tokens, parser_version: state.parser_version ?? 1 });
@@ -414,6 +427,7 @@ export class RlmEngine {
       const selected = this.selection ?? initial?.reuse_selection ?? this.state.reuse_selection;
       if (selected !== undefined && (initial === undefined || reuseTargetContract(initial) !== reuseTargetContract(this.state))) throw new RlmReuseConflict(this.state.run);
       if (initial?.reuse_identity !== undefined && this.state.reuse_identity === undefined) throw new RlmReuseError('original_opt_in');
+      this.trustedProgress = !(this.state.components !== undefined || this.state.reuse_identity !== undefined || initial?.components !== undefined || initial?.reuse_identity !== undefined) || isDeepStrictEqual(checkpointValue(this.state), await this.ledger.publishedState(this.state.run));
       if (this.contract !== undefined && this.contract !== reuseTargetContract(this.state)) {
         if (selected !== undefined) throw new RlmReuseConflict(this.state.run);
         throw new RlmReuseError('settings', 'invalid');
@@ -481,7 +495,8 @@ export async function resumeRlm(workspace: string, run: string, model?: RlmModel
 export async function replayRlm(workspace: string, run: string): Promise<RlmResult> {
   const ledger = new RlmLedger(workspace);
   const state = await ledger.load(run);
-  if (state.reuse !== undefined) { await validateReuseState(workspace, state); return result(state); }
+  await new RlmEngine(ledger, state, new HttpModel(state.settings)).validateRecorded(false, true);
+  if (state.reuse !== undefined) return result(state);
   const visited = new Set<string>();
   /** Follow recorded spawn edges and finish actions without executing a model or writing the tracker. */
   async function replay(call: RlmCall): Promise<string | undefined> {
@@ -502,9 +517,8 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
         continue;
       }
       if (action.action === 'spawn') {
-        if (typeof step.observation !== 'object' || step.observation === null || typeof (step.observation as { result?: unknown }).result !== 'string') throw new RlmError('replay', 'Recorded spawn step has no completed observation');
         const child = state.calls.find(child => child.parent === call.id && child.digest === promptDigest(action.subgoal, resolveSlice(state, call, action.slice), state.settings));
-        if (child === undefined || await replay(child) !== (step.observation as { result: string }).result) throw new RlmError('replay', 'Recorded child result differs');
+        if (child === undefined || await replay(child) !== recordedSpawnResult(step)) throw new RlmError('replay', 'Recorded child result differs');
       }
       if (action.action !== 'finish' && action.action !== 'answer' && action.action !== 'spawn') {
         await recordedRead(workspace, state, call, call.steps.indexOf(step), action, step.observation);
@@ -520,7 +534,6 @@ export async function replayRlm(workspace: string, run: string): Promise<RlmResu
   }
   await replay(state.calls[0]);
   if (visited.size !== state.calls.length) throw new RlmError('replay', 'Recorded call graph has unreachable calls');
-  if (state.components !== undefined || state.reuse_identity !== undefined) await new RlmEngine(ledger, state, new HttpModel(state.settings)).validateRecorded();
   return result(state);
 }
 /** Read a compact, ordered call tree, retaining the full checkpoint only when explicitly requested. */

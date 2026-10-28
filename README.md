@@ -474,6 +474,10 @@ component, evidence origin and budget coordinate; `--full` includes answer text.
 Saved prompts and inference holds are authenticated through their native
 producers before transport. Native transport refusals expose `RlmTranscriptError` with a
 `replay` code and remedy; repair returns a named gap for the damaged component.
+Repair child ids remain bound to their producer-owned component; replacements
+become named gaps, and older cleared intents retain native charges. Replayed
+native states cannot refund published evidence or authorize fresh inference. Ordinary
+replay authenticates execution refusals while preserving legacy placeholders.
 Recovery revalidates current SDK revisions, skips stale targets and their
 prerequisites' dependents, and reuses peer-completed native children. Runtime
 works without Git. See the [repair guide](docs/EVIDENCE-DIRECTED-REPAIR.md),

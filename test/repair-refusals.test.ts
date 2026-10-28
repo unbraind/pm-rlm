@@ -7,7 +7,7 @@ import { blobDigest, RlmBlobs } from '../src/blobs.ts';
 import type { RlmState } from '../src/types.ts';
 import { RlmError } from '../src/errors.ts';
 import { parseComponents, RlmEvidenceError } from '../src/evidence.ts';
-import { prepareRlmRun, runRlm } from '../src/engine.ts';
+import { prepareRlmRun, runRlm, RlmEngine } from '../src/engine.ts';
 import { compactRepairResult, repairRlm, resumeRepairRlm } from '../src/repair.ts';
 import { parseRepairRequest, parseRepairCheckpoint, RlmRepairError, validateRepairResult } from '../src/repair-contract.ts';
 import type { RlmRepairResult } from '../src/repair-contract.ts';
@@ -348,6 +348,7 @@ test('native repair charges reject lower finite counters and inconsistent settle
     if (mode === 'total') state.reserved_tokens = 0;
     else { const step = state.calls[0].steps[0]; state.reserved_tokens -= step.reserved; step.reserved = 0; }
     await client.run('update', { id: child, options: { rlmState: JSON.stringify(state) } });
+    await assert.rejects(new RlmEngine(new RlmLedger(workspace), state, model, undefined, true).validateRecorded(), RlmError);
     const result = repaired(await resumeRepairRlm(complete.run, { workspace, model }));
     assert.deepEqual(result.gaps, ['part2']); assert.equal(result.reused, 2); assert.equal(result.budget.remaining, 0);
     assert.equal(result.components[2].reason, 'child_evidence'); assert.equal(model.requests.length, 2);

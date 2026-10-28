@@ -80,6 +80,7 @@ test('500 seeded operation sequences preserve SDK-read native fields relationshi
       await ledger.save(actual);
       actual = await new RlmLedger(workspace).load(prepared.run);
       assert.deepEqual(actual, reference, `seed=0x5eeda11 sequence=${sequence}`);
+      assert.deepEqual(await ledger.publishedState(prepared.run), actual, 'Every SDK producer export remains the authoritative native checkpoint');
       // A fresh SDK client must see the same full native source as the captured oracle.
       assert.ok(actual.snapshot.find(item => item.id === source)!.dependencies!.some(edge => edge.id === dependency));
       assert.equal(actual.snapshot.find(item => item.id === source)!.parent, reference.snapshot.find(item => item.id === source)!.parent);

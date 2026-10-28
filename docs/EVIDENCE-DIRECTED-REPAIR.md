@@ -63,6 +63,20 @@ item lock. Native append-only history records each operation with an identity
 bound to that history head; importing an older serialized counter cannot reuse
 a newer operation. Initial declarations and source coordinates remain immutable. Continued native
 proofs must match the same producer-owned question, model policy and allowance.
+Native progress is checked against the last producer checkpoint in verified SDK
+history. Importing an older native state cannot refund completed evidence or
+authorize another model request. Previously allocated children outside the
+producer's canonical slots exhaust the remaining authority and produce an
+`untracked_child` gap; unrelated foreign runs remain unchanged.
+
+Each component's child identity is derived by the same producer used by recovery.
+A replacement id yields a named `child_identity` gap; it cannot allocate a second
+child or erase the canonical child's native charge. That gap persists on later
+resumes until the journal is explicitly corrected or a fresh repair starts. SDK aliases are normalized
+through the SDK on both sides. If an older checkpoint clears its child intent,
+recovery reads the canonical native record and restores its original allowance
+before admitting other work. Deleted or foreign canonical records conservatively
+retain the existing unknown-usage policy.
 Pending child identities are persisted before materialization. Retry reads
 current SDK rows and verified growing history coordinates, including ABA edits,
 before inference. Changed sources skip the target and every downstream part;
@@ -84,7 +98,10 @@ earlier charges, but cannot understate recorded holds or exceed the configured
 budget; repair children require exact totals. On unfinished calls, recovery can
 reconstruct a missing read observation through that same producer before checking
 a later saved prompt. Completed proofs never fill missing observations. Read-only
-legacy replay retains its historical placeholder-step behavior.
+legacy replay retains its historical placeholder-step behavior. Ordinary replay
+also uses the execution verifier for refusal codes, reasons and remedies; a
+placeholder has no authority to bypass that check. Corrupt execution refusals
+raise `RlmTranscriptError` before inference or ledger writes.
 
 Native resume refuses corrupt transport state with `RlmTranscriptError`, code
 `replay`, and a safe remedy. Repair converts a damaged child into a named gap,
@@ -101,7 +118,8 @@ The SDK returns full supported answers, witness references and their origin
 run ids. Witness step numbers belong to that named origin run. The CLI uses
 the host TOON renderer or `--json`, retains every component and named gap, and
 omits answer text and witnesses by default; answer digests and byte counts
-remain. `--full` returns full answers. `RlmRepairError` carries a stable `code`
+remain. JSON retains empty arrays; the host TOON projection omits empty
+containers. Both retain every component and every named gap. `--full` returns full answers. `RlmRepairError` carries a stable `code`
 and a machine-readable `remedy`. Invalid input and integrity failures exit 2;
 expected budget exhaustion is a successful partial receipt.
 
@@ -117,7 +135,8 @@ The [public measurement](repair-validation.json) uses deterministic protocol
 adapters and a pinned read-only public tracker copy. It measures selective
 execution, retained answers, accounting and recovery, not inference quality or
 provider billing. Native checkpoint v1/v2 interchange remains covered by the
-existing 500-sequence SDK state test; repair journals add 500 seeded sequences
+existing 500-sequence SDK state test; repair journals and child identity imports
+each add 500 seeded sequences
 over real producer checkpoints, including completed native children and zero-budget
 receipts, replaying older inputs and recovering each
 through the package. CRLF and whitespace variants, native relationships and

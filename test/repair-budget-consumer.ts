@@ -1,7 +1,7 @@
 /** Executed from installed npm/Bun consumers; imports only their actual packed public SDK. */
 import assert from 'node:assert/strict';
 import { PmClient } from '@unbrained/pm-cli/sdk';
-import { parseRepairCheckpoint, repairRlm, resumeRepairRlm, resumeRlm, RlmLedger, RlmTranscriptError, runRlm } from '../index.ts';
+import { parseRepairCheckpoint, replayRlm, repairRlm, resumeRepairRlm, resumeRlm, RlmLedger, RlmTranscriptError, runRlm } from '../index.ts';
 import type { ModelRequest, RlmModel, RlmRepairResult } from '../index.ts';
 
 const workspace = process.env.PM_PATH!;
@@ -19,7 +19,7 @@ const sourceModel: RlmModel = { name: 'packed-budget-protocol', complete: async 
     : { action: 'answer', components: parts.map((part, index) => ({ component: part.name, status: index < 2 ? 'supported' : 'unsupported', answer: index < 2 ? part.name : '', reason: index < 2 ? '' : 'Missing evidence', witnesses: index < 2 ? [{ step: index, digest: prompt.transcript[index].observation.data.digest }] : [] })) };
   return { text: JSON.stringify(action), tokens_in: 24, tokens_out: 16 };
 } };
-const source = await runRlm('Explain three budget sources', { workspace, model: sourceModel, scope: { ids }, components: parts.map(part => part.name), settings: { budget_tokens: 1000000 } });
+const source = await runRlm('Explain three budget sources', { workspace, model: sourceModel, scope: { ids }, components: parts.map(part => part.name), settings: { budget_tokens: 1000000, endpoint: 'http://127.0.0.1:1' } });
 await client.update(ids[0], { description: 'Updated evidence invalidates the first source' });
 let requests = 0;
 const model: RlmModel = { name: sourceModel.name, complete: async request => {
@@ -80,4 +80,58 @@ for (const mode of ['reservation', 'prompt']) {
   assert.ok(refused.status === 'partial'); assert.equal(refused.components[0].reason, 'child_evidence'); assert.deepEqual(refused.gaps, ['budget0', 'budget2']);
   assert.equal(unexpected, 0); receipts.push(refused);
 }
+/** Keep each packed receipt independently resumable across every CLI transport. */
+async function authorityFixture() {
+  const authority = await repairRlm({ source: source.run, parts, budget_tokens: 20000 }, { workspace, model });
+  assert.equal(authority.status, 'complete');
+  if (authority.status !== 'complete') throw new Error('Expected completed identity fixture');
+  const authoritative = parseRepairCheckpoint(JSON.parse((await client.get(authority.run, { depth: 'full' })).item.description!.slice('RLM repair v1\n'.length)));
+  return { authority, authoritative, authorizedRequests: requests };
+}
+const identityFixture = await authorityFixture();
+for (let attempt = 0; attempt < 2; attempt++) {
+  const { authority, authoritative, authorizedRequests } = identityFixture;
+  const imported = structuredClone(authoritative);
+  imported.targets[0].child = `${authority.run}-replacement${attempt}`; imported.targets[0].phase = 'pending';
+  await client.update(authority.run, { description: 'RLM repair v1\n' + JSON.stringify(imported) });
+  const refused = await resumeRepairRlm(authority.run, { workspace, model });
+  assert.equal(refused.status, 'partial');
+  if (refused.status !== 'partial') throw new Error('Expected isolated identity gap');
+  assert.deepEqual(refused.gaps, ['budget0']); assert.equal(refused.components[0].reason, 'child_identity');
+  assert.equal(refused.budget.charged, authority.budget.charged); assert.equal(requests, authorizedRequests);
+  receipts.push(refused);
+}
+{
+  const { authority, authoritative, authorizedRequests } = await authorityFixture();
+  const older = structuredClone(authoritative);
+  older.targets[0].child = ''; older.targets[0].allowance = 0; older.targets[0].phase = 'gap'; older.targets[0].reason = 'budget';
+  await client.update(authority.run, { description: 'RLM repair v1\n' + JSON.stringify(older) });
+  const restored = await resumeRepairRlm(authority.run, { workspace, model });
+  assert.equal(restored.status, 'complete');
+  if (restored.status !== 'complete') throw new Error('Expected recovered canonical child');
+  assert.equal(restored.budget.charged, authority.budget.charged); assert.equal(requests, authorizedRequests);
+  receipts.push(restored);
+}
+{
+  const { authority, authoritative, authorizedRequests } = await authorityFixture();
+  const nativeLedger = new RlmLedger(workspace);
+  const nativeChild = authoritative.targets[0].child;
+  const nativeBirth = await nativeLedger.load(nativeChild, '1');
+  await client.run('update', { id: nativeChild, options: { rlmState: JSON.stringify(nativeBirth) } });
+  await assert.rejects(resumeRlm(workspace, nativeChild, forbidden), (error: unknown) => error instanceof RlmTranscriptError && error.code === 'replay' && error.remedy.length > 0);
+  const nativeReplay = await resumeRepairRlm(authority.run, { workspace, model: forbidden });
+  assert.equal(nativeReplay.status, 'partial');
+  if (nativeReplay.status !== 'partial') throw new Error('Expected native history gap');
+  assert.deepEqual(nativeReplay.gaps, ['budget0']); assert.equal(nativeReplay.components[0].reason, 'child_evidence');
+  assert.equal(nativeReplay.budget.charged, nativeReplay.budget.limit); assert.equal(unexpected, 0); assert.equal(requests, authorizedRequests);
+  receipts.push(nativeReplay);
+}
+let plainRequests = 0;
+const plainModel: RlmModel = { name: 'packed-refusal-protocol', complete: async () => ({ text: JSON.stringify(plainRequests++ === 0 ? { action: 'get', id: 'outside', fields: [] } : { action: 'finish', answer: 'Retained plain answer' }), tokens_in: 24, tokens_out: 16 }) };
+const plain = await runRlm('Plain execution refusal', { workspace, scope: { ids }, model: plainModel, settings: { endpoint: 'http://127.0.0.1:1' } });
+const plainState = await new RlmLedger(workspace).load(plain.run);
+(plainState.calls[0].steps[0].observation as { reason: string }).reason = 'Forged corrective text';
+await client.run('update', { id: plain.run, options: { rlmState: JSON.stringify(plainState) } });
+await assert.rejects(replayRlm(workspace, plain.run), (error: unknown) => error instanceof RlmTranscriptError && error.code === 'replay' && error.remedy.length > 0);
+assert.equal(plainRequests, 2);
 console.log(JSON.stringify(receipts));

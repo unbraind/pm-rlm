@@ -1,13 +1,14 @@
+import { isDeepStrictEqual } from 'node:util';
 import { parseReuseIdentity, parseReuseSelection, parseReuseProvenance } from './reuse-contract.ts';
 import { parseComponents } from './evidence.ts';
 import { randomUUID, createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { readdir } from 'node:fs/promises';
-import { RlmBlobs } from './blobs.ts';
+import { checkpointValue, RlmBlobs } from './blobs.ts';
 import { resolveRuntimeStatusRegistry, commitItemMutations, mutateItem, acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, resolveTransactionSchema, resolveItemTypeRegistry, writeFileAtomic } from '@unbrained/pm-cli/sdk';
 import { DEFAULT_DEAD_OWNER_RETRY_MS, retryDeadOwnerLock, retryWithinBudget } from './lock-retry.ts';
 import type { RetryTiming } from './lock-retry.ts';
-import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, sdkRead, text } from './errors.ts';
+import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, RlmTranscriptError, sdkRead, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
 import { validateRlmSettings } from './settings.ts';
@@ -42,6 +43,15 @@ export function settleStep(state: RlmState, step: RlmStep, response: ModelRespon
   step.reserved = actual;
   step.response = response;
   step.settled = true;
+}
+/** Derive settled usage through the same primitive used by native execution. */
+function settledCharge(state: RlmState): number {
+  const copy = structuredClone(state);
+  for (const call of copy.calls) for (const step of call.steps) {
+    if (step.response === undefined) copy.reserved_tokens -= step.reserved;
+    else if (step.settled !== true) settleStep(copy, step, step.response);
+  }
+  return integer(copy.reserved_tokens, 0);
 }
 /** Crash-recovery tuning for ledger mutations that a dead previous writer's lock still blocks. */
 export interface RlmLedgerOptions {
@@ -137,18 +147,31 @@ export class RlmLedger {
         }
       }
       // Preserve by-value JSON semantics even when multiple references share a cached payload.
-      const state = JSON.parse(JSON.stringify(decoded)) as RlmState;
+      const state = checkpointValue(decoded as unknown as RlmState);
       if (at === undefined && lease !== undefined && (await readHistoryEntries(getHistoryPath(this.workspace, run), run)).length !== version) throw new RlmError('busy', 'Run changed while loading; reload inside the run lease');
       this.versions.set(state, version);
       if (at === undefined) this.reads.set(state, { lease, checkpoint: root.rlm_state });
       return state;
     } catch (error) { if (error instanceof RlmError && error.code === 'busy') throw error; throw new RlmError('incomplete', 'Run checkpoint is invalid'); }
   }
+  /** Read the last native publisher checkpoint through verified SDK history, preserving imported raw data. */
+  async publishedState(run: string): Promise<RlmState | undefined> {
+    const entries = await sdkRead(() => readHistoryEntries(getHistoryPath(this.workspace, run), run));
+    if (!verifyHistoryEntries(entries).ok) throw new RlmTranscriptError('Native publisher history cannot be verified');
+    const index = entries.map(entry => entry.message === 'Checkpoint recursive run' && entry.patch.some(patch => patch.path === '/metadata/rlm_state')).lastIndexOf(true);
+    try { return await this.load(run, String(index < 0 ? 1 : index + 1)); }
+    catch (error) { if (index < 0 && (error as RlmError).code === 'invalid') return undefined; throw error; }
+  }
   /** Save reservations, model outputs, observations and completed digests in one atomic SDK item update. */
   async save(state: RlmState): Promise<void> {
     assertLedgerPrivacy(state, this.workspace, state.settings.key_env);
     await this.storage(async blobs => {
       const expected = await this.assertCurrent(state);
+      const published = await this.publishedState(state.run);
+      if (published !== undefined && (state.components !== undefined || state.reuse_identity !== undefined || published.components !== undefined || published.reuse_identity !== undefined)) {
+        const proposed = checkpointValue(state);
+        if (settledCharge(proposed) < settledCharge(published) || published.calls.some(call => call.steps.some((step, index) => step.response !== undefined && !isDeepStrictEqual(step.response, proposed.calls.find(target => target.id === call.id)?.steps[index]?.response)))) throw new RlmTranscriptError('Checkpoint would refund published evidence usage');
+      }
       const checkpoint = await blobs.encode(state);
       const settings = await readSettings(this.workspace);
       const schema = await resolveTransactionSchema(this.workspace, settings);

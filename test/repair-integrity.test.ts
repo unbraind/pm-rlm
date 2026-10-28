@@ -253,6 +253,11 @@ test('prior repair contract refuses a substituted completed proof', async t => {
   await client.update(partial.run, { description: 'RLM repair v1\n' + JSON.stringify(journal) });
   const result = repaired(await repairRlm({ ...request, source: partial.run, budget_tokens: 0 }, { workspace }));
   assert.deepEqual(result.gaps, ['part0']);
+  const canonical = await prepareRlmRun(JSON.stringify({ part: { name: 'part0', question: 'A different intended question' } }), { workspace, question_item: partial.run, scope: { ids }, components: ['part0'], snapshot_only: true, settings: state.settings, reuse_identity: { tool_policy: 'repair-v1', model_policy: 'original-model', consent: blobDigest(partial.run) }, model: repairModel(ids[0]) }, undefined, `${partial.run}-r0`);
+  await canonical.engine.run();
+  journal.targets[0].child = canonical.run;
+  await client.update(partial.run, { description: 'RLM repair v1\n' + JSON.stringify(journal) });
+  assert.deepEqual(repaired(await repairRlm({ ...request, source: partial.run, budget_tokens: 0 }, { workspace })).gaps, ['part0']);
 });
 
 /** A stopped receipt reads current native completion rather than reusing its saved budget-gap verdict. */

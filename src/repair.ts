@@ -1,4 +1,5 @@
-import { getHistoryPath, hashDocument, hashHistoryStream, locateItem, mutateItemWithHistoryContext, normalizeItemId, readHistoryEntries, readLocatedItem, readSettings, resolveItemTypeRegistry, resolveTransactionSchema, verifyHistoryEntries } from '@unbrained/pm-cli/sdk';
+import { isDeepStrictEqual } from 'node:util';
+import { certifyCompleteListResult, getHistoryPath, hashDocument, hashHistoryStream, locateItem, mutateItemWithHistoryContext, normalizeItemId, readHistoryEntries, readLocatedItem, readSettings, resolveItemTypeRegistry, resolveTransactionSchema, verifyHistoryEntries } from '@unbrained/pm-cli/sdk';
 import { blobDigest } from './blobs.ts';
 import { emptyRootSlice, initialRlmCharge, prepareRlmRun, replayRlm, RlmEngine, RLM_VERSIONS } from './engine.ts';
 import { HttpModel } from './adapters.ts';
@@ -30,15 +31,38 @@ function childPolicy(state: RlmState, settings: RlmSettings): boolean {
 function ownedCall(item: RlmItem | undefined, id: string, parent?: string): boolean { return item?.rlm_run === id && item.tags.includes('rlm:call') && (parent === undefined || item.parent === parent); }
 /** A tag alone cannot grant a foreign row authority as a repair journal. */
 function ownedRepair(item: RlmItem | undefined): boolean { return item?.tags.includes('rlm:repair') === true && item.description?.startsWith(MARKER) === true; }
+/** One producer-owned identity per declared component survives older checkpoint imports. */
+function repairChildId(run: string, index: number): string { return `${run}-r${index}`; }
 /** Progress may replay, but declarations, source coordinates and initial scheduling decisions cannot change. */
-async function readCheckpoint(ledger: RlmLedger, run: string, description: string): Promise<RlmRepairCheckpoint> {
+async function readCheckpoint(ledger: RlmLedger, run: string, description: string): Promise<{ checkpoint: RlmRepairCheckpoint; invalid: Set<string> }> {
   const checkpoint = parseRepairCheckpoint(JSON.parse(description.slice(MARKER.length)));
-  const initialNative = (await ledger.client.get(run, { at: '1', fields: 'description' })).item;
+  const initialNative = (await ledger.client.get(run, { at: '1', fields: 'description', outputBudget: 'unbounded', outputLimit: 'unbounded' })).item;
   const initial = parseRepairCheckpoint(JSON.parse(initialNative.description!.slice(MARKER.length)));
   /** Select only producer-owned immutable intent; current target progress is reconstructed separately. */
   const intent = (value: RlmRepairCheckpoint) => JSON.stringify([value.request, value.source_mode, value.source_revision, value.revisions, value.targets.map(target => [target.component, target.kind])]);
   if (intent(initial) !== intent(checkpoint)) throw new RlmRepairError('evidence');
-  return checkpoint;
+  const invalid = new Set<string>();
+  const prefix = (await readSettings(ledger.workspace)).id_prefix;
+  for (const [index, target] of checkpoint.targets.entries()) {
+    const expected = target.kind === 'repair' ? normalizeItemId(repairChildId(run, index), prefix) : '';
+    if (target.reason === 'child_identity' || (target.child !== '' && normalizeItemId(target.child, prefix) !== expected)) {
+      invalid.add(target.component); target.child = expected; target.phase = 'skipped'; target.reason = 'child_identity';
+    } else if (target.child !== '') target.child = expected;
+  }
+  return { checkpoint, invalid };
+}
+/** An undeclared native allocation cannot release its controller's remaining authority. */
+async function hasUntrackedChild(ledger: RlmLedger, run: string, checkpoint: RlmRepairCheckpoint): Promise<boolean> {
+  const expected = new Set(checkpoint.targets.flatMap((target, index) => target.kind === 'repair' ? [repairChildId(run, index)] : []));
+  const corpus = certifyCompleteListResult(await ledger.client.listAllComplete());
+  for (const item of corpus.items) {
+    if (!ownedCall(item, item.id, run) || expected.has(item.id)) continue;
+    try {
+      const initial = await ledger.load(item.id, '1');
+      if (initial.calls[0].parent === run && isDeepStrictEqual(initial.reuse_identity, repairIdentity(run))) return true;
+    } catch { /* Foreign native formats confer no repair allocation authority. */ }
+  }
+  return false;
 }
 /** Read complete native rows; an unrelated malformed row cannot poison another run. */
 async function row(ledger: RlmLedger, id: string): Promise<(RlmItem & { body: string }) | undefined> {
@@ -69,7 +93,7 @@ async function source(ledger: RlmLedger, run: string, options: RlmRepairOptions,
     await boundary(options, 'source:read', run);
     const native = await row(ledger, run);
     if (ownedRepair(native)) {
-      const checkpoint = await readCheckpoint(ledger, run, native!.description!);
+      const { checkpoint } = await readCheckpoint(ledger, run, native!.description!);
       const result = await priorSource(ledger, run, checkpoint, options, ancestors);
       if (await revision(ledger, run) !== expected) throw new RlmRepairError('busy');
       return { ...result, revision: expected };
@@ -160,6 +184,7 @@ async function changedSources(ledger: RlmLedger, checkpoint: RlmRepairCheckpoint
 async function childCheckpoint(ledger: RlmLedger, run: string): Promise<RlmState | undefined> {
   try {
     const current = await ledger.load(run);
+    if (!isDeepStrictEqual(current, await ledger.publishedState(run))) return undefined;
     const initial = await ledger.load(run, '1');
     if (initial.calls[0].parent === undefined || current.reuse !== undefined || initial.reuse !== undefined) return undefined;
     const slice = emptyRootSlice();
@@ -235,7 +260,7 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
     if (!ownedRepair(native)) return { ...FOREIGN };
     await boundary(options, 'native', run);
     if ((await itemHead(ledger, run)).digest !== initialHead.digest) throw new RlmRepairError('busy');
-    const checkpoint = await readCheckpoint(ledger, run, native!.description!);
+    const { checkpoint, invalid } = await readCheckpoint(ledger, run, native!.description!);
     await boundary(options, 'read', run);
     if ((checkpoint.source_mode === 'external') !== (options.source_workspace !== undefined)) throw new RlmRepairError('scope');
     const sourceLedger = options.source_workspace === undefined ? ledger : new RlmLedger(options.source_workspace);
@@ -246,7 +271,8 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
     const limit = Math.min(checkpoint.request.budget_tokens, origin.state.settings.budget_tokens);
     const outputs = new Map<string, RlmRepairComponent>();
     const originals = new Map(origin.answers.map(answer => [answer.component, answer]));
-    let charged = 0; let calls = 0; let expected: RepairWriteHead = { description: native!.description!, ...initialHead }; let uncertain = false;
+    const untracked = await hasUntrackedChild(ledger, run, checkpoint);
+    let charged = untracked ? limit : 0; let calls = 0; let expected: RepairWriteHead = { description: native!.description!, ...initialHead }; let uncertain = untracked;
     for (const part of repairOrder(checkpoint.request.parts)) {
       const target = checkpoint.targets.find(target => target.component === part.name)!;
       const previous = JSON.stringify(target);
@@ -254,7 +280,13 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
       await boundary(options, `before:${part.name}`, run);
       const changed = await changedSources(sourceLedger, checkpoint, part.sources);
       const blocked = part.depends_on.some(name => outputs.get(name)!.status !== 'supported');
-      const childRow = target.child === '' ? undefined : await row(ledger, target.child);
+      const canonical = target.kind === 'repair' ? repairChildId(run, checkpoint.targets.indexOf(target)) : '';
+      const childRow = canonical === '' ? undefined : await row(ledger, canonical);
+      if (target.kind === 'repair' && target.child === '' && (childRow !== undefined || (await readHistoryEntries(getHistoryPath(ledger.workspace, canonical), canonical)).length > 0)) {
+        target.child = canonical; target.phase = 'running';
+        try { target.allowance = (await ledger.load(canonical, '1')).settings.budget_tokens; } catch { target.allowance = 0; }
+        expected = await save(ledger, run, checkpoint, expected, options);
+      }
       const foreign = childRow !== undefined && !ownedCall(childRow, target.child, run);
       if (foreign) { target.phase = 'skipped'; target.reason = 'foreign'; charged = limit; uncertain = true; }
       if (target.child !== '' && childRow === undefined && (await readHistoryEntries(getHistoryPath(ledger.workspace, target.child), target.child)).length > 0) { target.phase = 'skipped'; target.reason = 'missing_child'; charged = limit; uncertain = true; }
@@ -264,11 +296,11 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
         else {
           if (!uncertain) { accountedTokens = state.reserved_tokens; charged += accountedTokens; }
           accountedCalls = state.calls.length; calls += accountedCalls;
-          if (state.calls[0].result !== undefined && !changed && !blocked) { target.phase = 'complete'; target.reason = ''; }
-          if (uncertain && state.calls[0].result === undefined) { target.phase = 'skipped'; target.reason = 'budget'; }
+          if (state.calls[0].result !== undefined && !changed && !blocked && !invalid.has(part.name)) { target.phase = 'complete'; target.reason = ''; }
+          if (uncertain && state.calls[0].result === undefined) { target.phase = 'skipped'; target.reason = untracked ? 'untracked_child' : 'budget'; }
         }
       }
-      if (target.kind === 'reuse' && target.child === '' && !changed && !blocked && originals.get(part.name)!.status === 'supported') { target.phase = 'complete'; target.reason = ''; }
+      if (target.kind === 'reuse' && target.child === '' && !invalid.has(part.name) && !changed && !blocked && originals.get(part.name)!.status === 'supported') { target.phase = 'complete'; target.reason = ''; }
       if (changed || blocked || target.phase === 'skipped') {
         target.phase = 'skipped'; target.reason = changed ? 'source_changed' : blocked ? 'dependency_gap' : target.reason;
         outputs.set(part.name, gap(part.name, target.reason));
@@ -287,13 +319,13 @@ async function execute(run: string, options: RlmRepairOptions): Promise<RlmRepai
             if (settings.max_calls <= 0) throw new RlmRepairError('calls');
             initialRlmCharge(question, [part.name], settings);
             if (target.child === '') {
-              target.child = `${run}-r${checkpoint.targets.indexOf(target)}`; target.allowance = settings.budget_tokens; target.phase = 'running';
+              target.child = repairChildId(run, checkpoint.targets.indexOf(target)); target.allowance = settings.budget_tokens; target.phase = 'running';
               expected = await save(ledger, run, checkpoint, expected, options);
               await boundary(options, `intent:${part.name}`, run);
             }
           } catch (error) {
             if (!(error instanceof RlmError) || !['budget', 'calls'].includes(error.code)) throw error;
-            target.phase = 'gap'; target.reason = error.code;
+            target.phase = 'gap'; target.reason = untracked ? 'untracked_child' : error.code;
           }
         }
         if (target.phase === 'gap') outputs.set(part.name, gap(part.name, target.reason));

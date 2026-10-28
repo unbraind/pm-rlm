@@ -41,6 +41,8 @@ async function retained(work: ReturnType<typeof resumeRepairRlm>) {
 
 /** Both repair recovery and native resume must refuse before any model receives corrupt state. */
 async function assertPendingRefused(setup: Awaited<ReturnType<typeof pendingRepair>>, state: RlmState): Promise<void> {
+  const verifier = new RlmEngine(new RlmLedger(setup.workspace), state, setup.probe, undefined, true);
+  await assert.rejects(verifier.validateRecorded(), RlmError);
   await writeNativeCheckpoint(setup.client, setup.child, state);
   const result = await retained(resumeRepairRlm(setup.run, { workspace: setup.workspace, model: setup.probe }));
   assert.equal(setup.calls(), 0, 'Unauthenticated pending state must not reach model transport');
