@@ -20,6 +20,7 @@
 
 ### Fixed
 
+- SDK commit fence delays dead-owner crash recovery beyond the default lock wait ([pm-rlm-sdk-dead-fence](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-sdk-dead-fence.toon))
 - Report unknown interrupted child counts and run validation portably ([pm-rlm-cu](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-cu.toon))
 - Reduce full-snapshot ledger storage amplification for large repeated runs ([pm-rlm-3isb](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-3isb.toon))
 - Record terminal typed failures for child calls ([pm-rlm-k7tv](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-k7tv.toon))
