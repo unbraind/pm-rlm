@@ -1,0 +1,21 @@
+id: pm-rlm-github-dfe63798395a-37
+title: Dead-owner retry can start a new mutation after its total retry budget expires
+description: "GH issue #37: https://github.com/unbraind/pm-rlm/issues/37 · author @unbraind · created 2026-10-27T14:03:57Z · updated 2026-10-27T14:03:57Z"
+type: Issue
+status: open
+priority: 2
+tags[2]: "gh:unbraind/pm-rlm#37","github_author:unbraind"
+created_at: "2026-10-27T14:03:57Z"
+updated_at: "2026-10-28T09:41:45.732Z"
+author: pm-github
+github_close_reason: ""
+github_closed_at: ""
+github_created_at: "2026-10-27T14:03:57Z"
+github_link_only: false
+github_number: 37
+github_release: ""
+github_state: open
+github_state_reason: unspecified
+github_updated_at: "2026-10-27T14:03:57Z"
+github_url: "https://github.com/unbraind/pm-rlm/issues/37"
+body: "## Reproduced retry-budget overrun\nTested PR #36 head `c6fa42c8db6e671a7166ea16672154ec97153e80`, exact `src/lock-retry.ts`, with the published SDK `2026.10.27`. Imports were redirected only to the isolated error helper and installed SDK; clock/sleep were virtualized. No real locks, processes, providers or tracker writes were exercised.\n\n### Accepted contract\nThe current PM decision explicitly calls for bounded dead-owner retries with a configurable total budget (default 15s). This report concerns enforcement of that accepted decision, not the superseded proposal to prohibit package-side retries.\n\n### Reproduction / actual\n- Set `budgetMs=1`, deterministic jitter factor 1, and SDK lock_conflict context `reason: lock_owner_dead`, `recovery.retry_after_ms: 2000`.\n- First operation at t=0 throws that typed refusal.\n- Virtual sleep advances by 2000ms.\n- Second operation begins at t=2000 and succeeds.\nResult: `operationStartMs=[0,2000]`, `backoffMs=[2000]`, result `written`, despite the 1ms total retry budget.\nLive-owner and zero-budget single-attempt controls passed.\n\nThe catch computes `remainingMs`, but does not cap its sleep to it, and the next loop invokes the operation without checking the deadline. Thus a fresh mutation can begin after the budget is exhausted. Existing in-flight SDK work need not be preempted to correct this.\n\n### Expected / impact\nOnce the retry deadline expires, return the last typed lock-conflict rather than starting another mutation. Callers relying on a bounded recovery window can otherwise wait beyond it and initiate late writes.\n\n### Acceptance / regression\n- Cap backoff by remaining budget and recheck the deadline before every retry.\n- Deterministic fake-clock regression: an excessive hint/sleep must not start a second operation after the deadline.\n- Retain successful within-budget recovery, typed refusal preservation, and fast failure for live/unknown owners and non-lock errors.\n- Clarify whether the budget includes the initial attempt and document that an already-running SDK operation is not preempted.\n\nSources: [PR #36](https://github.com/unbraind/pm-rlm/pull/36), [exact helper](https://github.com/unbraind/pm-rlm/blob/c6fa42c8db6e671a7166ea16672154ec97153e80/src/lock-retry.ts), [accepted PM decision](https://github.com/unbraind/pm-rlm/blob/c6fa42c8db6e671a7166ea16672154ec97153e80/.agents/pm/issues/pm-rlm-sdk-dead-fence.toon).\nAll-status issue/PR and current discussion/PM checks found no existing deadline-overrun issue; upstream pm-cli#1609 owns the underlying fence-recovery delay, not this wrapper budget bug."
