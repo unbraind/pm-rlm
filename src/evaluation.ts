@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { commitItemMutations, locateItem, readSettings } from '@unbrained/pm-cli/sdk';
+import { retryDeadOwnerLock } from './lock-retry.ts';
 import { HttpModel } from './adapters.ts';
 import { prepareRlmRun } from './engine.ts';
 import { readCorpus } from './environment.ts';
@@ -139,14 +140,14 @@ async function executeEvaluation(suite: RlmEvalSuite, options: RlmEvalOptions): 
       for (const row of state.rows) for (const arm of [row.truncated, row.recursive]) if (arm.refusal === 'interrupted') arm.children = null;
     } else {
       state = { owner: 'pm-rlm/eval-v1', boundary, rows: [], complete: false }; serialized = JSON.stringify(state);
-      await client.create({ id: evaluation, type: 'Task', title: 'Recursive versus truncated evaluation', tags: 'rlm:evaluation,rlm:question', description: serialized, allowDuplicate: true });
+      await retryDeadOwnerLock(() => client.create({ id: evaluation, type: 'Task', title: 'Recursive versus truncated evaluation', tags: 'rlm:evaluation,rlm:question', description: serialized, allowDuplicate: true }));
       await checkpoint('created');
     }
     const previous = { value: serialized };
     /** CAS protects the exact description read inside this lease against nonparticipating writers. */
     const save = async (step: RlmEvalBoundary): Promise<void> => {
       const next = JSON.stringify(state);
-      await commitItemMutations({ pmRoot: options.workspace, author: options.author ?? 'rlm-eval', transactionId: `rlm-eval-${randomUUID()}`, mutations: [{ op: 'update', id: evaluation, match: { key: 'description', value: previous.value }, options: { description: next } }] });
+      await retryDeadOwnerLock(() => commitItemMutations({ pmRoot: options.workspace, author: options.author ?? 'rlm-eval', transactionId: `rlm-eval-${randomUUID()}`, mutations: [{ op: 'update', id: evaluation, match: { key: 'description', value: previous.value }, options: { description: next } }] }));
       Object.assign(previous, { value: next }); await checkpoint(step);
     };
     if (reason === '' && !state.complete) {
