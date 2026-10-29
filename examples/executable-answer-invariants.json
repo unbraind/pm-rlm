@@ -1,0 +1,9 @@
+{
+  "version": "answer-invariants-v1",
+  "answer": "There are two Tasks and the open status occurs in the source [citation].",
+  "scope": { "type": "Task" },
+  "checks": [
+    { "id": "task-count", "kind": "count", "filter": {}, "expected": 2 },
+    { "id": "open-status", "kind": "membership", "filter": {}, "field": "status", "value": "open", "expected": "present" }
+  ]
+}

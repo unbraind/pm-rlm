@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
 import { npmEnvironment } from '../scripts/environment.ts';
+import { verifyPackedInvariants } from './answer-invariants-consumer.ts';
 import { verifyPackedRepairBudget } from './repair-consumer.ts';
 
 /** Run one isolated consumer command; all diagnostics stay local to the disposable fixture. */
@@ -54,5 +55,6 @@ console.log(JSON.stringify({ run: result.run, parts }));
   assert.equal(receipt.status, 'partial'); assert.deepEqual(receipt.gaps, ['source']);
   const resumed = JSON.parse(invoke(binary, ['rlm', 'repair-resume', receipt.run, '--json'], project, projectEnv)) as { gaps: string[] };
   assert.deepEqual(resumed.gaps, receipt.gaps);
+  verifyPackedInvariants(project, args => invoke(manager === 'npm' ? process.execPath : 'bun', args, project, projectEnv), [args => invoke(binary, args, project, projectEnv)]);
   verifyPackedRepairBudget(repository, project, artifact, (args, pmRoot) => invoke(manager === 'npm' ? process.execPath : 'bun', args, project, { ...projectEnv, PM_PATH: pmRoot }), [(args, pmRoot) => invoke(binary, args, project, { ...projectEnv, PM_PATH: pmRoot })]);
 });
