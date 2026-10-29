@@ -1,3 +1,5 @@
+import { readAnswerContract, verifyRlmAnswer } from './answer-invariants.ts';
+import { RlmInvariantError } from './answer-contract.ts';
 import { compactReuseResult, reuseRlm } from './reuse.ts';
 import { compactRepairResult, repairRlm, resumeRepairRlm } from './repair.ts';
 import { parseRepairRequest, RlmRepairError } from './repair-contract.ts';
@@ -50,6 +52,7 @@ function evaluationOutput(result: RlmEvalResult): Record<string, unknown> {
 export async function runCommand(command: string, ctx: CommandHandlerContext): Promise<Record<string, unknown>> {
   try {
     const argument = operand(ctx.args[0]);
+    if (command === 'verify-answer') return { ...await verifyRlmAnswer(await readAnswerContract(argument), { environment: await readAnswerContract(operand(ctx.options.environment), 16777216) }) };
     if (command === 'repair' || command === 'repair-resume') {
       const options = { workspace: ctx.pm_root, author: ctx.global.author };
       let result;
@@ -114,12 +117,18 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, reuse_identity, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
     const code = error instanceof RlmError ? error.code : 'invalid';
-    const remedy = error instanceof RlmRepairError || error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError || error instanceof RlmTranscriptError ? error.remedy : ['repair', 'repair-resume'].includes(command) ? 'Supply --parts JSON and unsigned --budget-tokens for repair, or a repair id for repair-resume; inspect tracker integrity' : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
+    const remedy = command === 'verify-answer' ? new RlmInvariantError().remedy : error instanceof RlmRepairError || error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError || error instanceof RlmTranscriptError ? error.remedy : ['repair', 'repair-resume'].includes(command) ? 'Supply --parts JSON and unsigned --budget-tokens for repair, or a repair id for repair-resume; inspect tracker integrity' : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
     throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (remedy === undefined ? '' : '; remedy: ' + remedy) : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });
   }
 }
 /** Register ledger fields and native commands, preserving host TOON and JSON rendering. */
 export function register(api: ExtensionApi): void {
+  api.registerCommand(defineCommand({
+    name: 'rlm verify-answer', description: 'Check bounded declarative answer facts without inference or writes',
+    arguments: [{ name: 'contract', required: true }],
+    flags: [{ long: '--environment', description: 'Complete SDK environment JSON file (maximum 16 MiB)', value_name: 'file', value_type: 'string' }],
+    examples: ['pm rlm verify-answer answer.json --environment environment.json --json'], run: ctx => runCommand('verify-answer', ctx),
+  }));
   for (const name of ['repair', 'repair-resume']) api.registerCommand(defineCommand({
     name: `rlm ${name}`, description: 'Repair declared evidence gaps with a fresh explicit budget',
     arguments: [{ name: 'run', required: true }],

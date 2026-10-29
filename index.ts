@@ -51,3 +51,12 @@ export type { RlmReuseOptions, RlmReuseResult, RlmReuseSkipped } from './src/reu
 export type { RlmReuseDimension, RlmReuseIdentity, RlmReuseSelection, RlmReuseProvenance } from './src/reuse-contract.ts';
 /** Strict reuse boundary schema and machine-actionable refusal. */
 export { REUSE_SCHEMA, RlmReuseError, RlmReuseConflict } from './src/reuse-contract.ts';
+
+/** Read-only executable final-answer invariants over a certified immutable scope. */
+export { verifyRlmAnswer } from './src/answer-invariants.ts';
+/** Versioned declarations and actionable refusal shared by SDK and CLI. */
+export { ANSWER_INVARIANT_SCHEMA, parseAnswerContract, RlmInvariantError } from './src/answer-contract.ts';
+/** Public answer contracts, check results and operational source selection. */
+export type { RlmAnswerContract, RlmAnswerInvariant, RlmAnswerField, RlmAnswerScalar, RlmCountInvariant, RlmMembershipInvariant, RlmEqualityInvariant, RlmInvariantResult, RlmAnswerReport } from './src/answer-contract.ts';
+/** Read-only source selection for final-answer verification. */
+export type { RlmVerifyAnswerOptions } from './src/answer-invariants.ts';

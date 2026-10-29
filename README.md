@@ -83,7 +83,7 @@ See [the storage measurements](docs/LEDGER-STORAGE.md) for the public eval corpo
 
 ## Without git
 
-Environment reads, recursive run, tree, resume, replay, evidence-directed repair and its recovery, lazy storage migration and blob GC work in a plain-directory tracker without a Git executable. They need no Git repository. The eval command works without Git; preparing verified public source revisions needs Git and GitHub; repository changelog and release tooling also use Git.
+Environment reads, recursive run, tree, resume, replay, evidence-directed repair and its recovery, executable answer checks, lazy storage migration and blob GC work in a plain-directory tracker without a Git executable. They need no Git repository. The eval command works without Git; preparing verified public source revisions needs Git and GitHub; repository changelog and release tooling also use Git.
 
 ## Environment and execution
 
@@ -483,3 +483,84 @@ prerequisites' dependents, and reuses peer-completed native children. Runtime
 works without Git. See the [repair guide](docs/EVIDENCE-DIRECTED-REPAIR.md),
 [SDK example](examples/evidence-directed-repair.ts) and
 [public measurement](docs/repair-validation.json).
+
+## Executable answer invariants
+
+`verifyRlmAnswer` tests structured facts attached to a final answer. A valid citation
+can accompany a false count: the count still returns `failed`. Answer prose is
+always labelled `not_evaluated`; passing checks verify only the declared facts.
+
+Capture an environment through the SDK, then run checks against those exact bytes:
+
+```ts
+import { PmClient } from '@unbrained/pm-cli/sdk';
+import { verifyRlmAnswer } from 'pm-rlm';
+
+const environment = await new PmClient({ pmRoot: '.agents/pm', noExtensions: true })
+  .listAllComplete({ includeBody: true });
+const report = await verifyRlmAnswer({
+  version: 'answer-invariants-v1', answer: 'There are two Tasks [citation].',
+  scope: { type: 'Task' },
+  checks: [{ id: 'tasks', kind: 'count', filter: {}, expected: 2 }],
+}, { environment });
+console.log(report.status, report.checks, report.answer.verification);
+```
+
+For CLI use, save the full `environment` result as JSON, then run:
+
+```sh
+pm rlm verify-answer examples/executable-answer-invariants.json --environment environment.json --json
+pm rlm verify-answer examples/executable-answer-invariants.json --environment environment.json
+```
+
+Both formats use the host renderer. Exit zero means a report was produced; require
+`status === "passed"` to accept the declared facts. Invalid input exits 2 with a
+typed refusal and remedy. SDK callers receive `RlmInvariantError` for invalid
+contracts and structured reasons/remedies for failed or unknown checks.
+
+| Check | Declaration | Exact meaning |
+| --- | --- | --- |
+| Count | `kind: "count", filter: {}, expected: 2` | Filtered row cardinality equals the integer |
+| Membership | `kind: "membership", filter: {}, field: "status", value: "open", expected: "present"` | Value occurs in the distinct field set; `absent` tests nonmembership |
+| Equality | `kind: "equals", item: "item-id", field: "priority", expected: 2` | One scoped item's scalar equals the expected value |
+
+Fields are `id`, `title`, `type`, `status`, `priority`, `parent`, `assignee`, `sprint`
+and `release`. Absent optional fields compare as `null`, including SDK object properties whose
+value is `undefined`; SDK and JSON inputs share the existing aggregate scalar rules. Selectors are the existing
+RLM `type/status/parent/tag/text/ids` predicates; check filters intersect the
+contract scope. Use exact SDK-returned scalar values, including configured status
+identifiers. No lifecycle meaning is inferred from status names. Text search keeps
+the environment's case-insensitive full-item semantics; equality preserves exact
+whitespace, case and CRLF. Ledger rows are excluded using the existing RLM rule.
+
+Contracts allow 1–64 unique checks, at most 1,000 ids per filter, names/selectors
+of at most 256 Unicode code points, scalar strings of at most 256 code points, safe integer
+scalars, counts from 0 through 1,000,000,000, and answer text of at most 8,192 code points.
+The encoded contract is limited to 64 KiB; the supplied SDK environment and CLI environment file to 16 MiB and 100,000 rows.
+Sparse arrays, extra keys, executable expressions, nonfinite and fractional
+numbers are refused. A historical value outside the equality result domain
+makes that check `unknown`, preserving the other checks and the source data.
+
+The core complete-list certifier rejects filtered, truncated, projected or
+incomplete environments. An unavailable environment produces `source.status:
+"incomplete"`, unknown checks and no verified facts. A complete empty scope can
+verify a zero count. A missing scoped item is unknown. Any failed check determines
+an overall `failed` verdict; otherwise unknown checks yield `incomplete`.
+`verified_fact_ids` identifies only passing assertions, or the literal `none`.
+Incomplete source counts use the literal `unknown`. Both markers survive native
+TOON compaction without losing absence information. Source and contract
+SHA-256 digests bind the receipt to the exact captured data and declarations.
+
+Verification uses one detached immutable environment, existing scope-local
+count/distinct aggregates, and no inference, writes, Git subprocess, claims,
+leases, transactions, imports, syncs or recovery journal. SDK source acquisition
+is separate and can maintain derived caches. Core `aggregate` reads live state
+and has no supplied-item parameter, so it cannot replace frozen-scope aggregates.
+The receipt certifies the supplied environment, not its freshness or an atomic
+view of concurrent tracker writers. `commitWorkspaceTransaction` provides no
+isolation from ordinary writers; this feature never uses or claims such isolation.
+Retries re-certify the supplied input; supplying a fresh environment changes the
+source digest. It works in a plain-directory tracker with no Git executable.
+
+See the [contract example](examples/executable-answer-invariants.json) and
+[measured public-tracker validation](docs/executable-answer-invariants-validation.json).

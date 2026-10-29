@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
 import type { RlmAdaptiveResult } from '../src/adaptive.ts';
 import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
+import { verifyPackedInvariants } from './answer-invariants-consumer.ts';
 import { verifyPackedRepairBudget } from './repair-consumer.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
@@ -26,7 +27,7 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
   const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
-  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|PUBLIC-EVALUATION|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE|ADAPTIVE-DECOMPOSITION|RECONCILIATION|EVIDENCE-DIRECTED-REPAIR)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|public-eval-suite|public-eval-results|ledger-scale|answer-evidence-validation|adaptive-validation|reconciliation-validation|verified-subanswer-reuse-validation|repair-validation)\.json$|CHANGELOG\.md$|examples\/(?:reconciliation-plan\.json|verified-subanswer-reuse\.ts|evidence-directed-repair\.ts)$)/;
+  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|PUBLIC-EVALUATION|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE|ADAPTIVE-DECOMPOSITION|RECONCILIATION|EVIDENCE-DIRECTED-REPAIR)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|public-eval-suite|public-eval-results|ledger-scale|answer-evidence-validation|adaptive-validation|reconciliation-validation|verified-subanswer-reuse-validation|repair-validation|executable-answer-invariants-validation)\.json$|CHANGELOG\.md$|examples\/(?:reconciliation-plan\.json|verified-subanswer-reuse\.ts|evidence-directed-repair\.ts|executable-answer-invariants\.json)$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
   for (const path of ['docs/PUBLIC-EVALUATION.md', 'docs/public-eval-suite.json', 'docs/public-eval-results.json', 'docs/ANSWER-EVIDENCE.md', 'docs/answer-evidence-validation.json', 'docs/ADAPTIVE-DECOMPOSITION.md', 'docs/adaptive-validation.json', 'docs/RECONCILIATION.md', 'docs/reconciliation-validation.json', 'examples/reconciliation-plan.json', 'examples/verified-subanswer-reuse.ts', 'docs/verified-subanswer-reuse-validation.json']) assert.ok(packed[0].files.some(file => file.path === path));
@@ -39,7 +40,7 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
     execute(consumer, [...prefix, 'init', '--prefix', 'rlm-consumer', '--defaults', '--agent-guidance', 'skip'], executable, hostEnv);
     execute(consumer, [...prefix, 'package', 'install', join(scratch, packed[0].filename)], executable, hostEnv);
     const help = execute(consumer, [...prefix, 'rlm', '--help'], executable, hostEnv);
-    for (const command of ['run', 'repair', 'repair-resume', 'reuse', 'adaptive', 'reconcile', 'eval', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
+    for (const command of ['verify-answer', 'run', 'repair', 'repair-resume', 'reuse', 'adaptive', 'reconcile', 'eval', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
     writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm, reuseRlm, RlmLedger } from 'pm-rlm';
@@ -96,6 +97,12 @@ console.log(JSON.stringify(result));
     assert.deepEqual(evidence, expected);
     const toon = execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run], executable, hostEnv);
     assert.deepEqual(decodeToon(toon), expected);
+
+    verifyPackedInvariants(consumer,
+      args => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', hostEnv), [
+        args => execute(consumer, [...prefix, ...args], executable, hostEnv),
+        args => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), hostEnv),
+      ]);
 
     const repairParts = JSON.stringify([{ name: 'source', question: 'Return the source id', depends_on: [], sources: [evidenceRun.components[0].answer] }]);
     verifyPackedRepairBudget(repository, consumer, join(scratch, packed[0].filename), (args, pmRoot) => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', { ...hostEnv, PM_PATH: pmRoot }), [

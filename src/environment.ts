@@ -145,6 +145,10 @@ export async function createRlmContext(options: RlmContextOptions): Promise<RlmC
 }
 /** Read all statuses and fields with explicit complete-list certification. */
 export async function readCorpus(workspace: string): Promise<{ items: RlmItem[]; complete_list: PmCompleteListCertificate }> {
-  const result = await sdkRead(async () => certifyCompleteListResult(await new PmClient({ pmRoot: workspace, noExtensions: true }).listAllComplete({ includeBody: true })));
-  return { items: result.items.filter(item => !item.tags.includes('rlm:call') && !item.tags.includes('rlm:question')).sort((a, b) => a.id.localeCompare(b.id)), complete_list: result.complete_list };
+  return sdkRead(async () => certifiedRlmCorpus(await new PmClient({ pmRoot: workspace, noExtensions: true }).listAllComplete({ includeBody: true })));
+}
+/** Certify and detach an explicitly supplied environment without tracker or cache writes. */
+export function certifiedRlmCorpus(input: unknown): { items: RlmItem[]; complete_list: PmCompleteListCertificate } {
+  const result = certifyCompleteListResult(input);
+  return { items: structuredClone(result.items.filter(item => !item.tags.includes('rlm:call') && !item.tags.includes('rlm:question')).sort((a, b) => a.id.localeCompare(b.id))), complete_list: structuredClone(result.complete_list) };
 }
