@@ -101,7 +101,7 @@ a later saved prompt. Completed proofs never fill missing observations. Read-onl
 legacy replay retains its historical placeholder-step behavior. Ordinary replay
 also uses the execution verifier for refusal codes, reasons and remedies; a
 placeholder has no authority to bypass that check. Corrupt execution refusals
-raise `RlmTranscriptError` before inference or ledger writes.
+raise `RlmTranscriptError` before inference or ledger writes. The shared verifier also authenticates parse refusals and validates child/hook code and remedy combinations through the hydration contract. A genuine response interrupted before parsing is distinguished from a persisted refusal and resumes without repeating that response's inference.
 
 Native resume refuses corrupt transport state with `RlmTranscriptError`, code
 `replay`, and a safe remedy. Repair converts a damaged child into a named gap,

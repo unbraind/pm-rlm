@@ -47,6 +47,15 @@ export function text(value: unknown): string {
   return value;
 }
 
+/** Authenticate persisted child refusals with one contract shared by hydration and execution. */
+export function recordedRefusal(value: unknown): { code: RlmErrorCode; reason?: string; remedy?: string } {
+  const refusal = record(value);
+  if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay', 'evidence'].includes(text(refusal.code))) throw new RlmTranscriptError('Recorded refusal code is invalid');
+  if (refusal.reason !== undefined) text(refusal.reason);
+  if (refusal.remedy !== undefined && (refusal.code !== 'evidence' || typeof refusal.remedy !== 'string')) throw new RlmTranscriptError('Recorded refusal remedy is invalid');
+  return refusal as { code: RlmErrorCode; reason?: string; remedy?: string };
+}
+
 /** Compare Windows path spellings after JSON escaping, separator and case normalization. */
 function windowsPathText(value: string): string {
   return value.toLowerCase().replaceAll('\\\\', '/').replaceAll('\\', '/');

@@ -477,7 +477,7 @@ producers before transport. Native transport refusals expose `RlmTranscriptError
 Repair child ids remain bound to their producer-owned component; replacements
 become named gaps, and older cleared intents retain native charges. Replayed
 native states cannot refund published evidence or authorize fresh inference. Ordinary
-replay authenticates execution refusals while preserving legacy placeholders.
+replay authenticates execution refusals while preserving legacy placeholders. Parser, action, child and completion-hook refusals authenticate their code, reason and remedy through shared checks. Interrupted responses whose refusal has not yet been recorded remain resumable.
 Recovery revalidates current SDK revisions, skips stale targets and their
 prerequisites' dependents, and reuses peer-completed native children. Runtime
 works without Git. See the [repair guide](docs/EVIDENCE-DIRECTED-REPAIR.md),

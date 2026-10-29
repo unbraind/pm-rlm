@@ -5,7 +5,7 @@ import { tracker } from './helpers.ts';
 import { PmClient, commitItemMutations, getHistoryPath, hashHistoryStream, readHistoryEntries } from '@unbrained/pm-cli/sdk';
 import { repairRlm, resumeRepairRlm } from '../src/repair.ts';
 import { RlmLedger } from '../src/ledger.ts';
-import { prepareRlmRun, resumeRlm } from '../src/engine.ts';
+import { emptyRootSlice, RlmEngine, prepareRlmRun, resumeRlm } from '../src/engine.ts';
 import { completedRepairFixture, repairFixture, repairJournal, repairModel, repairPartsModel, repaired } from './repair-fixture.ts';
 import type { GetResult } from '@unbrained/pm-cli/sdk';
 import type { RlmRepairCheckpoint } from '../src/repair-contract.ts';
@@ -200,13 +200,21 @@ test('repair restored intent interleavings fence every recovery boundary', async
 
 /** Replaying the native checkpoint itself cannot refund the controller or bypass native SDK recovery. */
 test('repair native checkpoint replays cannot refund completed work through either resume API', async t => {
-  for (const mode of ['repair', 'native', 'save']) {
+  for (const mode of ['repair', 'native', 'save', 'pending', 'spawn']) {
     const { workspace, client, request, ids } = await repairFixture(t);
     request.budget_tokens = 20000;
     const model = repairModel(ids[2]);
     const complete = repaired(await repairRlm(request, { workspace, model }));
     const child = complete.components[2].run;
-    const older = await new RlmLedger(workspace).load(child, '1');
+    let older = await new RlmLedger(workspace).load(child, '1');
+    if (mode === 'pending') {
+      const entries = await readHistoryEntries(getHistoryPath(workspace, child), child);
+      for (let version = 1; version <= entries.length; version++) {
+        const candidate = await new RlmLedger(workspace).load(child, String(version));
+        if (candidate.calls[0].steps.length === 1 && candidate.calls[0].steps[0].response === undefined) { older = candidate; break; }
+      }
+      assert.equal(older.calls[0].steps.length, 1);
+    }
     if (mode === 'save') {
       const ledger = new RlmLedger(workspace); const unlock = await ledger.lease(child);
       try {
@@ -221,7 +229,15 @@ test('repair native checkpoint replays cannot refund completed work through eith
       assert.equal(model.requests.length, 2); continue;
     }
     await client.run('update', { id: child, options: { rlmState: JSON.stringify(older) } });
-    if (mode === 'native') await assert.rejects(resumeRlm(workspace, child, model), { code: 'replay' });
+    if (mode === 'spawn') {
+      const ledger = new RlmLedger(workspace); const unlock = await ledger.lease(child);
+      try {
+        const current = await ledger.load(child); const engine = new RlmEngine(ledger, current, model);
+        const before = (await client.listAllComplete()).items;
+        for (let attempt = 0; attempt < 2; attempt++) await assert.rejects(engine.spawn(child, 'Unfunded extra work', emptyRootSlice()), { code: 'replay' });
+        assert.deepEqual((await client.listAllComplete()).items, before);
+      } finally { await unlock(); }
+    } else if (mode === 'native' || mode === 'pending') await assert.rejects(resumeRlm(workspace, child, model), { code: 'replay' });
     else {
       const result = repaired(await resumeRepairRlm(complete.run, { workspace, model }));
       assert.equal(result.reused, 2);
@@ -242,7 +258,7 @@ test('repair untracked native allocations cannot fund additional children', asyn
     let run = '';
     await assert.rejects(repairRlm(request, { workspace, model, on_transition: (phase, id) => {
       if (phase === 'created') run = id;
-      if (phase === 'executed:part0') throw new Error('Synthetic older controller interruption');
+      if (phase === (mode === 'owned' ? 'prepared:part2' : 'executed:part0')) throw new Error('Synthetic older controller interruption');
     } }));
     const canonical = (await repairJournal(client, run)).targets[0].child;
     if (mode === 'foreign') {

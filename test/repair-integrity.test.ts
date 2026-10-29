@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { cp, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { emptyRootSlice, prepareRlmRun, resumeRlm, RlmEngine } from '../src/engine.ts';
+import { emptyRootSlice, prepareRlmRun, resumeRlm, replayRlm, RlmEngine } from '../src/engine.ts';
 import { promptDigest, RlmLedger } from '../src/ledger.ts';
 import { blobDigest } from '../src/blobs.ts';
 import { repairRlm, resumeRepairRlm } from '../src/repair.ts';
@@ -216,6 +216,7 @@ test('repair rejects unreachable native records before any materialization', asy
   await assert.rejects(new RlmEngine(ledger, state, model, undefined, true).validateRecorded(), { code: 'replay' });
   const count = (await client.listAllComplete()).items.length;
   await writeNativeCheckpoint(client, child, state);
+  await assert.rejects(replayRlm(workspace, child), { code: 'replay' });
   let observed: Awaited<ReturnType<typeof resumeRepairRlm>> | undefined;
   await assert.doesNotReject(async () => { observed = await resumeRepairRlm(complete.run, { workspace, model }); }, 'One malformed child must return its named gap');
   assert.ok(observed && observed.status !== 'skipped');

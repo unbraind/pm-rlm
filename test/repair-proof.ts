@@ -15,6 +15,9 @@ try {
   const env = testEnvironment(process.env);
   for (const key of Object.keys(env)) if (/^NODE_V8_COVERAGE$/i.test(key)) delete env[key];
   const proofs = [
+    { file: 'src/engine.ts', pattern: '500 seeded recorded refusal field', test: 'test/refusal-fields.test.ts', changes: [["        const action = recordedAction(state, call, step, !observational && call.result === undefined && index === call.steps.length - 1);\n        if (action === undefined) continue;", "        let action: RlmAction;\n        try { action = parseAction(step.response!.text, state.parser_version ?? 1); } catch { continue; }"]] },
+    { file: 'src/engine.ts', pattern: '500 seeded recorded refusal field', test: 'test/refusal-fields.test.ts', changes: [['  recordedRefusal(failure);', '']] },
+
     { file: 'src/engine.ts', pattern: 'review r6 replay rejects altered', test: 'test/review-r6.test.ts', changes: [['  await new RlmEngine(ledger, state, new HttpModel(state.settings)).validateRecorded(false, true);', "  if (state.components !== undefined || state.reuse_identity !== undefined) await new RlmEngine(ledger, state, new HttpModel(state.settings)).validateRecorded(false, true);"]] },
     { file: 'src/repair.ts', pattern: 'repair child identity replacement', test: 'test/repair-authority.test.ts', changes: [[`  for (const [index, target] of checkpoint.targets.entries()) {
     const expected = target.kind === 'repair' ? normalizeItemId(repairChildId(run, index), prefix) : '';
@@ -42,7 +45,7 @@ try {
     { file: 'src/repair.ts', pattern: 'prior repair contract', test: 'test/repair-integrity.test.ts', changes: [["if (state.calls[0].subgoal !== repairQuestion(base.state.question, part, dependencies) || !childPolicy(state, base.state.settings) || state.settings.budget_tokens !== target.allowance || target.allowance > Math.min(checkpoint.request.budget_tokens, base.state.settings.budget_tokens))", 'if (false)']] },
     { file: 'src/repair.ts', pattern: 'stopped budget gap', test: 'test/repair-integrity.test.ts', changes: [['(uncertain ? limit : limit - charged)', '(limit - charged)'], ['(uncertain ? limit : limit - charged + accountedTokens)', '(limit - charged + accountedTokens)'], ['if (state.calls[0].result !== undefined && !changed && !blocked && !invalid.has(part.name))', 'if (false)']] },
     { file: 'src/ledger.ts', pattern: 'foreign native subcalls', test: 'test/repair-integrity.test.ts', changes: [["if (existing.rlm_run !== state.run || !existing.tags.includes('rlm:call') || existing.parent !== call.parent)", 'if (false)']] },
-    { file: 'src/engine.ts', pattern: 'repair rejects unreachable native records', test: 'test/repair-integrity.test.ts', changes: [["if (strictUsage && visited.size !== this.state.calls.length)", 'if (false)']] },
+    { file: 'src/engine.ts', pattern: 'repair rejects unreachable native records', test: 'test/repair-integrity.test.ts', changes: [["if ((strictUsage || verifyingProof) && visited.size !== this.state.calls.length)", 'if (false)']] },
     { file: 'src/evidence.ts', pattern: 'repair schema fuzz', test: 'test/repair-refusals.test.ts', changes: [['Array.from(value).every', 'value.every']] },
   ];
   const selected = process.argv[2] === undefined ? proofs : proofs.filter(proof => proof.pattern.includes(process.argv[2]));

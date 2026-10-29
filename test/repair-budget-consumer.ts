@@ -134,4 +134,14 @@ const plainState = await new RlmLedger(workspace).load(plain.run);
 await client.run('update', { id: plain.run, options: { rlmState: JSON.stringify(plainState) } });
 await assert.rejects(replayRlm(workspace, plain.run), (error: unknown) => error instanceof RlmTranscriptError && error.code === 'replay' && error.remedy.length > 0);
 assert.equal(plainRequests, 2);
+let parseRequests = 0;
+const parseModel: RlmModel = { name: 'packed-parse-refusal', complete: async () => ({ text: parseRequests++ === 0 ? 'invalid action JSON' : '{"action":"finish","answer":"Retained parse answer"}', tokens_in: 24, tokens_out: 16 }) };
+const parsed = await runRlm('Parse refusal integrity', { workspace, scope: { ids }, model: parseModel, settings: { endpoint: 'http://127.0.0.1:1' } });
+const parsedState = await new RlmLedger(workspace).load(parsed.run);
+(parsedState.calls[0].steps[0].observation as { remedy?: string }).remedy = 'Forged parse remedy';
+await client.run('update', { id: parsed.run, options: { rlmState: JSON.stringify(parsedState) } });
+for (const read of [() => replayRlm(workspace, parsed.run), () => resumeRlm(workspace, parsed.run, forbidden)]) {
+  await assert.rejects(read, (error: unknown) => error instanceof RlmTranscriptError && error.code === 'replay' && error.remedy.length > 0);
+}
+assert.equal(parseRequests, 2); assert.equal(unexpected, 0);
 console.log(JSON.stringify(receipts));

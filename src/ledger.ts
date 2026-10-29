@@ -8,7 +8,7 @@ import { checkpointValue, RlmBlobs } from './blobs.ts';
 import { resolveRuntimeStatusRegistry, commitItemMutations, mutateItem, acquireLock, certifyCompleteListResult, getHistoryPath, PmClient, readHistoryEntries, verifyHistoryEntries, readFileIfExists, readSettings, removeFileIfExists, resolveTransactionSchema, resolveItemTypeRegistry, writeFileAtomic } from '@unbrained/pm-cli/sdk';
 import { DEFAULT_DEAD_OWNER_RETRY_MS, retryDeadOwnerLock, retryWithinBudget } from './lock-retry.ts';
 import type { RetryTiming } from './lock-retry.ts';
-import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, RlmTranscriptError, sdkRead, text } from './errors.ts';
+import { assertLedgerPrivacy, estimateTokens, integer, record, RlmError, RlmTranscriptError, recordedRefusal, sdkRead, text } from './errors.ts';
 import { parseFilter } from './environment.ts';
 import { parseSlice } from './protocol.ts';
 import { validateRlmSettings } from './settings.ts';
@@ -122,18 +122,8 @@ export class RlmLedger {
         text(call.id); integer(call.depth, 0, 32); text(call.subgoal); text(call.digest); parseSlice(call.slice);
         if (call.parent !== undefined) text(call.parent);
         if (call.result !== undefined && typeof call.result !== 'string') throw new Error('Invalid result');
-        if (call.failure !== undefined && !['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay', 'evidence'].includes(text(record(call.failure).code))) throw new Error('Invalid refusal');
-        if (call.failure !== undefined && record(call.failure).reason !== undefined) text(record(call.failure).reason);
-        if (call.completion_refusal !== undefined) {
-          const refusal = record(call.completion_refusal);
-          if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay', 'evidence'].includes(text(refusal.code))) throw new Error('Invalid completion refusal');
-          text(refusal.reason);
-        }
-        for (const failure of [call.failure, call.completion_refusal]) {
-          if (failure === undefined) continue;
-          const refusal = record(failure);
-          if (refusal.remedy !== undefined && (refusal.code !== 'evidence' || typeof refusal.remedy !== 'string')) throw new Error('Invalid refusal remedy');
-        }
+        for (const failure of [call.failure, call.completion_refusal]) if (failure !== undefined) recordedRefusal(failure);
+        if (call.completion_refusal !== undefined) text(record(call.completion_refusal).reason);
         if (!Array.isArray(call.steps)) throw new Error('Invalid steps');
         for (const entry of call.steps) {
           const step = record(entry);
