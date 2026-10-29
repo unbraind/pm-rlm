@@ -95,6 +95,20 @@ test('long historical native values refuse one equality check while counts and m
   assert.equal(membership.checks[0].reason, 'value_out_of_domain');
 });
 
+test('SDK optional undefined fields and JSON omission have identical equality verdicts', async t => {
+  const { client } = await tracker(t);
+  const item = (await client.create({ title: 'Optional scalar source', parent: 'none', assignee: 'none', sprint: 'none', release: 'none' })).item;
+  const environment = await client.listAllComplete({ includeBody: true });
+  const fields = ['parent', 'assignee', 'sprint', 'release'] as const;
+  const input = { ...contract(), checks: fields.map(field => ({ id: field, kind: 'equals', item: item.id, field, expected: null })) };
+  const native = await verifyRlmAnswer(input, { environment });
+  for (const field of fields) environment.items[0][field] = undefined;
+  const withUndefined = await verifyRlmAnswer(input, { environment });
+  const roundTrip = await verifyRlmAnswer(input, { environment: JSON.parse(JSON.stringify(environment)) });
+  assert.deepEqual(withUndefined, native); assert.deepEqual(roundTrip, native);
+  assert.equal(native.status, 'passed');
+});
+
 test('strict contract refuses executable syntax, sparse arrays, extremes and unknown fields before reads', async t => {
   const { workspace } = await tracker(t);
   const invalid: unknown[] = [null, [], {}, { ...contract(), extra: 1 }, { ...contract(), checks: [] }, { ...contract(), checks: Array(1) }, { ...contract(), checks: Array(65).fill(contract().checks[0]) }, { ...contract(), checks: [contract().checks[0], contract().checks[0]] }, { ...contract(), scope: { ids: Array(1) } }, { ...contract(), scope: { ids: Array(1001).fill('id') } }, { ...contract(), scope: { predicate: 'process.exit()' } }, { ...contract(), answer: 'x'.repeat(8193) }, { ...contract(), scope: { text: 'x'.repeat(257) } }];
@@ -232,6 +246,10 @@ test('500 seeded contract operation sequences compare SDK read-back state includ
     const decoded = parseAnswerContract(JSON.parse(text)); assert.deepEqual(decoded, input);
     const scoped = rows.filter(item => input.scope.ids!.includes(item.id));
     const report = await verifyRlmAnswer(decoded, { environment });
+    const variant = structuredClone(environment);
+    for (const row of variant.items) for (const field of ['parent', 'assignee', 'sprint', 'release'] as const) if (row[field] === undefined) row[field] = undefined;
+    assert.deepEqual(await verifyRlmAnswer(decoded, { environment: variant }), report);
+    assert.deepEqual(await verifyRlmAnswer(decoded, { environment: JSON.parse(JSON.stringify(variant)) }), report);
     for (let i = 0; i < input.checks.length; i++) {
       const check = input.checks[i];
       const actual = check.kind === 'count' ? scoped.filter(item => item.type === check.filter.type && item.status === check.filter.status && item.tags.includes(check.filter.tag!)).length

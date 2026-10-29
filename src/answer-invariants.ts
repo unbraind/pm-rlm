@@ -48,7 +48,7 @@ function evaluate(check: RlmAnswerInvariant, items: readonly RlmItem[]): RlmInva
   } else {
     const item = items.find(item => item.id === check.item);
     if (item === undefined) return unknown(check, 'item_unavailable');
-    actual = Object.hasOwn(item, check.field) ? item[check.field] as RlmAnswerScalar : null;
+    actual = (aggregateItems([item], { action: 'distinct', filter: {}, field: check.field }) as RlmAnswerScalar[])[0];
   }
   if (!acceptsSchema(ANSWER_INVARIANT_SCHEMA.scalar, actual)) return unknown(check, 'value_out_of_domain');
   const passed = actual === check.expected;

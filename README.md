@@ -525,7 +525,8 @@ contracts and structured reasons/remedies for failed or unknown checks.
 | Equality | `kind: "equals", item: "item-id", field: "priority", expected: 2` | One scoped item's scalar equals the expected value |
 
 Fields are `id`, `title`, `type`, `status`, `priority`, `parent`, `assignee`, `sprint`
-and `release`. Absent optional fields compare as `null`. Selectors are the existing
+and `release`. Absent optional fields compare as `null`, including SDK object properties whose
+value is `undefined`; SDK and JSON inputs share the existing aggregate scalar rules. Selectors are the existing
 RLM `type/status/parent/tag/text/ids` predicates; check filters intersect the
 contract scope. Use exact SDK-returned scalar values, including configured status
 identifiers. No lifecycle meaning is inferred from status names. Text search keeps

@@ -14,6 +14,7 @@ try {
   const proofs = [
     { file: 'src/answer-invariants.ts', before: 'const passed = actual === check.expected;', after: 'const passed = true;', pattern: 'cited false counts' },
     { file: 'src/answer-invariants.ts', before: 'items = corpus.items.filter(item => matches(item, contract.scope));', after: 'items = corpus.items;', pattern: 'scope intersection' },
+    { file: 'src/answer-invariants.ts', before: "actual = (aggregateItems([item], { action: 'distinct', filter: {}, field: check.field }) as RlmAnswerScalar[])[0];", after: 'actual = Object.hasOwn(item, check.field) ? item[check.field] as RlmAnswerScalar : null;', pattern: 'SDK optional undefined' },
     { file: 'src/environment.ts', before: 'const result = certifyCompleteListResult(input);', after: 'const result = input as ReturnType<typeof certifyCompleteListResult>;', pattern: 'empty complete scope' },
   ];
   for (const proof of proofs) {
@@ -31,5 +32,5 @@ try {
     const restored = run(); assert.equal(restored.status, 0, restored.stdout + restored.stderr);
     console.log(proof.pattern + ': fixed passes, behavioral revert fails by assertion, restored passes');
   }
-  console.log('3/3 executable answer invariant revert proofs passed');
+  console.log('4/4 executable answer invariant revert proofs passed');
 } finally { await rm(scratch, { recursive: true, force: true }); }
