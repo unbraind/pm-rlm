@@ -33,7 +33,8 @@ test('every revert script succeeds in a depth-one clone of HEAD', { timeout: tes
   assert.equal(git(clone, 'rev-list', '--count', 'HEAD'), '1');
   assert.equal(git(clone, 'rev-parse', 'HEAD'), git(source, 'rev-parse', 'HEAD'));
   const scripts = (await readdir(join(source, 'test'))).filter(name => /(?:^|-)revert\.ts$/.test(name)).sort();
-  assert.equal(scripts.length, 13);
+  assert.equal(scripts.length, 14);
+  assert.ok(scripts.includes('answer-invariants-revert.ts'));
   assert.ok(scripts.includes('sdk-boundaries-revert.ts'));
   assert.ok(scripts.includes('lock-retry-revert.ts'));
   for (const name of [...scripts, 'revert-source.ts']) {

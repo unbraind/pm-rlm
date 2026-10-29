@@ -31,4 +31,5 @@ try {
     const restored = run(); assert.equal(restored.status, 0, restored.stdout + restored.stderr);
     console.log(proof.pattern + ': fixed passes, behavioral revert fails by assertion, restored passes');
   }
+  console.log('3/3 executable answer invariant revert proofs passed');
 } finally { await rm(scratch, { recursive: true, force: true }); }
