@@ -12,6 +12,13 @@ export class RlmError extends Error {
     this.code = code;
   }
 }
+/** Refuse unauthenticated inference without exposing its saved prompt or tracker contents. */
+export class RlmTranscriptError extends RlmError {
+  /** Safe recovery guidance independent of the rejected data. */
+  readonly remedy = 'Inspect the native ledger; restore an intact producer checkpoint or start a fresh run with the declared question, scope and budget';
+  /** Keep transport refusals typed and actionable for both SDK and CLI callers. */
+  constructor(message: string) { super('replay', message); }
+}
 /** Convert failed SDK reads into sanitized refusals while preserving existing typed failures. */
 export async function sdkRead<T>(read: () => T | Promise<T>): Promise<T> {
   try { return await read(); }
@@ -38,6 +45,15 @@ export function record(value: unknown): Record<string, unknown> {
 export function text(value: unknown): string {
   if (typeof value !== 'string' || value.length === 0) throw new RlmError('invalid', 'Expected nonempty text');
   return value;
+}
+
+/** Authenticate persisted child refusals with one contract shared by hydration and execution. */
+export function recordedRefusal(value: unknown): { code: RlmErrorCode; reason?: string; remedy?: string } {
+  const refusal = record(value);
+  if (!['budget', 'depth', 'calls', 'scope', 'invalid', 'incomplete', 'model', 'busy', 'replay', 'evidence'].includes(text(refusal.code))) throw new RlmTranscriptError('Recorded refusal code is invalid');
+  if (refusal.reason !== undefined) text(refusal.reason);
+  if (refusal.remedy !== undefined && (refusal.code !== 'evidence' || typeof refusal.remedy !== 'string')) throw new RlmTranscriptError('Recorded refusal remedy is invalid');
+  return refusal as { code: RlmErrorCode; reason?: string; remedy?: string };
 }
 
 /** Compare Windows path spellings after JSON escaping, separator and case normalization. */

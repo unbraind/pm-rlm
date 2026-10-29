@@ -75,7 +75,11 @@ jobs:
       - name: Verify complete docstring coverage
         run: npm run docstring
 
+      # Each Node line still runs the complete suite once: npm below on 22,
+      # and the complete Bun release gate on 26. Manual runs use the full
+      # release wrappers on both lines instead of repeating their coverage.
       - name: Test with coverage gate
+        if: github.event_name != 'workflow_dispatch' && matrix.node-version == 22
         run: npm run coverage
 
       - name: Production dependency audit
@@ -101,5 +105,5 @@ jobs:
         run: bun run release:check
 
       - name: Full npm release gates on manual verification
-        if: github.event_name == 'workflow_dispatch' && matrix.node-version == 26
+        if: github.event_name == 'workflow_dispatch' && matrix.node-version == 22
         run: npm run release:check

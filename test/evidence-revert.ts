@@ -19,9 +19,9 @@ proveRevert({ name: 'terminal child remedy receipt', file: 'src/engine.ts', befo
 proveRevert({ name: 'completion-hook remedy receipt', file: 'src/engine.ts', before: 'call.completion_refusal = failure;', after: 'call.completion_refusal = { code: error.code, reason: error.message };', pattern: '^child completion evidence remedy survives' }, file);
 proveRevert({ name: 'failed child remedy reuse', file: 'src/engine.ts', before: 'throw recordedChildRefusal(call.failure);', after: "throw new RlmError(call.failure.code, call.failure.reason ?? 'Recorded child refusal');", pattern: '^child model evidence remedy survives' }, file);
 proveRevert({ name: 'replayed child remedy reconstruction', file: 'src/engine.ts', before: 'if (failure !== undefined) throw recordedChildRefusal(failure);', after: "if (failure !== undefined) throw new RlmError(failure.code, failure.reason ?? 'Recorded child refusal');", pattern: '^child completion evidence remedy survives' }, file);
-const receiptCheck = "          if (refusal.remedy !== undefined && (refusal.code !== 'evidence' || typeof refusal.remedy !== 'string')) throw new Error('Invalid refusal remedy');";
-proveRevert({ name: 'terminal child remedy shape', file: 'src/ledger.ts', before: receiptCheck, after: '', pattern: '^child model evidence remedy survives' }, file);
-proveRevert({ name: 'completion-hook remedy shape', file: 'src/ledger.ts', before: receiptCheck, after: '', pattern: '^child completion evidence remedy survives' }, file);
+const receiptCheck = "  if (refusal.remedy !== undefined && (refusal.code !== 'evidence' || typeof refusal.remedy !== 'string')) throw new RlmTranscriptError('Recorded refusal remedy is invalid');";
+proveRevert({ name: 'terminal child remedy shape', file: 'src/errors.ts', before: receiptCheck, after: '', pattern: '^child model evidence remedy survives' }, file);
+proveRevert({ name: 'completion-hook remedy shape', file: 'src/errors.ts', before: receiptCheck, after: '', pattern: '^child completion evidence remedy survives' }, file);
 proveRevert({ name: 'component count upper bound', file: 'src/evidence.ts', before: ' && value.length <= 16', after: '', pattern: '^component declarations enforce the 16-name upper bound independently$' }, file);
 proveRevert({ name: 'witness count upper bound', file: 'src/evidence.ts', before: ' && entry.witnesses.length <= 8', after: '', pattern: '^component witnesses enforce the eight-reference upper bound independently$' }, file);
 console.log('20/20 evidence revert proofs passed');

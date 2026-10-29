@@ -83,7 +83,7 @@ See [the storage measurements](docs/LEDGER-STORAGE.md) for the public eval corpo
 
 ## Without git
 
-Environment reads, recursive run, tree, resume, replay, lazy storage migration and blob GC work in a plain-directory tracker without a Git executable. They need no Git repository. The eval command works without Git; preparing verified public source revisions needs Git and GitHub; repository changelog and release tooling also use Git.
+Environment reads, recursive run, tree, resume, replay, evidence-directed repair and its recovery, lazy storage migration and blob GC work in a plain-directory tracker without a Git executable. They need no Git repository. The eval command works without Git; preparing verified public source revisions needs Git and GitHub; repository changelog and release tooling also use Git.
 
 ## Environment and execution
 
@@ -453,3 +453,33 @@ The approval variable controls GitHub releases; it does not impose a local npm
 publishing hold. Maintainers run the prepublish checks and authenticate with npm
 for local publication. The first local publish uses `--provenance=false`; daily
 GitHub OIDC releases keep provenance enabled.
+
+## Evidence-directed repair
+
+`repairRlm` and `pm rlm repair` resume a partially supported evidence answer
+within a fresh explicit budget. Declare every original component, its question,
+source ids and component dependencies. Only unsupported/unknown components,
+changed sources and their downstream dependents trigger new work. Nine valid
+components and one gap schedule just the gap. Zero budget returns the supported
+answer with every named gap and a remedy.
+
+```sh
+pm rlm repair original-run-id --parts '[{"name":"summary","question":"What is documented?","depends_on":[],"sources":["source-item-id"]}]' --budget-tokens 50000 --json
+pm rlm repair-resume repair-run-id --json
+```
+
+The SDK exports `repairRlm`, `resumeRepairRlm`, strict request/checkpoint parsers,
+`RlmRepairError`, and typed declarations/results. TOON/JSON output retains every
+component, evidence origin and budget coordinate; `--full` includes answer text.
+Saved prompts and inference holds are authenticated through their native
+producers before transport. Native transport refusals expose `RlmTranscriptError` with a
+`replay` code and remedy; repair returns a named gap for the damaged component.
+Repair child ids remain bound to their producer-owned component; replacements
+become named gaps, and older cleared intents retain native charges. Replayed
+native states cannot refund published evidence or authorize fresh inference. Ordinary
+replay authenticates execution refusals while preserving legacy placeholders. Parser, action, child and completion-hook refusals authenticate their code, reason and remedy through shared checks. Interrupted responses whose refusal has not yet been recorded remain resumable.
+Recovery revalidates current SDK revisions, skips stale targets and their
+prerequisites' dependents, and reuses peer-completed native children. Runtime
+works without Git. See the [repair guide](docs/EVIDENCE-DIRECTED-REPAIR.md),
+[SDK example](examples/evidence-directed-repair.ts) and
+[public measurement](docs/repair-validation.json).

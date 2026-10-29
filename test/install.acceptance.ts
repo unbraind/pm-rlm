@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
 import type { RlmAdaptiveResult } from '../src/adaptive.ts';
 import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
+import { verifyPackedRepairBudget } from './repair-consumer.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
 function execute(cwd: string, args: string[], executable: string, env: NodeJS.ProcessEnv): string {
@@ -25,20 +26,20 @@ for (const manager of ['npm', 'bun']) test(`packed ${manager} consumer installs,
   const manifest = JSON.parse(readFileSync(join(repository, 'package.json'), 'utf8')) as { version: string; devDependencies: Record<string, string> };
   const env = { ...npmEnvironment(gitEnvironment(process.env)), HOME: scratch, GIT_CONFIG_GLOBAL: '/dev/null', GIT_CONFIG_NOSYSTEM: '1', PM_AUTHOR: 'rlm-consumer' };
   const packed = JSON.parse(execute(repository, ['pack', '--json', '--pack-destination', scratch, '--ignore-scripts'], 'npm', env)) as { filename: string; files: { path: string }[] }[];
-  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|PUBLIC-EVALUATION|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE|ADAPTIVE-DECOMPOSITION|RECONCILIATION)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|public-eval-suite|public-eval-results|ledger-scale|answer-evidence-validation|adaptive-validation|reconciliation-validation|verified-subanswer-reuse-validation)\.json$|CHANGELOG\.md$|examples\/(?:reconciliation-plan\.json|verified-subanswer-reuse\.ts)$)/;
+  const allowed = /^(dist\/|manifest\.json$|eval-results(?:-v2|-constrained)?\.json$|docs\/(?:EVAL-V2|EVAL-CONSTRAINED|EVAL-CLOUD|EVAL-DESIGN|PUBLIC-EVALUATION|ACTION-DIAGNOSIS|LEDGER-STORAGE|ANSWER-EVIDENCE|ADAPTIVE-DECOMPOSITION|RECONCILIATION|EVIDENCE-DIRECTED-REPAIR)\.md$|package\.json$|README\.md$|ARCHITECTURE\.md$|LICENSE$|docs\/(?:eval-design|public-eval-suite|public-eval-results|ledger-scale|answer-evidence-validation|adaptive-validation|reconciliation-validation|verified-subanswer-reuse-validation|repair-validation)\.json$|CHANGELOG\.md$|examples\/(?:reconciliation-plan\.json|verified-subanswer-reuse\.ts|evidence-directed-repair\.ts)$)/;
   assert.ok(packed[0].files.every(file => allowed.test(file.path)), 'Packed file allowlist');
   assert.ok(packed[0].files.some(file => file.path === 'dist/index.js'));
   for (const path of ['docs/PUBLIC-EVALUATION.md', 'docs/public-eval-suite.json', 'docs/public-eval-results.json', 'docs/ANSWER-EVIDENCE.md', 'docs/answer-evidence-validation.json', 'docs/ADAPTIVE-DECOMPOSITION.md', 'docs/adaptive-validation.json', 'docs/RECONCILIATION.md', 'docs/reconciliation-validation.json', 'examples/reconciliation-plan.json', 'examples/verified-subanswer-reuse.ts', 'docs/verified-subanswer-reuse-validation.json']) assert.ok(packed[0].files.some(file => file.path === path));
     const consumer = join(scratch, manager); mkdirSync(consumer);
     writeFileSync(join(consumer, 'package.json'), JSON.stringify({ name: 'rlm-consumer-fixture', private: true, type: 'module', dependencies: { 'pm-rlm': `file:${join(scratch, packed[0].filename)}`, '@unbrained/pm-cli': manifest.devDependencies['@unbrained/pm-cli'] } }));
     execute(consumer, manager === 'npm' ? ['install', '--prefer-offline', '--ignore-scripts', '--no-audit', '--no-fund'] : ['install', '--ignore-scripts'], manager, env);
-    const hostEnv = { ...env, PM_PATH: join(consumer, '.agents', 'pm') };
+    const hostEnv = { ...env, PM_PATH: join(consumer, '.agents', 'pm'), GIT_CEILING_DIRECTORIES: scratch };
     const executable = manager === 'npm' ? 'npx' : 'bunx';
     const prefix = manager === 'npm' ? ['--no-install', 'pm'] : ['--bun', '--no-install', 'pm'];
     execute(consumer, [...prefix, 'init', '--prefix', 'rlm-consumer', '--defaults', '--agent-guidance', 'skip'], executable, hostEnv);
     execute(consumer, [...prefix, 'package', 'install', join(scratch, packed[0].filename)], executable, hostEnv);
     const help = execute(consumer, [...prefix, 'rlm', '--help'], executable, hostEnv);
-    for (const command of ['run', 'reuse', 'adaptive', 'reconcile', 'eval', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
+    for (const command of ['run', 'repair', 'repair-resume', 'reuse', 'adaptive', 'reconcile', 'eval', 'tree', 'resume', 'replay', 'evidence']) assert.ok(help.includes(command));
     const description = execute(consumer, [...prefix, 'package', 'describe', 'pm-rlm', '--json'], executable, hostEnv);
     assert.ok(description.includes('pm-rlm'));
     writeFileSync(join(consumer, 'create-run.ts'), `import { runRlm, reuseRlm, RlmLedger } from 'pm-rlm';
@@ -95,6 +96,19 @@ console.log(JSON.stringify(result));
     assert.deepEqual(evidence, expected);
     const toon = execute(consumer, [...prefix, 'rlm', 'evidence', evidenceRun.run], executable, hostEnv);
     assert.deepEqual(decodeToon(toon), expected);
+
+    const repairParts = JSON.stringify([{ name: 'source', question: 'Return the source id', depends_on: [], sources: [evidenceRun.components[0].answer] }]);
+    verifyPackedRepairBudget(repository, consumer, join(scratch, packed[0].filename), (args, pmRoot) => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', { ...hostEnv, PM_PATH: pmRoot }), [
+      (args, pmRoot) => execute(consumer, [...prefix, ...args], executable, { ...hostEnv, PM_PATH: pmRoot }),
+      (args, pmRoot) => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), { ...hostEnv, PM_PATH: pmRoot }),
+    ]);
+    for (const render of [[], ['--json']]) {
+      const output = execute(consumer, [...prefix, 'rlm', 'repair', evidenceRun.run, '--parts', repairParts, '--budget-tokens', '0', ...render], executable, hostEnv);
+      const repaired = (render.length === 0 ? decodeToon(output) : JSON.parse(output)) as { run: string; reused: number; status: string; calls: number };
+      assert.equal(repaired.status, 'complete'); assert.equal(repaired.reused, 1); assert.equal(repaired.calls, 0);
+      const recovered = JSON.parse(execute(consumer, [...prefix, 'rlm', 'repair-resume', repaired.run, '--json'], executable, hostEnv)) as { reused: number };
+      assert.equal(recovered.reused, 1);
+    }
 
     writeFileSync(join(consumer, 'create-adaptive.ts'), `import { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from 'pm-rlm';
 import assert from 'node:assert/strict';

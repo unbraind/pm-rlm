@@ -42,13 +42,16 @@
     "docs/public-eval-suite.json",
     "docs/public-eval-results.json",
     "docs/verified-subanswer-reuse-validation.json",
-    "examples/verified-subanswer-reuse.ts"
+    "examples/verified-subanswer-reuse.ts",
+    "docs/EVIDENCE-DIRECTED-REPAIR.md",
+    "docs/repair-validation.json",
+    "examples/evidence-directed-repair.ts"
   ],
   "scripts": {
     "build": "tsc",
     "build:test": "tsc -p tsconfig.test.json",
     "test": "npm run build && npm run build:test && node --test --test-concurrency=2 test/*.test.ts",
-    "test:install": "npm run build && node --test --test-concurrency=2 --test-reporter=spec test/install.acceptance.ts",
+    "test:install": "npm run build && node --test --test-concurrency=2 --test-reporter=spec test/install.acceptance.ts test/repair-install.acceptance.ts",
     "prepack": "npm run build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "check": "npm run typecheck",

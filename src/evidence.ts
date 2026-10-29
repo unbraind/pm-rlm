@@ -17,7 +17,7 @@ function requireEvidence(condition: boolean, message: string, remedy: string): a
 /** Validate and copy immutable caller-declared question components. */
 export function parseComponents(value: unknown): string[] {
   requireEvidence(Array.isArray(value) && value.length > 0 && value.length <= 16, 'Declare 1 to 16 components', 'Supply a nonempty components array with at most 16 entries');
-  requireEvidence(value.every(entry => typeof entry === 'string' && entry.trim().length > 0 && estimateTokens(entry) <= 256) && new Set(value).size === value.length, 'Components must be unique bounded text', 'Use distinct nonblank component names of at most 256 UTF-8 bytes');
+  requireEvidence(Array.from(value).every(entry => typeof entry === 'string' && entry.trim().length > 0 && estimateTokens(entry) <= 256) && new Set(value).size === value.length, 'Components must be unique bounded text', 'Use distinct nonblank component names of at most 256 UTF-8 bytes');
   return [...value] as string[];
 }
 /** Bind bounded UTF-16 offsets and exact snapshot text into a SHA-256 witness. */

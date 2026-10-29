@@ -22,7 +22,7 @@ test('Git environment filtering removes mixed-case selection and config keys', (
 
 /** Audit and packed consumers remove duplicate Windows-style npm configuration keys. */
 test('npm environment filtering isolates mixed-case script and user configuration', () => {
-  const inherited = { Path: 'keep', npm_config_allow_scripts: 'old', NPM_CONFIG_ALLOW_SCRIPTS: 'old', Npm_Config_Allow_Scripts: 'old', NpM_CoNfIg_UsErCoNfIg: 'private', npm_config_userconfig: 'private', NPM_CONFIG_USERCONFIG: 'private', npm_config_registry: 'keep-registry' };
+  const inherited = { Path: 'keep', npm_config_allow_scripts: 'old', NPM_CONFIG_ALLOW_SCRIPTS: 'old', Npm_Config_Allow_Scripts: 'old', NpM_CoNfIg_UsErCoNfIg: 'private', npm_config_userconfig: 'private', NPM_CONFIG_USERCONFIG: 'private', npm_config_registry: 'keep-registry', NPM_TOKEN: 'synthetic', NODE_AUTH_TOKEN: 'synthetic', NPM_MEDIA_SERVER: 'synthetic', EXAMPLE_API_KEY: 'synthetic' };
   assert.deepEqual(npmEnvironment(inherited), { Path: 'keep', npm_config_registry: 'keep-registry', npm_config_userconfig: devNull });
 });
 

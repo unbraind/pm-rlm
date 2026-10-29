@@ -4,6 +4,12 @@ export { reconcileRlm, parseReconcileArms, RlmReconcileError } from './src/recon
 export type { RlmReconcileArm, RlmReconcileOptions, RlmReconcileGroup, RlmReconcileResult } from './src/reconcile.ts';
 import { defineExtension } from '@unbrained/pm-cli/sdk/authoring';
 import { register } from './src/commands.ts';
+/** Targeted evidence repair with durable native recovery and bounded agent receipts. */
+export { repairRlm, resumeRepairRlm, compactRepairResult } from './src/repair.ts';
+/** Strict producer/consumer contracts and explicit dependency declarations. */
+export { REPAIR_SCHEMA, RlmRepairError, parseRepairRequest, parseRepairCheckpoint } from './src/repair-contract.ts';
+/** Public repair declarations and execution results. */
+export type { RlmRepairPart, RlmRepairRequest, RlmRepairOptions, RlmRepairResult, RlmRepairComponent, RlmRepairSkipped, RlmRepairCheckpoint } from './src/repair-contract.ts';
 /** Expose the certified token-budgeted environment for independent RLM loops. */
 export { createRlmContext, RlmContext, partitionItems, parseFilter } from './src/environment.ts';
 /** Expose bounded execution-time planning and typed partial receipts. */
@@ -17,7 +23,7 @@ export { RlmLedger, reserveStep, promptDigest } from './src/ledger.ts';
 /** Expose crash-recovery tuning for ledger mutations blocked by dead previous writers. */
 export type { RlmLedgerOptions } from './src/ledger.ts';
 /** Expose typed errors and conservative token estimation. */
-export { RlmError, estimateTokens } from './src/errors.ts';
+export { RlmError, RlmTranscriptError, estimateTokens } from './src/errors.ts';
 /** Expose the configurable Ollama and compatible HTTP transport. */
 export { HttpModel } from './src/adapters.ts';
 /** Expose settings resolution with flag precedence. */

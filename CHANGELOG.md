@@ -4,6 +4,7 @@
 
 ### Added
 
+- Repair only unsupported answer components within a fresh budget ([pm-rlm-repair-runs](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-repair-runs.toon))
 - Make the 2026.10.23 pm toolchain bump pass: regenerate the changelog with the new Closed section ([pm-rlm-tc1023](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-tc1023.toon))
 - Reuse explicitly selected verified subanswers across runs ([pm-rlm-bx9v](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-bx9v.toon))
 - Measured public tracker aggregation evaluation ([pm-rlm-umh4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/features/pm-rlm-umh4.toon))

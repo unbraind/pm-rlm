@@ -148,7 +148,7 @@ test('completion materialization uses durable answer and usage and refuses nonte
     state.calls[0].result = 'unsaved stale answer';
     state.calls[0].steps[0].response!.tokens_in = 999999;
     await client.reopen(child.run, 'Exercise completion recovery');
-    await ledger.complete(state, state.calls[0]);
+    await assert.doesNotReject(ledger.complete(state, state.calls[0]));
     const row = (await client.get(child.run, { depth: 'full' })).item;
     assert.notEqual(row.rlm_tokens_in, 999999);
     assert.equal(JSON.stringify(await client.comments(child.run)).includes('unsaved stale answer'), false);
