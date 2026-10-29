@@ -140,7 +140,7 @@ const parsed = await runRlm('Parse refusal integrity', { workspace, scope: { ids
 const parsedState = await new RlmLedger(workspace).load(parsed.run);
 (parsedState.calls[0].steps[0].observation as { remedy?: string }).remedy = 'Forged parse remedy';
 await client.run('update', { id: parsed.run, options: { rlmState: JSON.stringify(parsedState) } });
-for (const read of [() => replayRlm(workspace, parsed.run), () => resumeRlm(workspace, parsed.run, forbidden)]) {
+for (const read of [() => replayRlm(workspace, parsed.run), () => resumeRlm(workspace, parsed.run, { ...forbidden, name: parseModel.name })]) {
   await assert.rejects(read, (error: unknown) => error instanceof RlmTranscriptError && error.code === 'replay' && error.remedy.length > 0);
 }
 assert.equal(parseRequests, 2); assert.equal(unexpected, 0);
