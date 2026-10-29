@@ -250,7 +250,7 @@ test('repair native checkpoint replays cannot refund completed work through eith
 
 /** Old unexpected allocations consume authority; unrelated SDK runs stay foreign and unchanged. */
 test('repair untracked native allocations cannot fund additional children', async t => {
-  for (const mode of ['owned', 'foreign']) {
+  for (const mode of ['owned', 'owned-missing', 'foreign']) {
     const { workspace, client, request, ids } = await repairFixture(t);
     await client.update(ids[0], { description: 'Invalidate the first source' });
     request.budget_tokens = 1000000;
@@ -266,12 +266,12 @@ test('repair untracked native allocations cannot fund additional children', asyn
       await client.run('create', { options: { id, title: 'Foreign native format', type: 'Task', parent: run, tags: 'rlm:call', rlmRun: id, rlmState: '{}' } });
     }
     const state = await new RlmLedger(workspace).load(canonical);
-    const extra = await prepareRlmRun(state.question, { workspace, model, settings: state.settings, question_item: run, scope: state.scope, components: state.components, snapshot_only: true, reuse_identity: mode === 'owned' ? state.reuse_identity : { tool_policy: 'foreign', model_policy: 'foreign', consent: 'foreign' } }, undefined, `${run}-historic`);
+    const extra = await prepareRlmRun(state.question, { workspace, model, settings: state.settings, question_item: run, scope: state.scope, components: state.components, snapshot_only: true, reuse_identity: mode.startsWith('owned') ? state.reuse_identity : { tool_policy: 'foreign', model_policy: 'foreign', consent: 'foreign' } }, undefined, `${run}-historic`);
     await extra.engine.run();
     const before = (await client.get(extra.run, { depth: 'full' })).item;
     const result = repaired(await resumeRepairRlm(run, { workspace, model }));
     assert.equal(result.components[0].status, 'supported');
-    if (mode === 'owned') {
+    if (mode.startsWith('owned')) {
       assert.deepEqual(result.gaps, ['part2']); assert.equal(result.components[2].reason, 'untracked_child');
       assert.equal(result.budget.charged, result.budget.limit); assert.equal(model.requests.length, 4);
     } else {

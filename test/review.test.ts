@@ -197,6 +197,7 @@ test('replay retains existing full-slice partition receipts and rejects changed 
   const model = new ScriptedModel((_request, index) => JSON.stringify(index === 0 ? { action: 'partition', filter: {}, maxTokens: 2000 } : { action: 'finish', answer: 'legacy' }));
   const result = await runRlm('legacy partition', { workspace, model });
   const ledger = new RlmLedger(workspace); const state = await ledger.load(result.run);
+  delete state.aggregate_version;
   const context = new RlmContext(workspace, state.snapshot, state.certificate, state.settings.budget_tokens);
   const read = await context.partition({}, 2000);
   state.calls[0].steps[0].observation = read;

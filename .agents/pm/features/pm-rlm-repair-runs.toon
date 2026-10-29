@@ -6,11 +6,11 @@ status: in_progress
 priority: 2
 tags: []
 created_at: "2026-10-27T14:27:23.277Z"
-updated_at: "2026-10-29T00:48:07.995Z"
+updated_at: "2026-10-29T01:21:35.639Z"
 author: codex-agent
 acceptance_criteria: "One unsupported part among ten causes work only for that part and invalidated dependencies; budget exhaustion retains the supported answer with named gaps; no missing part is silently dropped. Typed SDK and CLI, compact TOON/JSON, strict schemas and remedies, no-git real public corpus validation, seeded state and interleaving evidence, npm and Bun CI gates."
 parent: pm-rlm-a1ih
-comments[38]{created_at,author,text}:
+comments[41]{created_at,author,text}:
   "2026-10-27T14:28:00.396Z",codex-agent,"Design: explicit caller component DAG and source dependencies; native run per targeted component, fresh shared accounting, persistent revision-fenced repair controller, current SDK source revalidation before inference/retry, transitive skip propagation, original evidence retained with origin run references. No new import, export or sync command; journal interchange and native ledger round trips will be model-tested. Tests use only deterministic model adapters, real SDK trackers."
   "2026-10-27T14:51:10.363Z",codex-agent,"Public protocol-fixture validation passed on a verified read-only copy of unbraind/pm-lint at f2c20efa78139f4071f3dd08d317bea05337fe28: 12 source items, 54941 source JSON bytes, 30 unchanged read-only files. Ten components: one scheduled, nine reused, ten supported, one logical child, two model requests, 8181 charged tokens; resume adds zero requests. Zero budget retains nine supported answers and one named gap. Compact JSON is 2918 bytes. No external inference or runtime Git."
   "2026-10-27T15:02:24.481Z",codex-agent,"The behavioral revert proof passed in a disposable source copy: the zero-budget retention regression passes fixed code, fails when supported-component reuse is removed from the execution function, and passes after restoration (1/1). New state tests cover 500 seeded journal sequences, older inputs, native relationships and fields, random custom status roles/focus, source ABA changes, and competing executors at controller and SDK transaction transitions. Source reads now use public locateItem/readLocatedItem and runtime schema/type registry APIs rather than repeated full command projections."
@@ -49,7 +49,11 @@ comments[38]{created_at,author,text}:
   "2026-10-28T23:57:00.662Z",codex-agent,"Resumed on exact head bb7aa2d4 for the new parse-refusal failure and branch coverage. The shared verifier currently catches parseAction errors and continues without authenticating the recorded refusal, while ordinary replay and resume have separate recordedAction checks. This violates one-verifier agreement and lets direct validation used by repair skip refusal fields. Plan: route verification through the existing parser/refusal producer check, audit all code/reason/remedy fields with seeded adversarial cases, preserve legacy must-allow records, add behavior-revert evidence, and close the uncovered real state branches without changing thresholds. Main has zero commits ahead; SDK pin stays 2026.10.25. The new instruction allows a 45-minute exact-head CI wait."
   "2026-10-29T00:37:25.874Z",codex-agent,"The exact-head failure reproduced locally (0/1). Code fix routes shared validation through recordedAction instead of swallowing parse errors; replay, resume and repair now share that refusal authentication, while a final unobserved producer response may still resume before its parse decision is recorded. The seeded property additionally found child reconstruction could overwrite a saved code with evidence when a remedy existed. One recordedRefusal contract now validates child/hook metadata in both SDK hydration and reconstruction. Property passed 500 mutations over eight SDK-produced refusal records and 24 field positions; SDK read-back then proved replay/resume/repair reject each field mutation with no inference or item/history writes. Both new behavioral reversions passed fixed, failed by assertion on the reverted code, and passed restored (2/2). No existing assertion or threshold is weakened. New edge fixtures cover legacy held usage, malformed births, immutable payload corruption, native component declarations, unfinished parse responses and graph completeness. A repeated-spawn probe also exposed materialization before the inference fence; spawn now refuses untrusted progress before any native mutation, and the test checks unchanged SDK item state."
   "2026-10-29T00:47:47.953Z",codex-agent,"Round 4 validation: the exact failing bb7aa2d parse-remedy case reproduces 0/1 and now passes 1/1, including a linked pm test run. Focused shared refusal/recovery suite passes 11/11 (500 seeded mutations, eight SDK producer records, 24 independently authenticated field positions); native authority selection passes 3/3. Behavioral proof removes each new verifier guard independently: fixed pass, reverted assertion failure, restored pass (2/2). Rule: every persisted refusal must be checked against its producer contract before replay or inference, including parse failures and terminal child/hook receipts. Audited SDK, CLI JSON/TOON and packed consumers through their common verifier. Branch probes exercise legacy held usage, damaged publisher payloads, canonical births, component contracts, genuine interrupted responses, ordinary graph completeness and stripped declarations. Typecheck, lint, build, docstrings and zero-duplication pass. Original coverage thresholds remain 100/100/100/100; complete npm and Bun release evidence will be taken from fresh exact-head CI. The PR remains draft until green."
-files[39]{path,scope}:
+  "2026-10-29T01:14:33.577Z",codex-agent,"Exact-head CI ddf11da reports 506/511 and 99.89% branches. A supposedly redundant ordinary spawn check also authenticated absent observations, so removing it changed interrupted replay behavior; the common verifier now performs that check in observational mode. Existing recovery and malformed-observation assertions remain unchanged. Two older source-revert scripts still pointed at the former duplicate parse validation and parser-call count; their mutation targets now follow the shared verifier, retaining every behavioral assertion. Additional branch fixtures cover unversioned full-slice partitions, missing earlier proof reads and untracked allocations with an unmaterialized target. The first-push 45-minute verification cutoff remains unchanged. Both CI run links and subsequent results are recorded on PR 39."
+  "2026-10-29T01:17:41.683Z",codex-agent,"CI scheduling: every supported Node version retains one complete unchanged coverage/release gate, with the npm wrapper on Node 22 and Bun wrapper on Node 26. Manual verification now invokes those two full release wrappers in parallel instead of running three sequential full suites on Node 26. PR checks retain the complete npm gate steps on Node 22 and the complete Bun release gate on Node 26. No test, release command, source inventory or 100-percent threshold is removed. This avoids duplicate coverage work inside the fixed first-push verification window."
+  "2026-10-29T01:21:29.774Z",codex-agent,"Follow-up focused evidence: interrupted recovery, malformed spawn observations, unversioned full-slice partition receipts and untracked allocations pass 4/4; the added saved-legacy-parser fixture passes independently 1/1 with its exact invalid/Unknown model action refusal. All five updated round-three behavioral reverts pass by assertion with source restored byte-for-byte, including both resume and replay routing through the shared verifier. Follow-up typecheck, lint, duplication, docstrings, build and changelog check pass. The original 20 evidence reverts and the two new 500-mutation verifier reverts also passed. No existing assertion or coverage threshold was weakened."
+files[43]{path,scope}:
+  .github/workflows/ci.yml,project
   index.ts,project
   package.json,project
   README.md,project
@@ -65,6 +69,7 @@ files[39]{path,scope}:
   src/repair-contract.ts,project
   src/repair.ts,project
   test/checkpoint-concurrency.test.ts,project
+  test/constrained-revert.ts,project
   test/evidence.test.ts,project
   test/install.acceptance.ts,project
   test/ledger-storage-revert.ts,project
@@ -86,8 +91,10 @@ files[39]{path,scope}:
   test/repair.test.ts,project
   test/reuse-state.test.ts,project
   test/revert.ts,project
+  test/review-r3-revert.ts,project
   test/review-r4-revert.ts,project
   test/review-r6-revert.ts,project
+  test/review.test.ts,project
   test/round4.test.ts,project
 tests[28]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "node --test --test-concurrency=2 --test-name-pattern=\"repair schema fuzz\" test/repair-refusals.test.ts",project,codex-agent,"2026-10-27T15:08:57.294Z",local_mutation,feat/evidence-directed-repair-runs

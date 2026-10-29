@@ -133,3 +133,13 @@ test('repair verifier retains initial component protection when current declarat
   await client.run('update', { id: source, options: { rlmState: JSON.stringify(state) } });
   await assert.rejects(resumeRlm(workspace, source, model), { code: 'replay' });
 });
+
+/** The saved legacy parser rejects modern proof actions before reconstructing a missing read. */
+test('repair interrupted legacy proof reads refuse modern actions under their saved parser', async t => {
+  const { workspace, complete, model } = await completedRepairFixture(t, 1);
+  const ledger = new RlmLedger(workspace);
+  const state = await ledger.load(complete.components[0].run);
+  delete state.parser_version; delete state.calls[0].result; delete state.calls[0].steps[0].observation;
+  await assert.rejects(new RlmEngine(ledger, state, model).validateRecorded(false, true), { code: 'invalid', message: 'Unknown model action' });
+  assert.equal(model.requests.length, 2);
+});

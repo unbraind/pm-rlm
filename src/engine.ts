@@ -346,7 +346,10 @@ export class RlmEngine {
           }
         }
         const observation = step.observation;
-        if (observation === undefined) continue;
+        if (observation === undefined) {
+          if (observational && action.action === 'spawn') recordedSpawnResult(step);
+          continue;
+        }
         if (typeof observation === 'object' && observation !== null && 'refused' in observation) {
           let refusal = spawnRefusal;
           if (action.action !== 'spawn') {
