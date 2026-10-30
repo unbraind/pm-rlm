@@ -2,14 +2,19 @@ id: pm-rlm-cu
 title: Report unknown interrupted child counts and run validation portably
 description: "Address review findings from PRs #23 and #27: preserve unobserved child counts, allow standalone SDK parity validation, and distinguish revert timeouts from assertion evidence under host load."
 type: Issue
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-26T05:40:32.797Z"
-updated_at: "2026-10-26T05:54:42.904Z"
+updated_at: "2026-10-30T14:24:31.632Z"
+closed_at: "2026-10-30T14:24:29.003Z"
+completed_at: "2026-10-26T06:39:45.000Z"
 author: codex-agent
 acceptance_criteria: "Interrupted arms use nullable child counts in typed results and native JSON/TOON; summaries preserve unknown totals and report unknown arm counts.; The public SDK parity runner skips clearly without fleet fixtures and README documents prerequisites.; One documented timeout scale preserves default regression limits, classifies timeouts explicitly, and keeps assertion failures immediate.; Behavioral revert proofs, targeted tests, typecheck and lint pass; npm and Bun CI release gates pass before handoff."
 parent: pm-rlm-a1ih
+resolution: "Delivered by PR #30 (cc0dd9d): Report unknown interrupted child counts and run validation portably"
+expected_result: "Interrupted arms use nullable child counts in typed results and native JSON/TOON; summaries preserve unknown totals and report unknown arm counts.; The public SDK parity runner skips clearly without fleet fixtures and README documents prerequisites.; One documented timeout scale preserves default regression limits, classifies timeouts explicitly, and keeps assertion failures immediate.; Behavioral revert proofs, targeted tests, typecheck and lint pass; npm and Bun CI release gates pass before handoff."
+actual_result: "PR #30 merged at 2026-10-26T06:39:45Z as cc0dd9d; required CI passed on the merged head."
 comments[4]{created_at,author,text}:
   "2026-10-26T05:40:35.485Z",codex-agent,"Tracker orientation found related evaluation and SDK adoption items, but no existing item for these three review corrections. Implement nullable observations and unknown-arm summaries, detect missing public parity fixtures before setup, and centralize scaled regression deadlines with explicit timeout diagnostics. Preserve repository-pinned SDK dependencies."
   "2026-10-26T05:45:41.086Z",codex-agent,"Implemented nullable interrupted child counts, unknown_children_arms summaries, legacy receipt normalization, and unknown aggregates for skipped/unobserved rows. Standalone public parity now preflights fleet fixtures before setup. Regression deadlines and enclosing shallow-clone limits share PM_RLM_TEST_TIMEOUT_SCALE; ETIMEDOUT reports timed out with missing assertion evidence and restores mutated source. Initial typecheck/lint passed; real native renderer and child-process regressions are running. Full npm/Bun release validation will run in CI at unchanged thresholds."
@@ -33,4 +38,5 @@ tests[3]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,
   PM_RLM_TEST_TIMEOUT_SCALE=3 node test/evaluation-revert.ts --review-only && PM_RLM_TEST_TIMEOUT_SCALE=3 node test/sdk-boundaries-revert.ts,project,1800,codex-agent,"2026-10-26T05:47:55.194Z",local_mutation,fix/interrupted-children-unknown
 docs[1]{path,scope}:
   README.md,project
+close_reason: "Delivered by PR #30 (cc0dd9d): Report unknown interrupted child counts and run validation portably"
 body: ""

@@ -2,12 +2,17 @@ id: pm-rlm-b602
 title: Repair the ledger storage revert proof for the toolchain update
 description: Diagnose the PR 35 legacy-writer mutation proof without accepting unrelated errors as assertion evidence. Preserve storage-format regression coverage and record already merged PR 33 as independently green.
 type: Chore
-status: in_progress
+status: closed
 priority: 2
 tags[4]: ci,dependabot,"gh:unbraind/pm-rlm#33","gh:unbraind/pm-rlm#35"
 created_at: "2026-10-28T19:48:44.579Z"
-updated_at: "2026-10-28T20:57:49.619Z"
+updated_at: "2026-10-30T14:24:10.444Z"
+closed_at: "2026-10-30T14:24:08.057Z"
+completed_at: "2026-10-28T21:32:38.000Z"
 author: codex-agent
+resolution: "Delivered by PR #35 (5c96b92): chore(deps-dev): bump the pm-toolchain group across 1 directory with 3 updates"
+expected_result: Repair the ledger storage revert proof for the toolchain update
+actual_result: "PR #35 merged at 2026-10-28T21:32:38Z as 5c96b92; required CI passed on the merged head."
 comments[6]{created_at,author,text}:
   "2026-10-28T19:50:15.875Z",codex-agent,"Cause class under investigation: dependency incompatibility in the legacy inline-checkpoint mutation proof. The old writer reaches JSON.parse with an unterminated checkpoint instead of the required format assertion. Diagnose read versus persistence truncation with synthetic trackers; do not accept generic errors as successful revert evidence. PR 33 is already merged, with both exact-head test jobs successful at https://github.com/unbraind/pm-rlm/actions/runs/40716156064."
   "2026-10-28T20:11:03.783Z",codex-agent,"Synthetic diagnosis confirms that complete-list evidence can reuse a clipped extension field after compact mutation output: a legacy checkpoint read was 241 characters while an unbounded point read returned all 22123 persisted characters. Added one shared complete field reader for hydration, compare-and-set checkpoint checks and garbage-collection marking. Corpus certification remains in place, all recovery assertions are retained, and old inline data stays supported. The regression creates and claims a legacy inline checkpoint through the real SDK, then checks load, migration and collection. No SDK mock, retry or timeout increase is introduced."
@@ -25,4 +30,5 @@ tests[2]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
   "node --test --test-concurrency=2 --test-name-pattern=\"large legacy checkpoints|legacy checkpoints read unchanged\" test/ledger-storage.test.ts",project,codex-agent,"2026-10-28T20:05:35.699Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-cc78843e61
 docs[1]{path,scope}:
   "https://github.com/unbraind/pm-rlm/actions/runs/40724961517",project
+close_reason: "Delivered by PR #35 (5c96b92): chore(deps-dev): bump the pm-toolchain group across 1 directory with 3 updates"
 body: ""

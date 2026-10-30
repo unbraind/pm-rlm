@@ -2,14 +2,19 @@ id: pm-rlm-bx9v
 title: Reuse explicitly selected verified subanswers across runs
 description: "Opt-in cross-run reuse built on existing digests and core ledger records. Acceptance: matching source scope, snapshot, question, tool/model policy and consent identities reuse with zero new model calls; changing one source revision invalidates only dependent results; retain original provenance without double-counting usage. Provide typed SDK and CLI, compact TOON/JSON, typed refusals and remedies, README/example, non-git public-tracker validation, seeded model-based state tests and concurrency interleavings."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-26T00:07:55.801Z"
-updated_at: "2026-10-26T03:57:56.975Z"
+updated_at: "2026-10-30T14:24:21.016Z"
+closed_at: "2026-10-30T14:24:18.339Z"
+completed_at: "2026-10-26T04:38:36.000Z"
 author: codex-agent
 acceptance_criteria: "Matching explicitly selected source scope, snapshot, question, tool/model policy and consent identities reuse a prior subanswer with zero new model calls.; Changing one source revision invalidates only dependent selected results. Independent subanswers remain reusable.; Reuse reports original run/call provenance and original usage separately, with no double-counted new charges."
 parent: pm-rlm-a1ih
+resolution: "Delivered by PR #28 (b4e6e2f): Reuse verified subanswers across runs without new model calls"
+expected_result: "Matching explicitly selected source scope, snapshot, question, tool/model policy and consent identities reuse a prior subanswer with zero new model calls.; Changing one source revision invalidates only dependent selected results. Independent subanswers remain reusable.; Reuse reports original run/call provenance and original usage separately, with no double-counted new charges."
+actual_result: "PR #28 merged at 2026-10-26T04:38:36Z as b4e6e2f; required CI passed on the merged head."
 comments[16]{created_at,author,text}:
   "2026-10-26T00:09:03.255Z",codex-agent,"Overlap rechecked: core CLI supplies certified full reads, native item/history transactions and locks, not verified model subanswer reuse. pm-rlm prompt digests reuse within a run; replay verifies recorded work. pm-memory embedding caches and purpose consent are distinct; pm-context freshness manifests invalidate packet sections but do not authenticate RLM answers; pm-swarm coordinates native resources. Implement an explicit selected-call reuse command atop existing checkpoint records, immutable snapshots, replay verification and SDK CAS. Identity is opt-in at original execution, freezes history access, and binds tool/model policy plus consent revision. No cache discovery or implicit reuse."
   "2026-10-26T00:22:09.768Z",codex-agent,"Implemented explicit selected original-call reuse, opt-in immutable policy/consent identities, native checkpoint provenance, zero new usage and bounded CLI previews. Native resume/replay reverify provenance. Root dependencies cover scope membership; child dependencies cover supplied source rows. Foreign rows skip with a remedy. Public-tracker copy measurement: 23 public items, 2 scoped, 3 original logical calls / 5 scripted protocol requests, 2 reused subanswers / 0 new requests, one changed revision caused one dependent refusal while one independent child reused, new counters all zero, compact JSON 944 bytes; source archive unchanged. Fixture validates protocol and provenance, not model quality. First publication interleavings passed 10 before/after boundaries; native custom-status and peer-completion tests added."
@@ -47,4 +52,5 @@ docs[3]{path,scope}:
   docs/verified-subanswer-reuse-validation.json,project
   examples/verified-subanswer-reuse.ts,project
   README.md,project
+close_reason: "Delivered by PR #28 (b4e6e2f): Reuse verified subanswers across runs without new model calls"
 body: ""
