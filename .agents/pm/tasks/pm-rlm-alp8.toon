@@ -2,13 +2,18 @@ id: pm-rlm-alp8
 title: Verify SDK adoption boundaries for recursive run ownership and scoped reads
 description: "Address both unused SDK findings from the 2026-10-25 audit: adopt process-start-aware SDK leases with safe long-call lifetime and checkpoint fencing; preserve immutable consent-scoped exact filters unless an equivalent SDK API exists. Prove parity on public tracker copies, verify history after primed caches, retain full coverage and npm/Bun release gates."
 type: Task
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-25T18:03:55.682Z"
-updated_at: "2026-10-25T18:28:06.642Z"
+updated_at: "2026-10-30T14:23:51.110Z"
+closed_at: "2026-10-30T14:23:48.388Z"
+completed_at: "2026-10-25T19:04:17.000Z"
 author: codex-agent
 parent: pm-rlm-a1ih
+resolution: "Delivered by PR #27 (6ee1966): Keep RLM history corruption detectable after SDK cache priming"
+expected_result: Verify SDK adoption boundaries for recursive run ownership and scoped reads
+actual_result: "PR #27 merged at 2026-10-25T19:04:17Z as 6ee1966; required CI passed on the merged head."
 comments[9]{created_at,author,text}:
   "2026-10-25T18:04:58.970Z",codex-agent,"Orientation: searched SDK, adoption, adopt and reuse; no existing SDK-adoption item found. Related delivered SDK ledger item: pm-rlm-6a8t; parent pm-rlm-a1ih. Audit ledger.ts:240-269 cannot be replaced under the pinned dependency policy: @unbrained/pm-cli 2026.10.20 exports acquireLock but not acquireLockLease or LockLease.fence (confirmed declarations and runtime namespace). The current 2026.10.25 host has the API, but importing it from the host or bumping the pin would violate the queue rules. Missing pinned SDK APIs: acquireLockLease and LockLease.fence. Retain the current runtime owner until a dependency update; any later adoption needs a long-model-call lifetime policy and fencing at publication, not a short TTL substitution."
   "2026-10-25T18:05:04.671Z",codex-agent,"Audit environment.ts:20-28 retained deliberately: matches evaluates an immutable consent-scoped snapshot with exact string predicates. parseMultiValueFilter accepts a comma/OR grammar and cannot preserve that behavior; a live PmClient list would bypass the frozen source boundary. Missing equivalent SDK API: a pure predicate evaluator over caller-owned frozen item snapshots with exact literal type/status/parent/tag strings and the current full-item text semantics. No dependency bump or grammar expansion authorized. Verification plan: public tracker origin/main build versus candidate build, read-only non-git copies, real SDK cache priming followed by history corruption, targeted regressions and unchanged 100-percent coverage gates."
@@ -30,4 +35,5 @@ tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
 docs[2]{path,scope}:
   docs/sdk-adoption-validation.json,project
   docs/SDK-ADOPTION.md,project
+close_reason: "Delivered by PR #27 (6ee1966): Keep RLM history corruption detectable after SDK cache priming"
 body: ""

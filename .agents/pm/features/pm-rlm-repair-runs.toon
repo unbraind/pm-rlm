@@ -2,14 +2,19 @@ id: pm-rlm-repair-runs
 title: Repair only unsupported answer components within a fresh budget
 description: "Evidence-directed repair resumes declared gaps while retaining valid supported components. Overlap check: host SDK provides certified reads, transactions, history, status roles and leases; pm-rlm evidence diagnoses gaps, adaptive plans initial work, reuse selects one complete call, reconciliation compares arms; pm-evidence manages citations and pm-rl evaluates policies. None schedules targeted repair of a partially supported answer."
 type: Feature
-status: in_progress
+status: closed
 priority: 2
 tags: []
 created_at: "2026-10-27T14:27:23.277Z"
-updated_at: "2026-10-29T01:25:37.882Z"
+updated_at: "2026-10-30T14:24:42.545Z"
+closed_at: "2026-10-30T14:24:38.446Z"
+completed_at: "2026-10-29T02:09:04.000Z"
 author: codex-agent
 acceptance_criteria: "One unsupported part among ten causes work only for that part and invalidated dependencies; budget exhaustion retains the supported answer with named gaps; no missing part is silently dropped. Typed SDK and CLI, compact TOON/JSON, strict schemas and remedies, no-git real public corpus validation, seeded state and interleaving evidence, npm and Bun CI gates."
 parent: pm-rlm-a1ih
+resolution: "Delivered by PR #39 (727fcb8): Repair unsupported answer components while retaining supported evidence"
+expected_result: "One unsupported part among ten causes work only for that part and invalidated dependencies; budget exhaustion retains the supported answer with named gaps; no missing part is silently dropped. Typed SDK and CLI, compact TOON/JSON, strict schemas and remedies, no-git real public corpus validation, seeded state and interleaving evidence, npm and Bun CI gates."
+actual_result: "PR #39 merged at 2026-10-29T02:09:04Z as 727fcb8; required CI passed on the merged head."
 comments[42]{created_at,author,text}:
   "2026-10-27T14:28:00.396Z",codex-agent,"Design: explicit caller component DAG and source dependencies; native run per targeted component, fresh shared accounting, persistent revision-fenced repair controller, current SDK source revalidation before inference/retry, transitive skip propagation, original evidence retained with origin run references. No new import, export or sync command; journal interchange and native ledger round trips will be model-tested. Tests use only deterministic model adapters, real SDK trackers."
   "2026-10-27T14:51:10.363Z",codex-agent,"Public protocol-fixture validation passed on a verified read-only copy of unbraind/pm-lint at f2c20efa78139f4071f3dd08d317bea05337fe28: 12 source items, 54941 source JSON bytes, 30 unchanged read-only files. Ten components: one scheduled, nine reused, ten supported, one logical child, two model requests, 8181 charged tokens; resume adds zero requests. Zero budget retains nine supported answers and one named gap. Compact JSON is 2918 bytes. No external inference or runtime Git."
@@ -130,4 +135,5 @@ docs[3]{path,scope}:
   docs/EVIDENCE-DIRECTED-REPAIR.md,project
   docs/repair-validation.json,project
   examples/evidence-directed-repair.ts,project
+close_reason: "Delivered by PR #39 (727fcb8): Repair unsupported answer components while retaining supported evidence"
 body: ""
