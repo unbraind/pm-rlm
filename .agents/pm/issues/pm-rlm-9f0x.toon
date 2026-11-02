@@ -6,9 +6,7 @@ status: in_progress
 priority: 2
 tags[3]: "gh:unbraind/pm-rlm#49",provenance,sync
 created_at: "2026-11-02T09:18:24.673Z"
-updated_at: "2026-11-02T09:41:53.257Z"
-assignee: pi-glm
-claim_principal: pi-glm
+updated_at: "2026-11-02T09:42:31.636Z"
 author: pi-glm
 comments[1]{created_at,author,text}:
   "2026-11-02T09:41:53.256Z",pi-glm,"Duplicate #4 and #5 ownership reconciled. Both competing records no longer lead their descriptions with 'GitHub issue <url>' (the source references are preserved in prose), each gained a related dependency to its imported record, and both stay closed. The imported records keep the gh: tags and github_url as sole owners. Measurement — before: failing run https://github.com/unbraind/pm-rlm/actions/runs/41297675184 (2026-11-01T10:29Z, 'GitHub issue #5 has multiple existing owners'; #4 had the same competing shape). After: the same gated dry-run the scheduled workflow runs (pm-github 2026.10.29 as pinned by the reusable workflow) passes against this branch's tracker: fetched 6, planned 6, import 0, update 6, skip 0, provenance-indexed 10, and issues #4 and #5 resolve uniquely to their imported records via provenance-tag. The command is linked as a passing test; its pm-test receipt runs in pm's isolated seeded workspace, so the reconciliation numbers here come from the direct dry-run against this checkout. GitHub API budget was checked before measuring (core remaining above the 1500 floor). Guard unchanged; item stays open for orchestrator close after merge."
