@@ -2,12 +2,17 @@ id: pm-rlm-github-dfe63798395a-38
 title: Update fatal-child behavioral revert target after ledger retry wrapper change
 description: "GH issue #38: https://github.com/unbraind/pm-rlm/issues/38 · author @unbraind · created 2026-10-27T15:50:48Z · updated 2026-10-28T19:13:35Z"
 type: Issue
-status: open
+status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-rlm#38","github_author:unbraind"
 created_at: "2026-10-27T15:50:48Z"
-updated_at: "2026-10-29T10:13:45.252Z"
+updated_at: "2026-11-02T09:27:34.455Z"
+closed_at: "2026-11-02T09:27:34.374Z"
+completed_at: "2026-11-02T09:27:34.374Z"
 author: pm-github
+comments[1]{created_at,author,text}:
+  "2026-11-02T09:18:17.985Z",pi-glm,"Triage 2026-11-02 (missed-watch sweep): FIXED on main, suitable for closure. The behavioral-revert proof targets (test/review-r4-revert.ts, test/reconcile-revert.ts) were updated together with the history-fenced ledger writer in the merged PR #39 head (merge 727fcb8, 2026-10-29); the later counterproof targets reported against pre-merge heads were resolved before merge. Main runs the shallow-clone revert gates green: CI run 41082228407 (2026-10-30T15:36Z)."
+close_reason: PR #39 (merge 727fcb8) updated the revert-proof targets for the history-fenced writer; main CI run 41082228407 green. GitHub issue #38 closed with this evidence.
 github_close_reason: ""
 github_closed_at: ""
 github_created_at: "2026-10-27T15:50:48Z"

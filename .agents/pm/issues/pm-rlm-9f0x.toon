@@ -1,0 +1,23 @@
+id: pm-rlm-9f0x
+title: Reconcile duplicate ownership of GitHub issue #5 blocking the gated tracker sync
+description: "Tracks gh:unbraind/pm-rlm#49 (filed 2026-11-01, missed by the blind issue watch). The scheduled gated sync still fails the ownership preflight ('GitHub issue #5 has multiple existing owners') on current main: two closed records both claim the source issue — the imported issue item holds the gh: tag/github_url, and the other closed record (pm-rlm-sr0b) begins its description with the source issue URL, which the identity contract treats as a competing ownership declaration. Latest failing run 41297675184 (2026-11-01T10:29Z, pm-github 2026.10.29); the 10-31 run passed, the 11-01 run after the sync-workflow bump refuses again. Reconcile exactly one import owner with supported PM operations while preserving both records' knowledge, evidence and durable history (reword the competing description or convert it to a structured relationship); keep the fail-closed guard."
+type: Issue
+status: closed
+priority: 2
+tags[3]: "gh:unbraind/pm-rlm#49",provenance,sync
+created_at: "2026-11-02T09:18:24.673Z"
+updated_at: "2026-11-02T15:48:04.794Z"
+closed_at: "2026-11-02T15:48:04.755Z"
+completed_at: "2026-11-02T15:48:04.755Z"
+author: pi-glm
+comments[1]{created_at,author,text}:
+  "2026-11-02T09:41:53.256Z",pi-glm,"Duplicate #4 and #5 ownership reconciled. Both competing records no longer lead their descriptions with 'GitHub issue <url>' (the source references are preserved in prose), each gained a related dependency to its imported record, and both stay closed. The imported records keep the gh: tags and github_url as sole owners. Measurement — before: failing run https://github.com/unbraind/pm-rlm/actions/runs/41297675184 (2026-11-01T10:29Z, 'GitHub issue #5 has multiple existing owners'; #4 had the same competing shape). After: the same gated dry-run the scheduled workflow runs (pm-github 2026.10.29 as pinned by the reusable workflow) passes against this branch's tracker: fetched 6, planned 6, import 0, update 6, skip 0, provenance-indexed 10, and issues #4 and #5 resolve uniquely to their imported records via provenance-tag. The command is linked as a passing test; its pm-test receipt runs in pm's isolated seeded workspace, so the reconciliation numbers here come from the direct dry-run against this checkout. GitHub API budget was checked before measuring (core remaining above the 1500 floor). Guard unchanged; item stays open for orchestrator close after merge."
+files[2]{path,scope,note}:
+  .agents/pm/issues/pm-rlm-k7tv.toon,project,de-owned duplicate GH4 claim
+  .agents/pm/issues/pm-rlm-sr0b.toon,project,de-owned duplicate GH5 claim
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  pm github import unbraind/pm-rlm --state all --atomic --gate --dry-run --with-comments --json,project,pi-glm,"2026-11-02T09:40:49.071Z",local_mutation,chore/triage-1102-issues
+docs[1]{path,scope,note}:
+  .github/workflows/pm-github-sync.yml,project,scheduled gated sync caller
+close_reason: "Duplicate GitHub #4 and #5 ownership removed on this branch (pm-rlm-k7tv and pm-rlm-sr0b no longer lead with the issue URLs and link their imported records as related). Before: scheduled sync run 41297675184 refused with multiple existing owners. After: the same gated dry-run (pm-github 2026.10.29) passes against this tracker with import 0, update 6, skip 0. The merged result is re-checked by dispatching the scheduled sync after merge."
+body: ""

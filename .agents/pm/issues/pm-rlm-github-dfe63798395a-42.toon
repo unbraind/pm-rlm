@@ -2,12 +2,17 @@ id: pm-rlm-github-dfe63798395a-42
 title: Plain replay skips execution-refusal integrity validation
 description: "GH issue #42: https://github.com/unbraind/pm-rlm/issues/42 · author @unbraind · created 2026-10-28T19:12:44Z · updated 2026-10-28T19:13:04Z"
 type: Issue
-status: open
+status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-rlm#42","github_author:unbraind"
 created_at: "2026-10-28T19:12:44Z"
-updated_at: "2026-10-29T10:13:45.242Z"
+updated_at: "2026-11-02T09:27:35.937Z"
+closed_at: "2026-11-02T09:27:35.839Z"
+completed_at: "2026-11-02T09:27:35.839Z"
 author: pm-github
+comments[1]{created_at,author,text}:
+  "2026-11-02T09:18:19.273Z",pi-glm,"Triage 2026-11-02 (missed-watch sweep): FIXED on main, suitable for closure. src/engine.ts now validates recorded refusals unconditionally again: the run path awaits this.validateRecorded() after the reuse/replay block, and replayRlm() calls validateRecorded(false, true) before traversal (the regression that skipped plain-run integrity validation is gone from current main). Landed via PR #39 (merge 727fcb8, 2026-10-29). Green run exercising the replay/refusal-tampering suite on main: CI run 41082228407 (2026-10-30T15:36Z)."
+close_reason: PR #39 (merge 727fcb8) validates recorded refusals unconditionally again; main CI run 41082228407 green. GitHub issue #42 closed with this evidence.
 github_close_reason: ""
 github_closed_at: ""
 github_created_at: "2026-10-28T19:12:44Z"
