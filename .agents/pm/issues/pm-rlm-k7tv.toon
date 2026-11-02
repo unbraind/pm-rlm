@@ -1,18 +1,20 @@
 id: pm-rlm-k7tv
 title: Record terminal typed failures for child calls
-description: "GitHub issue: https://github.com/unbraind/pm-rlm/issues/4. Successful roots currently retain unfinished children after a typed child model refusal."
+description: "Successful roots currently retain unfinished children after a typed child model refusal. Record terminal typed failures for child calls so every materialized child reaches a completed result or terminal refusal evidence before its parent handles it. Source request: unbraind/pm-rlm#4 (GitHub identity owned by the imported record pm-rlm-github-dfe63798395a-4)."
 type: Issue
 status: closed
 priority: 2
 tags: []
 created_at: "2026-10-18T21:15:53.713Z"
-updated_at: "2026-10-21T19:27:51.692Z"
+updated_at: "2026-11-02T09:35:11.431Z"
 closed_at: "2026-10-21T19:27:44.668Z"
 completed_at: "2026-10-21T19:27:44.668Z"
 author: codex-agent
 estimated_minutes: 180
 acceptance_criteria: Every materialized child reaches completed result or terminal typed refusal evidence before its parent handles that refusal; successful runs replay byte-identically and resume without retrying terminal failed calls; cover transport and child context refusals.
 parent: pm-rlm-a1ih
+dependencies[1]{id,kind,created_at,author,source_kind,author_source}:
+  pm-rlm-github-dfe63798395a-4,related,"2026-11-02T09:35:11.079Z",pi-glm,"cli:update:dep",detected
 comments[5]{created_at,author,text}:
   "2026-10-18T21:23:58.470Z",codex-agent,"Regression reproduces issue #4 using a real SDK tracker and deterministic LM only. Repeated spawn of a terminal model/budget-refused digest makes one child inference, closes the child with RLM refusal evidence, and both replay and resume return the root answer without new inference. Also cover a context refusal before child inference and replay tampering of the typed refusal code."
   "2026-10-18T21:30:49.384Z",codex-agent,"Behavioral revert proof: node test/revert.ts passed 6/6 mutations with exact source hash restoration. Removing only the child terminal-failure assignment makes the issue #4 regression fail with ERR_ASSERTION (exit 1). Typed model refusal, repeated digest reuse, real child context refusal, closure evidence, replay and resume are covered in test/review.test.ts. Legacy completed checkpoints with unfinished children now fail closed as incomplete instead of reporting recovery."
