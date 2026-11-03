@@ -165,5 +165,8 @@
   "duplicationGate": {
     "threshold": 0,
     "minTokens": 50
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
   }
 }
