@@ -26,7 +26,6 @@
 
 ### Fixed
 
-- Reconcile duplicate ownership of GitHub issue \#5 blocking the gated tracker sync ([pm-rlm-9f0x](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-9f0x.toon))
 - SDK commit fence delays dead-owner crash recovery beyond the default lock wait ([pm-rlm-sdk-dead-fence](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-sdk-dead-fence.toon))
 - Report unknown interrupted child counts and run validation portably ([pm-rlm-cu](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-cu.toon))
 - Reduce full-snapshot ledger storage amplification for large repeated runs ([pm-rlm-3isb](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-3isb.toon))
@@ -41,8 +40,8 @@
 
 ### Closed
 
-- Closed: Plain replay skips execution-refusal integrity validation ([pm-rlm-github-dfe63798395a-42](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-42.toon))
-- Closed: Update fatal-child behavioral revert target after ledger retry wrapper change ([pm-rlm-github-dfe63798395a-38](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-38.toon))
 - Closed: Dead-owner retry can start a new mutation after its total retry budget expires ([pm-rlm-github-dfe63798395a-37](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-37.toon))
+- Closed: Update fatal-child behavioral revert target after ledger retry wrapper change ([pm-rlm-github-dfe63798395a-38](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-38.toon))
+- Closed: Plain replay skips execution-refusal integrity validation ([pm-rlm-github-dfe63798395a-42](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-42.toon))
 - Closed: Checkpoint validation rejects engine-generated empty response steps and blocks recovery ([pm-rlm-github-dfe63798395a-5](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-5.toon))
 - Closed: Failed recursive child leaves successful runs unreplayable and unrecovered ([pm-rlm-github-dfe63798395a-4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-4.toon))
