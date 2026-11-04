@@ -17,7 +17,7 @@ const answer = JSON.stringify({ action: 'answer', components: [{ component: 'tit
 /** Capture actual producer refusals, including terminal-child and completion-hook receipts. */
 async function corpus(t: Parameters<typeof tracker>[0]) {
   const fixture = await tracker(t);
-  const id = (await fixture.client.create({ title: 'Public refusal source', parent: 'none' })).item.id;
+  const id = (await fixture.client.create({ title: 'Public refusal source', unset: ['parent'] })).item.id;
   const rows: { state: RlmState; model: ScriptedModel; location: 'observation' | 'failure' | 'completion_refusal' }[] = [];
   for (const scenario of ['parse', 'tool', 'witness', 'component', 'child', 'hook']) {
     const model = new ScriptedModel(request => {

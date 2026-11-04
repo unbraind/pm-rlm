@@ -24,7 +24,7 @@ export function repairModel(id: string, component?: string): ScriptedModel {
 export async function repairFixture(t: TestContext, size = 3, settings: Partial<RlmSettings> = {}) {
   const setup = await tracker(t);
   const ids: string[] = [];
-  for (let index = 0; index < size; index++) ids.push((await setup.client.create({ title: `Source ${index}`, type: 'Issue', parent: 'none', tags: 'source', description: `line ${index}\r\n content ` })).item.id);
+  for (let index = 0; index < size; index++) ids.push((await setup.client.create({ title: `Source ${index}`, type: 'Issue', unset: ['parent'], tags: 'source', description: `line ${index}\r\n content ` })).item.id);
   const parts: RlmRepairPart[] = ids.map((id, index) => ({ name: `part${index}`, question: `Explain source ${index}`, depends_on: [], sources: [id] }));
   const model = new ScriptedModel(request => {
     const input = repairPrompt(request);

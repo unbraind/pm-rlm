@@ -7,7 +7,7 @@ import type { ModelRequest, RlmModel, RlmRepairResult } from '../index.ts';
 const workspace = process.env.PM_PATH!;
 const client = new PmClient({ pmRoot: workspace, author: 'budget-consumer', noExtensions: true });
 const ids: string[] = [];
-for (let index = 0; index < 3; index++) ids.push((await client.create({ title: `Budget source ${index}`, parent: 'none', description: 'Public synthetic evidence' })).item.id);
+for (let index = 0; index < 3; index++) ids.push((await client.create({ title: `Budget source ${index}`, unset: ['parent'], description: 'Public synthetic evidence' })).item.id);
 const parts = ids.map((id, index) => ({ name: `budget${index}`, question: `Explain evidence ${index}`, sources: [id], depends_on: [] }));
 /** Decode the model protocol without accessing any host installation internals. */
 function protocol(request: ModelRequest): { question: string; transcript: { observation: { data: { digest: string } } }[] } {

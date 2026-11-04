@@ -16,7 +16,7 @@ import type { PmClient } from '@unbrained/pm-cli/sdk';
 
 /** Native import of a malformed initial intent must be refused before new execution. */
 async function imported(client: PmClient, checkpoint: RlmRepairCheckpoint): Promise<string> {
-  return (await client.create({ title: 'Imported repair intent', type: 'Task', parent: 'none', tags: 'rlm:question,rlm:repair', description: 'RLM repair v1\n' + JSON.stringify(checkpoint) })).item.id;
+  return (await client.create({ title: 'Imported repair intent', type: 'Task', unset: ['parent'], tags: 'rlm:question,rlm:repair', description: 'RLM repair v1\n' + JSON.stringify(checkpoint) })).item.id;
 }
 
 /** Verify only the damaged prior child and its dependent are unavailable. */
@@ -195,7 +195,7 @@ test('uncertain repair budgets retain completed peers and skip only unfinished w
 /** An existing unrelated row cannot be materialized as a call from imported native progress. */
 test('foreign native subcalls are refused without changing their SDK fields', async t => {
   const { workspace, request, client } = await repairFixture(t, 1);
-  const foreign = (await client.create({ title: 'Unrelated native record', parent: 'none' })).item;
+  const foreign = (await client.create({ title: 'Unrelated native record', unset: ['parent'] })).item;
   const before = (await client.get(foreign.id, { depth: 'full' })).item;
   const ledger = new RlmLedger(workspace); const unlock = await ledger.lease(request.source);
   try {

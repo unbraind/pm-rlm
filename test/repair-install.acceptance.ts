@@ -12,8 +12,8 @@ import { verifyPackedRepairBudget } from './repair-consumer.ts';
 /** Run one isolated consumer command; all diagnostics stay local to the disposable fixture. */
 function invoke(executable: string, argv: string[], cwd: string, env: NodeJS.ProcessEnv): string {
   const result = spawnSync(executable, argv, { cwd, env, encoding: 'utf8', timeout: 300000 });
-  assert.equal(result.status, 0, result.stdout + result.stderr);
   assert.equal(result.error, undefined);
+  assert.equal(result.status, 0, result.stdout + result.stderr);
   return result.stdout;
 }
 
@@ -43,7 +43,7 @@ for (const manager of ['npm', 'bun']) test(`packed repair works through ${manage
   writeFileSync(join(project, 'fixture.ts'), `import { runRlm, repairRlm } from 'pm-rlm';
 import { PmClient } from '@unbrained/pm-cli/sdk';
 const workspace = process.env.PM_PATH!;
-const source = (await new PmClient({ pmRoot: workspace, noExtensions: true }).create({ title: 'Global packed source', parent: 'none' })).item.id;
+const source = (await new PmClient({ pmRoot: workspace, noExtensions: true }).create({ title: 'Global packed source', unset: ['parent'] })).item.id;
 const result = await runRlm('Complete the source component', { workspace, scope: { ids: [source] }, components: ['source'], model: { name: 'packed-repair', complete: async () => ({ text: JSON.stringify({ action: 'answer', components: [{ component: 'source', status: 'unsupported', answer: '', reason: 'Fixture gap', witnesses: [] }] }), tokens_in: 20, tokens_out: 10 }) } });
 const parts = [{ name: 'source', question: 'What is established?', sources: [source], depends_on: [] }];
 const receipt = await repairRlm({ source: result.run, parts, budget_tokens: 0 }, { workspace });

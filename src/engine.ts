@@ -477,7 +477,7 @@ export async function prepareRlmRun(question: string, options: RlmRunOptions, co
   const ledger = new RlmLedger(options.workspace, options.author);
   await ledger.registerFields();
   const run = runId ?? await ledger.newRunId();
-  const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', parent: 'none', tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
+  const questionItem = options.question_item ?? (await ledger.client.create({ title: 'RLM question', type: 'Task', unset: ['parent'], tags: 'rlm:question', description: question, allowDuplicate: true })).item.id;
   const state: RlmState = { version: 1, ...RLM_VERSIONS, run, question, settings, scope, snapshot, certificate: corpus.complete_list, ...(options.snapshot_only === true || reuse_identity !== undefined ? { snapshot_only: true } : {}), ...(reuse_identity === undefined ? {} : { reuse_identity }), ...(reuse_selection === undefined ? {} : { reuse_selection }), calls: [], reserved_tokens: 0, ...(components === undefined ? {} : { components }) };
   const slice = emptyRootSlice();
   state.calls.push({ id: run, parent: questionItem, depth: 0, subgoal: question, slice, digest: promptDigest(question, slice, settings), steps: [] });

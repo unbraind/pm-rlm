@@ -173,7 +173,7 @@ test('repair skips foreign child identities and refuses changed source ledgers',
   await assert.rejects(repairRlm(request, { workspace, model, on_transition: (name, id) => { run = id; if (name === 'intent:part2') throw new Error('crash'); } }), RlmRepairError);
   const state = await checkpoint(workspace, run);
   const id = state.targets[2].child;
-  await client.create({ id, title: 'Foreign native record', parent: 'none' });
+  await client.create({ id, title: 'Foreign native record', unset: ['parent'] });
   const before = (await client.get(id, { depth: 'full' })).item;
   assert.deepEqual(repaired(await resumeRepairRlm(run, { workspace, model })).gaps, ['part0', 'part2']);
   assert.deepEqual((await client.get(id, { depth: 'full' })).item, before);

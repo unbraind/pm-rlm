@@ -1,0 +1,19 @@
+id: pm-rlm-collector-contention
+title: Investigate collector lease contention during complete coverage
+description: "On SDK 2026.11.4, the complete coverage run reports storage lease serializes collectors and bounds busy waits failing after 2835 ms, followed by asynchronous incomplete rejection. The same isolated real-SDK case passes 1/1 in 883 ms. The root cause is unconfirmed; do not attribute this to the SDK or alter bounds without a reproducible counterexample."
+type: Issue
+status: open
+priority: 2
+tags[3]: concurrency,follow-up,validation
+created_at: "2026-11-04T20:04:24.108Z"
+updated_at: "2026-11-04T20:05:36.219Z"
+author: codex-toolchain-1104
+acceptance_criteria: "Reproduce the complete-run failure with explicit error context; distinguish scheduler contention from a production ownership defect; preserve collector serialization, exact fake-clock assertion and all wait bounds."
+comments[1]{created_at,author,text}:
+  "2026-11-04T20:05:26.972Z",codex-toolchain-1104,"The isolated case passes twice, including a linked tracker-run reproduction. Complete coverage still reported one failure plus asynchronous incomplete activity; its detailed cause is not established. The remaining complete run was canceled within the package budget, and partial reports were removed. Follow-up remains open; no source workaround or bound change is proposed."
+files[2]{path,scope,note}:
+  src/ledger.ts,project,Storage lease and release path under investigation
+  test/ledger-storage.test.ts,project,Complete-run failure; isolated case passes
+tests[1]{command,scope,timeout_seconds,provenance{author,created_at,source_kind,source_ref}}:
+  nice -n 10 node --test --test-name-pattern=storage.lease.serializes test/ledger-storage.test.ts,project,180,codex-toolchain-1104,"2026-11-04T20:04:35.978Z",local_mutation,dependabot/npm_and_yarn/pm-toolchain-f7b0fd4832
+body: ""
