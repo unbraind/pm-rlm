@@ -6,13 +6,32 @@ status: open
 priority: 3
 tags: []
 created_at: "2026-10-26T21:57:04.245Z"
-updated_at: "2026-10-26T21:57:19.470Z"
+updated_at: "2026-11-04T20:05:23.622Z"
 author: codex-agent
 acceptance_criteria: Both packed consumers complete all existing checks within unchanged bounds; distinguish assertion failures from timeouts.
-comments[1]{created_at,author,text}:
+comments[3]{created_at,author,text}:
   "2026-10-26T21:57:19.467Z",codex-agent,"Separate npm run test:install result: npm consumer failed after 996076.562189 ms because eval-sdk.ts exceeded its unchanged 300000 ms subprocess limit; Bun consumer passed all installed SDK/CLI checks in 375765.42913 ms. Total 2 cases, 1 pass and 1 failure, no cancellations or skips. This is a timeout receipt, not evidence of a failed evaluation assertion. No deadline or test change was applied."
-files[1]{path,scope}:
-  test/install.acceptance.ts,project
-tests[1]{command,scope,provenance{author,created_at,source_kind}}:
-  "npm run test:install",project,codex-agent,"2026-10-26T21:57:14.488Z",local_mutation
+  "2026-11-04T19:54:42.103Z",codex-toolchain-1104,"New SDK 2026.11.4 toolchain candidate: complete packed run reports 3/4 passing; npm and Bun local consumers pass, npm-global repair passes, Bun-global repair returns null status in repair-budget-consumer.ts under the unchanged 300000 ms per-command bound. Reorder the existing invoke assertions to expose the actual spawn error before checking exit status; rerun only Bun-global repair at low priority. No deadline or semantic assertion is weakened."
+  "2026-11-04T20:05:17.504Z",codex-toolchain-1104,"Isolated Bun-global repair retry passes 1/1 in 391913 ms total, including setup and every original native budget assertion, with unchanged 300000 ms individual invocation bounds. The preceding complete packed run remains a 3/4 receipt; this retry does not erase that failure or establish scheduling tolerance. Return this existing timing investigation to open for orchestrator review."
+files[2]:
+  - path: test/install.acceptance.ts
+    scope: project
+  - path: test/repair-install.acceptance.ts
+    scope: project
+    note: Expose spawn errors and isolate Bun-global retry
+tests[2]:
+  - command: "npm run test:install"
+    scope: project
+    provenance:
+      author: codex-agent
+      created_at: "2026-10-26T21:57:14.488Z"
+      source_kind: local_mutation
+  - command: nice -n 10 node --test --test-name-pattern=bun.global test/repair-install.acceptance.ts
+    scope: project
+    timeout_seconds: 900
+    provenance:
+      author: codex-toolchain-1104
+      created_at: "2026-11-04T19:54:47.537Z"
+      source_kind: local_mutation
+      source_ref: dependabot/npm_and_yarn/pm-toolchain-f7b0fd4832
 body: ""

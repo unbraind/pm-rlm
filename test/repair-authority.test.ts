@@ -284,7 +284,7 @@ test('repair untracked native allocations cannot fund additional children', asyn
 /** Foreign legacy records remain readable while changed native history cannot confer authority. */
 test('repair publisher history distinguishes legacy records from altered audit chains', async t => {
   const { workspace, client } = await tracker(t);
-  const id = (await client.create({ title: 'Previously released foreign native record', parent: 'none' })).item.id;
+  const id = (await client.create({ title: 'Previously released foreign native record', unset: ['parent'] })).item.id;
   const ledger = new RlmLedger(workspace);
   await ledger.registerFields();
   assert.equal(await ledger.publishedState(id), undefined);

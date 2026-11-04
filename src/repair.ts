@@ -236,7 +236,7 @@ async function start(input: unknown, options: RlmRepairOptions): Promise<RlmRepa
   if (options.model !== undefined && options.model.name !== origin.state.settings.model) throw new RlmRepairError();
   const checkpoint = await plan(request, origin, options.source_workspace === undefined ? ledger : new RlmLedger(options.source_workspace), options.source_workspace !== undefined);
   assertLedgerPrivacy(checkpoint, options.workspace, origin.state.settings.key_env);
-  const run = (await ledger.client.create({ type: 'Task', title: 'RLM evidence-directed repair', parent: 'none', tags: 'rlm:question,rlm:repair', description: MARKER + JSON.stringify(checkpoint), allowDuplicate: true })).item.id;
+  const run = (await ledger.client.create({ type: 'Task', title: 'RLM evidence-directed repair', unset: ['parent'], tags: 'rlm:question,rlm:repair', description: MARKER + JSON.stringify(checkpoint), allowDuplicate: true })).item.id;
   await boundary(options, 'created', run);
   return resumeRepairRlm(run, options);
 }

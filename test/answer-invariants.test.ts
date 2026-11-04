@@ -29,7 +29,7 @@ async function bytes(root: string): Promise<[string, string][]> {
 
 test('cited false counts fail independently of complete sources and unchecked prose', async t => {
   const { workspace, client } = await tracker(t);
-  const source = (await client.create({ title: 'Cited source', parent: 'none', assignee: 'none', sprint: 'none', release: 'none' })).item;
+  const source = (await client.create({ title: 'Cited source', unset: ['parent', 'assignee', 'sprint', 'release'] })).item;
   const input = contract(99);
   input.checks.push({ id: 'source-is-present', kind: 'membership', filter: {}, field: 'id', value: source.id, expected: 'present' });
   const environment = await client.listAllComplete({ includeBody: true });
@@ -49,7 +49,7 @@ test('cited false counts fail independently of complete sources and unchecked pr
 
 test('empty complete scope, excluded ledger rows and incomplete source remain distinct', async t => {
   const { workspace, client } = await tracker(t);
-  await client.create({ title: 'Foreign ledger record', tags: 'rlm:call', parent: 'none' });
+  await client.create({ title: 'Foreign ledger record', tags: 'rlm:call', unset: ['parent'] });
   const environment = await client.listAllComplete({ includeBody: true });
   const before = await bytes(workspace);
   const empty = await verifyRlmAnswer(contract(), { environment });
@@ -64,8 +64,8 @@ test('empty complete scope, excluded ledger rows and incomplete source remain di
 
 test('scope intersection, exact scalar equality and unavailable items keep independent verdicts', async t => {
   const { workspace, client } = await tracker(t);
-  const first = (await client.create({ title: 'Exact text', parent: 'none', priority: 2, tags: 'sample' })).item;
-  const second = (await client.create({ title: 'Outside scope', parent: 'none' })).item;
+  const first = (await client.create({ title: 'Exact text', unset: ['parent'], priority: 2, tags: 'sample' })).item;
+  const second = (await client.create({ title: 'Outside scope', unset: ['parent'] })).item;
   const input = contract(1); input.scope = { ids: [first.id] };
   input.checks.push(
     { id: 'not-broadened', kind: 'count', filter: { ids: [second.id] }, expected: 0 },
@@ -85,7 +85,7 @@ test('scope intersection, exact scalar equality and unavailable items keep indep
 
 test('long historical native values refuse one equality check while counts and membership still run', async t => {
   const { workspace, client } = await tracker(t);
-  const item = (await client.create({ title: 'x'.repeat(300), parent: 'none' })).item;
+  const item = (await client.create({ title: 'x'.repeat(300), unset: ['parent'] })).item;
   const input = contract(1);
   input.checks.push({ id: 'long-title', kind: 'equals', item: item.id, field: 'title', expected: 'x' });
   const report = await verifyRlmAnswer(input, { environment: await client.listAllComplete({ includeBody: true }) });
@@ -97,7 +97,7 @@ test('long historical native values refuse one equality check while counts and m
 
 test('SDK optional undefined fields and JSON omission have identical equality verdicts', async t => {
   const { client } = await tracker(t);
-  const item = (await client.create({ title: 'Optional scalar source', parent: 'none', assignee: 'none', sprint: 'none', release: 'none' })).item;
+  const item = (await client.create({ title: 'Optional scalar source', unset: ['parent', 'assignee', 'sprint', 'release'] })).item;
   const environment = await client.listAllComplete({ includeBody: true });
   const fields = ['parent', 'assignee', 'sprint', 'release'] as const;
   const input = { ...contract(), checks: fields.map(field => ({ id: field, kind: 'equals', item: item.id, field, expected: null })) };
@@ -135,7 +135,7 @@ test('strict contract refuses executable syntax, sparse arrays, extremes and unk
 
 test('supplied source boundaries reject sparse or oversized environments and isolate malformed scalar records', async t => {
   const { client } = await tracker(t);
-  const item = (await client.create({ title: 'Source', parent: 'none' })).item;
+  const item = (await client.create({ title: 'Source', unset: ['parent'] })).item;
   const environment = await client.listAllComplete({ includeBody: true });
   for (const input of [{}, { ...environment, items: Array(1) }, { ...environment, items: Array(100001) }, { ...environment, padding: 'x'.repeat(16777217) }]) {
     assert.equal((await verifyRlmAnswer(contract(), { environment: input })).source.status, 'incomplete');
@@ -210,7 +210,7 @@ function random(): () => number {
 test('500 seeded contract operation sequences compare SDK read-back state including older replays and CRLF', async t => {
   const { workspace, client } = await tracker(t);
   const next = random();
-  const parents = await Promise.all([0, 1].map(i => client.create({ title: `Parent ${i}`, parent: 'none' })));
+  const parents = await Promise.all([0, 1].map(i => client.create({ title: `Parent ${i}`, unset: ['parent'] })));
   const statuses: string[] = [];
   for (let i = 0; i < 4; i++) {
     const status = `custom_${next().toString(16)}`;
@@ -219,7 +219,7 @@ test('500 seeded contract operation sequences compare SDK read-back state includ
   const registry = resolveRuntimeStatusRegistry((await readSettings(workspace)).schema);
   assert.ok(registry);
   await client.focus(parents[next() % 2].item.id);
-  const native = (await client.create({ title: 'Source', parent: 'none', assignee: 'none', sprint: 'none', release: 'none' })).item;
+  const native = (await client.create({ title: 'Source', unset: ['parent', 'assignee', 'sprint', 'release'] })).item;
   await client.update(native.id, { dep: [`id=${parents[0].item.id},kind=related`] });
   const archive: RlmAnswerContract[] = [];
   const fields: RlmAnswerField[] = ['id', 'title', 'type', 'status', 'priority', 'parent', 'assignee', 'sprint', 'release'];
@@ -228,7 +228,7 @@ test('500 seeded contract operation sequences compare SDK read-back state includ
   for (let sequence = 0; sequence < 500; sequence++) {
     if (sequence % 25 === 0) {
       await client.focus(parents[next() % 2].item.id);
-      await client.update(native.id, { title: `  Source ${next() % 5}\r\n title  `, status: statuses[next() % 4], closeReason: 'Model fixture', parent: sequence % 50 === 0 ? parents[0].item.id : 'none', priority: next() % 5, assignee: `agent-${next() % 3}`, sprint: `sprint-${next() % 4}`, release: `release-${next() % 3}`, tags: `sample,tag-${next() % 3}` });
+      await client.update(native.id, { title: `  Source ${next() % 5}\r\n title  `, status: statuses[next() % 4], closeReason: 'Model fixture', ...(sequence % 50 === 0 ? { parent: parents[0].item.id } : { unset: ['parent'] }), priority: next() % 5, assignee: `agent-${next() % 3}`, sprint: `sprint-${next() % 4}`, release: `release-${next() % 3}`, tags: `sample,tag-${next() % 3}` });
       environment = await client.listAllComplete({ includeBody: true });
     }
     const rows = environment.items;
@@ -267,7 +267,7 @@ test('500 seeded contract operation sequences compare SDK read-back state includ
 
 test('concurrent verification owns no shared tracker state and detaches supplied inputs', async t => {
   const { client, workspace } = await tracker(t);
-  const item = (await client.create({ title: 'Before peer mutation', parent: 'none' })).item;
+  const item = (await client.create({ title: 'Before peer mutation', unset: ['parent'] })).item;
   const environment = await client.listAllComplete({ includeBody: true });
   const input = { ...contract(1), checks: [{ id: 'title', kind: 'equals', item: item.id, field: 'title', expected: item.title }] };
   const before = await bytes(workspace);

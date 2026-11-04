@@ -11,7 +11,7 @@ import { verifyRlmAnswer, parseAnswerContract } from 'pm-rlm';
 import { writeFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const client = new PmClient({ pmRoot: process.env.PM_PATH, noExtensions: true });
-const item = (await client.create({ title: 'Packed invariant source', parent: 'none', assignee: 'none', sprint: 'none', release: 'none' })).item;
+const item = (await client.create({ title: 'Packed invariant source', unset: ['parent', 'assignee', 'sprint', 'release'] })).item;
 const environment = await client.listAllComplete({ includeBody: true });
 const contract = parseAnswerContract({ version: 'answer-invariants-v1', answer: 'One cited source.', scope: { ids: [item.id] }, checks: [
   { id: 'count', kind: 'count', filter: {}, expected: 1 },

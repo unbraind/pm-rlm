@@ -90,7 +90,7 @@ test('repair source chains enforce depth and revision contracts and reject pendi
     const located = await locateItem(workspace, previous);
     const parsed = await readLocatedItem(located!);
     clone.source_revision = blobDigest(JSON.stringify([hashDocument(parsed.document), hashHistoryStream(await readHistoryEntries(getHistoryPath(workspace, previous), previous))]));
-    previous = (await client.create({ title: `Source chain ${index}`, parent: 'none', tags: 'rlm:question,rlm:repair', description: 'RLM repair v1\n' + JSON.stringify(clone) })).item.id;
+    previous = (await client.create({ title: `Source chain ${index}`, unset: ['parent'], tags: 'rlm:question,rlm:repair', description: 'RLM repair v1\n' + JSON.stringify(clone) })).item.id;
   }
   let depth = 0;
   await assert.rejects(repairRlm({ ...request, source: previous }, { workspace, on_transition: name => { if (name === 'source:read') depth++; } }), { code: 'evidence' });
@@ -163,14 +163,14 @@ test('late foreign child transitions never mutate the peer record or free its bu
     if (name !== 'intent:part2') return;
     const controller = (await client.get(run, { depth: 'full' })).item;
     foreign = JSON.parse(controller.description!.slice('RLM repair v1\n'.length)).targets[2].child;
-    await client.create({ id: foreign, title: 'Peer record', parent: 'none' });
+    await client.create({ id: foreign, title: 'Peer record', unset: ['parent'] });
     snapshot = (await client.get(foreign, { depth: 'full' })).item;
   } }));
   assert.deepEqual(occupied.gaps, ['part2']); assert.equal(occupied.budget.remaining, 0);
   assert.deepEqual((await client.get(foreign, { depth: 'full' })).item, snapshot);
   let child = '';
   const response = repairModel(ids[2]);
-  for (const patch of [{ rlmRun: 'foreign' }, { tags: 'foreign' }, { parent: 'none' }]) {
+  for (const patch of [{ rlmRun: 'foreign' }, { tags: 'foreign' }, { unset: ['parent'] }]) {
     const model = new ScriptedModel(async input => {
       await client.run('update', { id: child, options: patch });
       snapshot = (await client.get(child, { depth: 'full' })).item;

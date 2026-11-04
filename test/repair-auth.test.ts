@@ -183,7 +183,7 @@ test('settled evidence usage cannot exceed its producer reservation or total bud
 /** A recorded successful history action cannot bypass the immutable source policy on replay. */
 test('read verification revalidates immutable history policy before accepting stored observations', async t => {
   const { workspace, client } = await tracker(t);
-  const source = (await client.create({ title: 'Public history fixture', parent: 'none' })).item.id;
+  const source = (await client.create({ title: 'Public history fixture', unset: ['parent'] })).item.id;
   const model = new ScriptedModel((_request, index) => index === 0 ? JSON.stringify({ action: 'history', id: source, start: 0, end: 1 }) : '{"action":"finish","answer":"history verified"}');
   const prepared = await prepareRlmRun('Read declared history', { workspace, scope: { ids: [source] }, model });
   await prepared.engine.run();
