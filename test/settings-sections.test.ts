@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile, spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { chmod, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdirSync, readFileSync, renameSync } from 'node:fs';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { promisify } from 'node:util';
@@ -126,22 +126,32 @@ test('RLM command and library share SDK section defaults, policy and model prece
   assert.ok(history.some(entry => entry.op === 'settings:section:write' && entry.author === 'settings-author'));
 });
 
-/** A real denied write must sanitize I/O paths while restoring the fixture's exact original mode. */
+/** Force a real SDK I/O failure without permission assumptions, restoring the original file in finally. */
 test('RLM settings write sanitizes unexpected I/O failures', async t => {
-  const { workspace } = await tracker(t);
-  const mode = (await stat(workspace)).mode & 0o7777;
-  const before = await readFile(getSettingsPath(workspace), 'utf8');
+  const { root, workspace } = await tracker(t);
+  const path = getSettingsPath(workspace);
+  const saved = join(root, 'settings-before-write.json');
+  const mode = (await stat(path)).mode & 0o7777;
+  const before = await readFile(path, 'utf8');
+  let displaced = false;
   try {
-    await chmod(workspace, mode & 0o555);
-    await assert.rejects(writeRlmSettings(workspace, { model: 'denied-write' }, 'settings-test'), error => {
+    await assert.rejects(writeRlmSettings(workspace, {
+      get model() {
+        renameSync(path, saved); displaced = true;
+        mkdirSync(path);
+        return 'io-fault';
+      },
+    }, 'settings-test'), error => {
       assert.ok(error instanceof Error && 'code' in error);
       assert.equal(error.code, 'incomplete');
       assert.equal(error.message, 'Workspace data could not be written completely');
       assert.ok(!error.message.includes(workspace)); return true;
     });
-  } finally { await chmod(workspace, mode); }
-  assert.equal((await stat(workspace)).mode & 0o7777, mode);
-  assert.equal(await readFile(getSettingsPath(workspace), 'utf8'), before);
+  } finally {
+    if (displaced) { await rm(path, { recursive: true, force: true }); await rename(saved, path); }
+  }
+  assert.equal((await stat(path)).mode & 0o7777, mode);
+  assert.equal(await readFile(path, 'utf8'), before);
 });
 
 /** Native command handling retains the same section refusals as direct library configuration. */
