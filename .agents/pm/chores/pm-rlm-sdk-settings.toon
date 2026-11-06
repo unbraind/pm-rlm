@@ -1,0 +1,27 @@
+id: pm-rlm-sdk-settings
+title: Adopt revision-safe SDK settings sections
+description: "Replace private RLM settings parsing and workspace mutation with public section receipts and compare-and-set writes, retaining domain validation and flag precedence."
+type: Chore
+status: in_progress
+priority: 1
+tags[3]: concurrency,sdk-adoption,settings
+created_at: "2026-11-06T12:10:09.663Z"
+updated_at: "2026-11-06T12:25:27.767Z"
+author: codex-sol
+acceptance_criteria: "Real no-git SDK trackers cover stored/default receipts, typed malformed refusals, cross-process stale writes without history changes, sibling/core preservation and command/library parity."
+comments[4]{created_at,author,text}:
+  "2026-11-06T12:10:17.334Z",codex-sol,"Read companion pm-cli-website-8opm (G3) and pm-cli-website-m8dy (G4) without mutation. G4 names other packages; apply adapter-parity criteria only to RLM. Plan: SDK readSettingsSection/writeSettingsSection with read revision, typed host refusals, retained package validation/privacy, real no-git trackers and OS-process race tests. Installed pinned SDK 2026.11.4 exports both APIs; public registry currently reports 2026.11.6. No dependency bump planned."
+  "2026-11-06T12:15:29.498Z",codex-sol,"Implementation replaces raw settings parsing and custom mutateWorkspaceSettings with readSettingsSection/writeSettingsSection and expectedRevision. Retained defaults, numeric/model/transport validation, flag precedence and credential-reference/privacy rules because SDK sections are domain-neutral. Preserved typed malformed/invalid SDK errors. Peer and manifest floors raised to the already pinned 2026.11.4; development pin unchanged. Targeted run: 18/18 pass; typecheck and lint pass. Revert verification runs only in disposable source copies."
+  "2026-11-06T12:21:10.933Z",codex-sol,Final inspection retained the existing sanitized incomplete refusal for unexpected settings I/O failures while preserving expected SDK section errors. The malformed-data regression also uses a genuine unreadable settings document shape to verify no local path appears in the refusal. Previous isolated pm run passed both linked commands; rerunning them after this final privacy-preservation adjustment.
+  "2026-11-06T12:25:22.450Z",codex-sol,"Final verification: isolated pm test passed both linked commands (6/6 settings tests; 3/3 behavioral revert groups covering all six tests). Reverting private read behavior loses typed section errors/receipts; reverting only the writer causes both cross-process stale-write refusals and both section-history regressions to fail; fixed and restored runs pass. Winner settings bytes and workspace history remain unchanged on conflict. Earlier focused suite passed 18/18. Final typecheck, lint, build, duplication (0%) and docstring (183/183 declarations) pass; strict tracker health passes. Full unchanged-threshold npm/Bun gates and bot review will run on the PR. No SDK gap encountered. Item remains in progress for orchestrator verification."
+files[4]{path,scope}:
+  src/settings.ts,project
+  test/settings-proof.ts,project
+  test/settings-sections.test.ts,project
+  test/settings-writer.ts,project
+tests[2]{command,scope,pm_context_mode,workspace_context_mode,provenance{author,created_at,source_kind,source_ref}}:
+  node --test --test-concurrency=2 test/settings-sections.test.ts,project,none,snapshot,codex-sol,"2026-11-06T12:16:50.590Z",local_mutation,rlm-revision-safe-settings
+  node test/settings-proof.ts,project,none,snapshot,codex-sol,"2026-11-06T12:16:53.749Z",local_mutation,rlm-revision-safe-settings
+docs[1]{path,scope}:
+  README.md,project
+body: ""

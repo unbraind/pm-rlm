@@ -69,7 +69,7 @@ test('missing settings use defaults while unknown extension settings are refused
   assert.equal((await readRlmSettings(join(root, 'missing'))).max_depth, 3);
   const sdk = createExtensionCommandSdk(workspace, client, 'rlm-test');
   await sdk.mutateWorkspaceSettings({ operationId: 'bad-settings', mutate: current => ({ ...current, rlm: { unexpected: true } }) });
-  await assert.rejects(readRlmSettings(workspace), { code: 'invalid' });
+  await assert.rejects(readRlmSettings(workspace), { code: 'settings_section_invalid' });
 });
 
 /** Replay validates spawn returns and skips unfinished recorded inference without calling a model. */

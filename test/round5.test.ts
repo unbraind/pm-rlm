@@ -31,7 +31,7 @@ test('SDK read boundaries sanitize corrupt history corpus settings and lease fil
   for (const operation of [() => readCorpus(workspace), () => ledger.load(run.run), () => ledger.materialize(state, state.calls[0]), () => ledger.complete(state, state.calls[0])]) await assert.rejects(operation(), { code: 'incomplete' });
   await rm(join(workspace, 'tasks', 'unreadable.toon'), { recursive: true });
   const settings = getSettingsPath(workspace); const before = await readFile(settings);
-  await writeFile(settings, '{'); await assert.rejects(readRlmSettings(workspace), { code: 'incomplete' });
+  await writeFile(settings, '{'); await assert.rejects(readRlmSettings(workspace), { code: 'settings_section_document_malformed' });
   await writeFile(settings, before);
   const path = join(workspace, 'runtime', 'rlm-corrupt.json');
   await writeFile(path, '{'); await assert.rejects(ledger.lease('corrupt'), { code: 'incomplete' });

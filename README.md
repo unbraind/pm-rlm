@@ -145,7 +145,7 @@ Implement `RlmModel` to supply a third-party model. Its `complete({prompt, max_o
 
 The model receives the protocol, subgoal, selected slice and recorded observations. `partition` returns compact `{partition_step,index,estimated_tokens}` references in the model protocol. `spawn` takes `{subgoal,slice:{partition_step:0,index:0}}`, where the step is the zero-based transcript index of a successful partition. The engine resolves the reference to lossless authorized fragments without requiring the parent to copy their text. Explicit fragment slices are also accepted. The exported environment API continues to return full slices. Child tools can access only whole items completely represented by their slice; partial JSON fragments remain visible in the child prompt and can be subdivided for descendants. Invalid JSON, unknown actions, invalid ranges and denied reads become recorded refusals and consume a reserved model step. Depth, call count, total estimated tokens and per-prompt context all bound execution. There is no unrestricted shell, JavaScript execution, filesystem tool or hidden agent delegation.
 
-Configure the model with the audited SDK settings API:
+Configure the model with the audited SDK settings API (host SDK 2026.11.4 or later):
 
 ```ts
 import { writeRlmSettings } from 'pm-rlm';
@@ -162,6 +162,8 @@ await writeRlmSettings('.agents/pm', {
   timeout_ms: 120000,
 }, 'my-agent');
 ```
+
+`readRlmSettingsSection` exposes the SDK `source` and stored-section `revision` receipt with validated, default-filled values. `writeRlmSettings` reads that revision and passes it to `writeSettingsSection` as `expectedRevision`; a competing section write refuses with `settings_section_revision_conflict` without retry or a history append. Sibling extension sections and core settings retain their values. Malformed documents and invalid persisted sections preserve the SDK `settings_section_document_malformed` and `settings_section_invalid` refusals, including when overrides are supplied. The package retains model defaults, numeric bounds, transport safety and credential-reference/privacy policy because the host section API does not define RLM domain rules.
 
 `readRlmSettings` resolves defaults, the `rlm` section in workspace settings, then explicit overrides. The compatible adapter uses `adapter: 'openai'`, an endpoint ending in the provider's version prefix, and `key_env` naming an environment variable. It appends `/chat/completions`; Ollama appends `/api/generate`. Credentials are read only at request time and never put in settings. Endpoints cannot contain URL credentials, query strings or fragments. Remote OpenAI endpoints require HTTPS; loopback HTTP is allowed. Successful response bodies are capped at 8 MiB before JSON parsing, separately from the model output limit. Redirects are rejected before forwarding prompts, and non-OK bodies are canceled. Transport diagnostics omit raw responses, keys and paths; ledger creation and model-response checkpoints reject disclosure of the active scratch workspace or configured credential.
 

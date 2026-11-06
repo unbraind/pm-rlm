@@ -76,7 +76,7 @@
     "test:live": "node test/live-v2.ts --constrained"
   },
   "peerDependencies": {
-    "@unbrained/pm-cli": ">=2026.10.18"
+    "@unbrained/pm-cli": ">=2026.11.4"
   },
   "devDependencies": {
     "@babel/eslint-parser": "8.0.7",
