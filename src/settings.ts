@@ -1,18 +1,33 @@
-import { randomUUID } from 'node:crypto';
-import { createExtensionCommandSdk, PmClient, getSettingsPath, readFileIfExists } from '@unbrained/pm-cli/sdk';
-import { assertLedgerPrivacy, integer, record, RlmError, sdkRead, text } from './errors.ts';
+import { isPmCliExpectedError, readSettingsSection, writeSettingsSection } from '@unbrained/pm-cli/sdk';
+import type { SettingsSectionReadResult } from '@unbrained/pm-cli/sdk';
+import { assertLedgerPrivacy, integer, record, RlmError, text } from './errors.ts';
 import type { RlmSettings } from './types.ts';
+
+/** Resolve defaults, stored values and explicit flags before validating RLM domain policy. */
+function resolveRlmSettings(section: unknown, overrides: Partial<RlmSettings>): RlmSettings {
+  return validateRlmSettings({
+    model: 'gemma4:e4b', adapter: 'ollama', endpoint: 'http://localhost:11434', key_env: 'OPENAI_API_KEY',
+    max_depth: 3, max_calls: 32, budget_tokens: 300000, output_tokens: 512, context_tokens: 32768, timeout_ms: 120000,
+    ...record(section), ...overrides,
+  });
+}
+
+/** Preserve native storage receipts, then resolve package policy with explicit flag precedence. */
+export async function readRlmSettingsSection(workspace: string, overrides: Partial<RlmSettings> = {}): Promise<SettingsSectionReadResult<RlmSettings>> {
+  let section: SettingsSectionReadResult<Record<string, unknown>>;
+  try {
+    section = await readSettingsSection(workspace, 'rlm', { validate: record, defaultValue: {} });
+  } catch (error) {
+    if (isPmCliExpectedError(error)) throw error;
+    throw new RlmError('incomplete', 'Workspace data could not be read completely');
+  }
+  return { ...section, value: resolveRlmSettings(section.value, overrides) };
+}
 
 /** Resolve extension settings with explicit flags taking precedence over persisted defaults. */
 export async function readRlmSettings(workspace: string, overrides: Partial<RlmSettings> = {}): Promise<RlmSettings> {
-  const source = await sdkRead(async () => record(JSON.parse((await readFileIfExists(getSettingsPath(workspace))) ?? '{}')));
-  const section = source.rlm === undefined ? {} : record(source.rlm);
-  const config: RlmSettings = {
-    model: 'gemma4:e4b', adapter: 'ollama', endpoint: 'http://localhost:11434', key_env: 'OPENAI_API_KEY',
-    max_depth: 3, max_calls: 32, budget_tokens: 300000, output_tokens: 512, context_tokens: 32768, timeout_ms: 120000,
-    ...section, ...overrides,
-  };
-  return validateRlmSettings(config);
+  const section = await readRlmSettingsSection(workspace, overrides);
+  return validateRlmSettings(section.value);
 }
 
 /** Validate complete settings, including checkpoints, before selecting any credential transport. */
@@ -32,11 +47,16 @@ export function validateRlmSettings(value: unknown): RlmSettings {
   return config as unknown as RlmSettings;
 }
 
-/** Validate and persist settings through the SDK's audited workspace-settings transaction. */
+/** Persist validated settings using the read revision; competing writes refuse without retry. */
 export async function writeRlmSettings(workspace: string, overrides: Partial<RlmSettings>, author: string): Promise<RlmSettings> {
-  const config = await readRlmSettings(workspace, overrides);
+  const section = await readRlmSettingsSection(workspace, overrides);
+  const config = validateRlmSettings(section.value);
   assertLedgerPrivacy(config, workspace, config.key_env);
-  const sdk = createExtensionCommandSdk(workspace, new PmClient({ pmRoot: workspace, author, noExtensions: true }), author, 'rlm settings');
-  await sdk.mutateWorkspaceSettings({ operationId: randomUUID(), mutate: current => ({ ...current, rlm: config }) });
+  try {
+    await writeSettingsSection(workspace, 'rlm', config, { expectedRevision: section.revision, validate: validateRlmSettings, author });
+  } catch (error) {
+    if (isPmCliExpectedError(error)) throw error;
+    throw new RlmError('incomplete', 'Workspace data could not be written completely');
+  }
   return config;
 }

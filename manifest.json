@@ -4,7 +4,7 @@
   "description": "Recursive language models with a typed pm environment and durable call ledger",
   "author": "@unbraind",
   "entry": "./dist/index.js",
-  "pm_min_version": "2026.10.18",
+  "pm_min_version": "2026.11.4",
   "priority": 90,
   "capabilities": [
     "commands",

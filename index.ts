@@ -27,7 +27,7 @@ export { RlmError, RlmTranscriptError, estimateTokens } from './src/errors.ts';
 /** Expose the configurable Ollama and compatible HTTP transport. */
 export { HttpModel } from './src/adapters.ts';
 /** Expose settings resolution with flag precedence. */
-export { readRlmSettings, writeRlmSettings } from './src/settings.ts';
+export { readRlmSettings, readRlmSettingsSection, writeRlmSettings } from './src/settings.ts';
 /** Expose bounded evidence contracts and deterministic source witness creation. */
 export { parseComponents, sourceWitness, RlmEvidenceError } from './src/evidence.ts';
 /** Expose public environment, ledger and model contracts. */

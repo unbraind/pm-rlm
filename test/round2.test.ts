@@ -43,7 +43,7 @@ test('malformed scope JSON identifies the flag', async t => {
   await assert.rejects(runCommand('run', context), { exitCode: 2, message: 'rlm invalid: Invalid --scope JSON' });
   await assert.rejects(runCommand('run', { ...context, options: { scope: '' } }), { exitCode: 2, message: 'rlm invalid: Expected nonempty text' });
   await writeFile(getSettingsPath(workspace), '{');
-  await assert.rejects(runCommand('run', { ...context, options: {} }), { exitCode: 2, message: 'rlm incomplete: Workspace data could not be read completely' });
+  await assert.rejects(runCommand('run', { ...context, options: {} }), { exitCode: 2, code: 'settings_section_document_malformed' });
 });
 
 /** Escaped secrets and path separators cannot bypass serialization-time privacy checks. */
