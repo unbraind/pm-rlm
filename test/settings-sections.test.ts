@@ -1,11 +1,13 @@
 import assert from 'node:assert/strict';
 import { execFile, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { promisify } from 'node:util';
 import { createExtensionCommandSdk, getSettingsPath, getWorkspaceHistoryPath, readSettingsSection, readHistoryEntries, WORKSPACE_HISTORY_ID, writeSettingsSection } from '@unbrained/pm-cli/sdk';
+import type { CommandHandlerContext } from '@unbrained/pm-cli/sdk/authoring';
+import { runCommand } from '../src/commands.ts';
 import { readRlmSettings, readRlmSettingsSection, writeRlmSettings } from '../src/settings.ts';
 import { npmEnvironment, testEnvironment } from '../scripts/environment.ts';
 import { installExtension, tracker } from './helpers.ts';
@@ -112,4 +114,34 @@ test('RLM command and library share SDK section defaults, policy and model prece
   assert.deepEqual(models, [(await readRlmSettings(workspace)).model, (await readRlmSettings(workspace, { model: 'explicit' })).model]);
   const history = await readHistoryEntries(getWorkspaceHistoryPath(workspace), WORKSPACE_HISTORY_ID);
   assert.ok(history.some(entry => entry.op === 'settings:section:write' && entry.author === 'settings-author'));
+});
+
+/** A real denied write must sanitize I/O paths while restoring the fixture's exact original mode. */
+test('RLM settings write sanitizes unexpected I/O failures', async t => {
+  const { workspace } = await tracker(t);
+  const mode = (await stat(workspace)).mode & 0o7777;
+  const before = await readFile(getSettingsPath(workspace), 'utf8');
+  try {
+    await chmod(workspace, mode & 0o555);
+    await assert.rejects(writeRlmSettings(workspace, { model: 'denied-write' }, 'settings-test'), error => {
+      assert.ok(error instanceof Error && 'code' in error);
+      assert.equal(error.code, 'incomplete');
+      assert.equal(error.message, 'Workspace data could not be written completely');
+      assert.ok(!error.message.includes(workspace)); return true;
+    });
+  } finally { await chmod(workspace, mode); }
+  assert.equal((await stat(workspace)).mode & 0o7777, mode);
+  assert.equal(await readFile(getSettingsPath(workspace), 'utf8'), before);
+});
+
+/** Native command handling retains the same section refusals as direct library configuration. */
+test('RLM native CLI preserves SDK section refusals', async t => {
+  const { workspace } = await tracker(t);
+  const context = { command: 'rlm run', pm_root: workspace, args: ['q'], options: {}, global: { author: 'settings-test' } } as CommandHandlerContext;
+  await writeSettingsSection(workspace, 'rlm', { unexpected: true }, { author: 'settings-test' });
+  for (const code of ['settings_section_invalid', 'settings_section_document_malformed']) {
+    await assert.rejects(readRlmSettings(workspace), { code });
+    await assert.rejects(runCommand('run', context), { code, exitCode: 2 });
+    await writeFile(getSettingsPath(workspace), '{');
+  }
 });

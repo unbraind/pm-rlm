@@ -10,7 +10,7 @@ import { evaluateRlm, RlmEvalError } from './evaluation.ts';
 import { reconcileRlm, parseReconcileArms, RlmReconcileError } from './reconcile.ts';
 import { adaptiveRlm, parseQuestionStructure, RlmAdaptiveError } from './adaptive.ts';
 import { parseComponents, RlmEvidenceError } from './evidence.ts';
-import { createPmCliExpectedError } from '@unbrained/pm-cli/sdk';
+import { createPmCliExpectedError, isPmCliExpectedError } from '@unbrained/pm-cli/sdk';
 import { defineCommand } from '@unbrained/pm-cli/sdk/authoring';
 import type { CommandHandlerContext, ExtensionApi } from '@unbrained/pm-cli/sdk/authoring';
 import { parseFilter } from './environment.ts';
@@ -116,6 +116,7 @@ export async function runCommand(command: string, ctx: CommandHandlerContext): P
     }
     return { ...await runRlm(argument, { workspace: ctx.pm_root, scope, settings, reuse_identity, ...(ctx.options.components === undefined ? {} : { components: componentOperand(ctx.options.components) }), author: ctx.global.author }) };
   } catch (error) {
+    if (isPmCliExpectedError(error) && String(error.code).startsWith('settings_section_')) throw error;
     const code = error instanceof RlmError ? error.code : 'invalid';
     const remedy = command === 'verify-answer' ? new RlmInvariantError().remedy : error instanceof RlmRepairError || error instanceof RlmReuseError || error instanceof RlmEvidenceError || error instanceof RlmAdaptiveError || error instanceof RlmReconcileError || error instanceof RlmEvalError || error instanceof RlmTranscriptError ? error.remedy : ['repair', 'repair-resume'].includes(command) ? 'Supply --parts JSON and unsigned --budget-tokens for repair, or a repair id for repair-resume; inspect tracker integrity' : ['adaptive', 'reconcile'].includes(command) ? 'Supply valid declarations (--structure or --plan), unsigned --budget-tokens, scope and model settings; inspect tracker integrity' : undefined;
     throw createPmCliExpectedError(`rlm ${code}: ${error instanceof RlmError ? error.message + (remedy === undefined ? '' : '; remedy: ' + remedy) : 'Command failed; check inputs and tracker integrity'}`, { exitCode: code === 'budget' || code === 'depth' || code === 'calls' ? 3 : 2 });

@@ -38,10 +38,14 @@ export async function writeRlmSettings(workspace: string, overrides: Partial<Rlm
   return config;
 }`;
   const imports = "import { randomUUID } from 'node:crypto';\nimport { createExtensionCommandSdk, PmClient, getSettingsPath, readFileIfExists } from '@unbrained/pm-cli/sdk';\nimport { sdkRead } from './errors.ts';\n";
+  const commands = await readFile(join(scratch, 'src/commands.ts'), 'utf8');
   const proofs = [
-    { pattern: 'RLM section receipts', changed: fixed.replace("    return await readSettingsSection(workspace, 'rlm', { validate: resolveRlmSettings, defaultValue: resolveRlmSettings({}) });", "    const source = record(JSON.parse((await readFileIfExists(getSettingsPath(workspace))) ?? '{}'));\n  return { section: 'rlm', source: 'default', value: resolveRlmSettings(source.rlm ?? {}), revision: null };") },
-    { pattern: 'RLM reads and writes preserve typed', changed: fixed.replace(/export async function readRlmSettings\([\s\S]*?\n}/, previous.match(/export async function readRlmSettings\([\s\S]*?\n}/)![0]) },
-    { pattern: 'RLM automatic CAS|RLM section writes preserve|RLM command and library', changed: fixed.replace(/export async function writeRlmSettings\([\s\S]*?\n}/, previous.match(/export async function writeRlmSettings\([\s\S]*?\n}/)![0]) },
+    { file: 'src/settings.ts', pattern: 'RLM section receipts', changed: fixed.replace("    return await readSettingsSection(workspace, 'rlm', { validate: resolveRlmSettings, defaultValue: resolveRlmSettings({}) });", "    const source = record(JSON.parse((await readFileIfExists(getSettingsPath(workspace))) ?? '{}'));\n  return { section: 'rlm', source: 'default', value: resolveRlmSettings(source.rlm ?? {}), revision: null };") },
+    { file: 'src/settings.ts', pattern: 'RLM reads and writes preserve typed', changed: fixed.replace(/export async function readRlmSettings\([\s\S]*?\n}/, previous.match(/export async function readRlmSettings\([\s\S]*?\n}/)![0]) },
+    { file: 'src/settings.ts', pattern: 'RLM automatic CAS|RLM section writes preserve|RLM command and library', changed: fixed.replace(/export async function writeRlmSettings\([\s\S]*?\n}/, previous.match(/export async function writeRlmSettings\([\s\S]*?\n}/)![0]) },
+    { file: 'src/settings.ts', pattern: 'RLM settings write sanitizes', changed: fixed.replace("  try {\n    await writeSettingsSection(workspace, 'rlm', config, { expectedRevision: section.revision, validate: validateRlmSettings, author });\n  } catch (error) {\n    if (isPmCliExpectedError(error)) throw error;\n    throw new RlmError('incomplete', 'Workspace data could not be written completely');\n  }", "  await writeSettingsSection(workspace, 'rlm', config, { expectedRevision: section.revision, validate: validateRlmSettings, author });") },
+    { file: 'src/commands.ts', pattern: 'RLM native CLI preserves', changed: commands.replace("    if (isPmCliExpectedError(error) && String(error.code).startsWith('settings_section_')) throw error;", '') },
+    { file: 'src/settings.ts', pattern: 'RLM reads and writes preserve typed', changed: fixed.replace("    throw new RlmError('incomplete', 'Workspace data could not be read completely');", '    throw error;') },
   ];
   /** Run only the regression scenarios affected by one restored private mechanism. */
   const run = (pattern: string) => {
@@ -50,16 +54,18 @@ export async function writeRlmSettings(workspace: string, overrides: Partial<Rlm
     return result;
   };
   for (const proof of proofs) {
-    assert.notEqual(proof.changed, fixed);
+    const path = join(scratch, proof.file);
+    const original = await readFile(path, 'utf8');
+    assert.notEqual(proof.changed, original);
     const baseline = run(proof.pattern); assert.equal(baseline.status, 0, baseline.stdout + baseline.stderr);
     try {
-      await writeFile(path, imports + proof.changed);
+      await writeFile(path, (proof.file === 'src/settings.ts' ? imports : '') + proof.changed);
       const broken = run(proof.pattern);
       assert.equal(broken.status, 1, broken.stdout + broken.stderr);
       assert.match(broken.stdout + broken.stderr, /AssertionError/);
       console.log(broken.stdout.split('\n').filter(line => line.startsWith('✖') && !line.includes('failing tests')).join('\n'));
-    } finally { await writeFile(path, fixed); }
+    } finally { await writeFile(path, original); }
     const restored = run(proof.pattern); assert.equal(restored.status, 0, restored.stdout + restored.stderr);
   }
-  console.log('3/3 settings behavioral revert proofs (6 regression tests): fixed pass, private behavior fails, restored pass');
+  console.log('6/6 settings behavioral revert proofs (8 regression tests): fixed pass, private behavior fails, restored pass');
 } finally { await rm(scratch, { recursive: true, force: true }); }

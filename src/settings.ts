@@ -50,6 +50,11 @@ export async function writeRlmSettings(workspace: string, overrides: Partial<Rlm
   const section = await readRlmSettingsSection(workspace);
   const config = validateRlmSettings({ ...section.value, ...overrides });
   assertLedgerPrivacy(config, workspace, config.key_env);
-  await writeSettingsSection(workspace, 'rlm', config, { expectedRevision: section.revision, validate: validateRlmSettings, author });
+  try {
+    await writeSettingsSection(workspace, 'rlm', config, { expectedRevision: section.revision, validate: validateRlmSettings, author });
+  } catch (error) {
+    if (isPmCliExpectedError(error)) throw error;
+    throw new RlmError('incomplete', 'Workspace data could not be written completely');
+  }
   return config;
 }
