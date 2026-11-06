@@ -11,7 +11,7 @@ import { runCommand } from '../src/commands.ts';
 import { readRlmSettings, readRlmSettingsSection, writeRlmSettings } from '../src/settings.ts';
 import { npmEnvironment, testEnvironment } from '../scripts/environment.ts';
 import { installExtension, tracker } from './helpers.ts';
-import { httpFixture } from './http.ts';
+import { httpFixture, requestBody } from './http.ts';
 
 /** Run a competing package writer after the first writer read its revision, before persistence. */
 function competingWrite(workspace: string): void {
@@ -19,6 +19,14 @@ function competingWrite(workspace: string): void {
     encoding: 'utf8', timeout: 30000, env: npmEnvironment(testEnvironment(process.env)),
   });
   assert.equal(child.status, 0, child.stderr);
+}
+
+/** Invoke the actual host asynchronously so its local model endpoint can respond. */
+async function nativeRun(root: string, workspace: string, flags: string[]): Promise<Record<string, unknown>> {
+  const result = await promisify(execFile)(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'run', 'configured question', '--json', ...flags], {
+    cwd: root, env: { ...npmEnvironment(testEnvironment(process.env)), PM_PATH: workspace, PM_AUTHOR: 'settings-author' }, timeout: 30000,
+  });
+  return JSON.parse(result.stdout) as Record<string, unknown>;
 }
 
 /** Receipts retain the host source/revision while package defaults validate partial stored sections. */
@@ -39,9 +47,14 @@ test('RLM section receipts distinguish absent defaults from normalized stored se
 test('RLM reads and writes preserve typed SDK refusals without changing invalid documents', async t => {
   const { workspace } = await tracker(t);
   const path = getSettingsPath(workspace); const original = await readFile(path, 'utf8');
-  for (const raw of ['{', 'null', '[]', ...[null, [], { unexpected: true }, { endpoint: 'https://name:pass@example.invalid' }].map(rlm => JSON.stringify({ ...JSON.parse(original), rlm }))]) {
+  const document = JSON.parse(original) as Record<string, unknown>;
+  const cases = [
+    ...['{', 'null', '[]'].map(raw => ({ raw, code: 'settings_section_document_malformed' })),
+    ...[null, []].map(rlm => ({ raw: JSON.stringify({ ...document, rlm }), code: 'settings_section_invalid' })),
+    ...[{ unexpected: true }, { endpoint: 'https://name:pass@example.invalid' }].map(rlm => ({ raw: JSON.stringify({ ...document, rlm }), code: 'invalid' })),
+  ];
+  for (const { raw, code } of cases) {
     await writeFile(path, raw);
-    const code = ['{', 'null', '[]'].includes(raw) ? 'settings_section_document_malformed' : 'settings_section_invalid';
     await assert.rejects(readRlmSettings(workspace), { code });
     await assert.rejects(writeRlmSettings(workspace, { model: 'override' }, 'settings-test'), { code });
     assert.equal(await readFile(path, 'utf8'), raw);
@@ -106,10 +119,7 @@ test('RLM command and library share SDK section defaults, policy and model prece
   });
   await writeRlmSettings(workspace, { endpoint, model: 'saved-model' }, 'settings-author');
   for (const flags of [[], ['--model', 'explicit']]) {
-    const result = await promisify(execFile)(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'run', 'configured question', '--json', ...flags], {
-      cwd: root, env: { ...npmEnvironment(testEnvironment(process.env)), PM_PATH: workspace, PM_AUTHOR: 'settings-author' }, timeout: 30000,
-    });
-    assert.equal((JSON.parse(result.stdout) as { answer: string }).answer, 'section-config');
+    assert.equal((await nativeRun(root, workspace, flags)).answer, 'section-config');
   }
   assert.deepEqual(models, [(await readRlmSettings(workspace)).model, (await readRlmSettings(workspace, { model: 'explicit' })).model]);
   const history = await readHistoryEntries(getWorkspaceHistoryPath(workspace), WORKSPACE_HISTORY_ID);
@@ -138,10 +148,39 @@ test('RLM settings write sanitizes unexpected I/O failures', async t => {
 test('RLM native CLI preserves SDK section refusals', async t => {
   const { workspace } = await tracker(t);
   const context = { command: 'rlm run', pm_root: workspace, args: ['q'], options: {}, global: { author: 'settings-test' } } as CommandHandlerContext;
-  await writeSettingsSection(workspace, 'rlm', { unexpected: true }, { author: 'settings-test' });
+  await writeSettingsSection(workspace, 'rlm', null, { author: 'settings-test' });
   for (const code of ['settings_section_invalid', 'settings_section_document_malformed']) {
     await assert.rejects(readRlmSettings(workspace), { code });
     await assert.rejects(runCommand('run', context), { code, exitCode: 2 });
     await writeFile(getSettingsPath(workspace), '{');
   }
+});
+
+/** Legacy saved defaults remain overridable before domain validation, including cross-field limits. */
+test('RLM explicit overrides repair stored defaults through library and native CLI', async t => {
+  const { root, workspace, client } = await tracker(t);
+  await installExtension(workspace);
+  const models: string[] = [];
+  const { endpoint } = await httpFixture(t, async (request, response) => {
+    models.push(String((await requestBody(request)).model));
+    response.end(JSON.stringify({ response: '{"action":"finish","answer":"compatible"}' }));
+  });
+  // The previous workspace-settings API could persist this opaque extension section.
+  await createExtensionCommandSdk(workspace, client, 'legacy-settings').mutateWorkspaceSettings({
+    operationId: 'legacy-override-fixture', mutate: current => ({ ...current, rlm: { model: '', endpoint, context_tokens: 65536 } }),
+  });
+  const overrides = { model: 'library-override', output_tokens: 40000 };
+  await assert.doesNotReject(() => readRlmSettings(workspace, overrides));
+  const resolved = await readRlmSettings(workspace, overrides);
+  assert.equal(resolved.model, 'library-override'); assert.equal(resolved.output_tokens, 40000); assert.equal(resolved.context_tokens, 65536);
+  const receipt = await readRlmSettingsSection(workspace, overrides);
+  assert.equal(receipt.source, 'stored'); assert.equal(receipt.revision, (await readSettingsSection(workspace, 'rlm')).revision);
+  await assert.rejects(readRlmSettings(workspace), { code: 'invalid' });
+  await assert.doesNotReject(async () => { assert.equal((await nativeRun(root, workspace, ['--model', 'cli-override'])).answer, 'compatible'); });
+  assert.deepEqual(models, ['cli-override']);
+  assert.equal(((await readSettingsSection<Record<string, unknown>>(workspace, 'rlm')).value)?.model, '');
+  await assert.doesNotReject(() => writeRlmSettings(workspace, { ...overrides, model: 'repaired' }, 'settings-compat'));
+  assert.equal((await readRlmSettings(workspace)).model, 'repaired');
+  const history = await readHistoryEntries(getWorkspaceHistoryPath(workspace), WORKSPACE_HISTORY_ID);
+  assert.equal(history.at(-1)?.op, 'settings:section:write'); assert.equal(history.at(-1)?.author, 'settings-compat');
 });
