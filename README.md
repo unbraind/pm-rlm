@@ -566,3 +566,7 @@ source digest. It works in a plain-directory tracker with no Git executable.
 
 See the [contract example](examples/executable-answer-invariants.json) and
 [measured public-tracker validation](docs/executable-answer-invariants-validation.json).
+
+GitHub issue sync uses `changelog:automation` to run the same full generation
+policy that the package changelog check verifies. Reusable workflow defaults
+therefore cannot add a different pending-release policy to this caller.

@@ -73,7 +73,8 @@
     "coverage": "npm run build && npm run build:test && node scripts/coverage-gate.ts",
     "verify:release-publish-attestation": "node scripts/verify-release-publish-attestation.ts",
     "identity:check": "node scripts/identity-gate.ts",
-    "test:live": "node test/live-v2.ts --constrained"
+    "test:live": "node test/live-v2.ts --constrained",
+    "changelog:automation": "npm run changelog:full"
   },
   "peerDependencies": {
     "@unbrained/pm-cli": ">=2026.11.4"
