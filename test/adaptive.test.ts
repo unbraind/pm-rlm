@@ -224,7 +224,7 @@ test('native adaptive command renders bounded TOON and JSON in a plain tracker',
   await writeFile(join(directory, 'manifest.json'), JSON.stringify({ name: 'pm-rlm', version: '2026.10.18', entry: 'entry.js', capabilities: ['commands', 'schema'] }));
   await writeFile(join(directory, 'entry.js'), `export { default } from ${JSON.stringify(new URL('../index.ts', import.meta.url).href)};\n`);
   for (const json of [true, false]) {
-    const run = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'adaptive', 'Explain', '--structure', JSON.stringify(structure), '--budget-tokens', '0', ...(json ? ['--json'] : [])], { cwd: root, encoding: 'utf8', env: { ...process.env, PATH: root, GIT_CEILING_DIRECTORIES: dirname(root), PM_PATH: workspace } });
+    const run = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', 'adaptive', 'Explain', '--structure', JSON.stringify(structure), '--budget-tokens', '0', ...(json ? ['--json'] : [])], { cwd: root, encoding: 'utf8', env: { ...process.env, PATH: root, GIT_CEILING_DIRECTORIES: dirname(root), PM_PATH: workspace } });
     assert.equal(run.status, 0, run.stderr);
     const result = (json ? JSON.parse(run.stdout) : decodeToon(run.stdout)) as { status: string; components: unknown[] };
     assert.equal(result.status, 'partial');

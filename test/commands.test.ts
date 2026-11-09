@@ -15,7 +15,7 @@ import { ScriptedModel, tracker, installExtension } from './helpers.ts';
 
 /** Invoke the actual host CLI rather than simulating its output renderer. */
 function cli(root: string, workspace: string, args: string[]) {
-  return spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace, PM_AUTHOR: 'rlm-test' } });
+  return spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', ...args], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace, PM_AUTHOR: 'rlm-test' } });
 }
 /** Verify extension metadata and host-produced TOON/JSON command rendering. */
 test('real host tree and replay commands emit native TOON and JSON', async t => {

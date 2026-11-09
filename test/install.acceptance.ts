@@ -101,13 +101,13 @@ console.log(JSON.stringify(result));
     verifyPackedInvariants(consumer,
       args => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', hostEnv), [
         args => execute(consumer, [...prefix, ...args], executable, hostEnv),
-        args => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), hostEnv),
+        args => execute(consumer, [join(consumer, 'node_modules', '@unbrained', 'pm-cli', 'dist', 'cli.js'), ...args], process.execPath, hostEnv),
       ]);
 
     const repairParts = JSON.stringify([{ name: 'source', question: 'Return the source id', depends_on: [], sources: [evidenceRun.components[0].answer] }]);
     verifyPackedRepairBudget(repository, consumer, join(scratch, packed[0].filename), (args, pmRoot) => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', { ...hostEnv, PM_PATH: pmRoot }), [
       (args, pmRoot) => execute(consumer, [...prefix, ...args], executable, { ...hostEnv, PM_PATH: pmRoot }),
-      (args, pmRoot) => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), { ...hostEnv, PM_PATH: pmRoot }),
+      (args, pmRoot) => execute(consumer, [join(consumer, 'node_modules', '@unbrained', 'pm-cli', 'dist', 'cli.js'), ...args], process.execPath, { ...hostEnv, PM_PATH: pmRoot }),
     ]);
     for (const render of [[], ['--json']]) {
       const output = execute(consumer, [...prefix, 'rlm', 'repair', evidenceRun.run, '--parts', repairParts, '--budget-tokens', '0', ...render], executable, hostEnv);

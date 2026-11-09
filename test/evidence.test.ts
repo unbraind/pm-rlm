@@ -65,7 +65,7 @@ test('evidence works in a non-git tracker with no git executable and zero valida
   await writeFile(join(extension, 'manifest.json'), JSON.stringify({ name: 'pm-rlm', version: '2026.10.18', entry: 'entry.js', capabilities: ['commands', 'schema'] }));
   await writeFile(join(extension, 'entry.js'), `export { default } from ${JSON.stringify(new URL('../index.ts', import.meta.url).href)};`);
   for (const json of [false, true]) {
-    const execution = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'evidence', run.run, ...(json ? ['--json'] : [])], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace } });
+    const execution = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', 'evidence', run.run, ...(json ? ['--json'] : [])], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace } });
     assert.equal(execution.status, 0, execution.stderr);
     const decoded = (json ? JSON.parse(execution.stdout) : decodeToon(execution.stdout)) as typeof report;
     assert.deepEqual(decoded, report);

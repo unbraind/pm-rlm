@@ -149,7 +149,7 @@ test('paired history refusal is replayable and recursive calls share the global 
 
 /** Execute the native host asynchronously so the HTTP fixture can serve both arms. */
 async function native(root: string, workspace: string, plan: string, json: boolean): Promise<string> {
-  const child = spawn(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'reconcile', 'Explain', '--plan', plan, '--budget-tokens', '200000', ...(json ? ['--json'] : [])], { cwd: root, env: { ...process.env, PM_PATH: workspace }, stdio: ['ignore', 'pipe', 'pipe'] });
+  const child = spawn(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', 'reconcile', 'Explain', '--plan', plan, '--budget-tokens', '200000', ...(json ? ['--json'] : [])], { cwd: root, env: { ...process.env, PM_PATH: workspace }, stdio: ['ignore', 'pipe', 'pipe'] });
   let stdout = ''; let stderr = '';
   child.stdout.on('data', data => { stdout += String(data); });
   child.stderr.on('data', data => { stderr += String(data); });

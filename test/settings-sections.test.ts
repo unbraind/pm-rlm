@@ -23,7 +23,7 @@ function competingWrite(workspace: string): void {
 
 /** Invoke the actual host asynchronously so its local model endpoint can respond. */
 async function nativeRun(root: string, workspace: string, flags: string[]): Promise<Record<string, unknown>> {
-  const result = await promisify(execFile)(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'run', 'configured question', '--json', ...flags], {
+  const result = await promisify(execFile)(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', 'run', 'configured question', '--json', ...flags], {
     cwd: root, env: { ...npmEnvironment(testEnvironment(process.env)), PM_PATH: workspace, PM_AUTHOR: 'settings-author' }, timeout: 30000,
   });
   return JSON.parse(result.stdout) as Record<string, unknown>;

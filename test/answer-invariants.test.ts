@@ -187,7 +187,7 @@ test('native no-git command emits compact TOON and JSON with no git executable',
   for (const encoded of [await readFile(sourceFile, 'utf8'), '{}']) {
     await writeFile(sourceFile, encoded);
     for (const json of [true, false]) {
-      const result = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'verify-answer', file, '--environment', sourceFile, ...(json ? ['--json'] : [])], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace, PATH: noGit, GIT_CEILING_DIRECTORIES: root } });
+      const result = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', 'verify-answer', file, '--environment', sourceFile, ...(json ? ['--json'] : [])], { cwd: root, encoding: 'utf8', env: { ...process.env, PM_PATH: workspace, PATH: noGit, GIT_CEILING_DIRECTORIES: root } });
       assert.equal(result.status, 0, result.stderr + result.stdout);
       const report = json ? JSON.parse(result.stdout) : decodeToon(result.stdout);
       if (json) expected = report; else assert.deepEqual(report, expected);

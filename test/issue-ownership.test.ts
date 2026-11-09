@@ -61,6 +61,8 @@ test('ownership oracle rejects every PR number in every ownership field and allo
       else assert.throws(() => verifyOwnership(item), /pull request used as issue ownership/);
     }
     assert.throws(() => verifyOwnership({ id: 'pull-url', github_url: `https://github.com/unbraind/pm-rlm/pull/${number}` }), /must identify an issue/);
+    assert.throws(() => verifyOwnership({ id: 'pull-declaration', description: `GitHub issue https://github.com/unbraind/pm-rlm/pull/${number}` }), /must identify an issue/);
+    assert.throws(() => verifyOwnership({ id: 'pull-imported-description', description: `GH issue #${number}: https://github.com/unbraind/pm-rlm/pull/${number}` }), /must identify an issue/);
     assert.doesNotThrow(() => verifyOwnership({ id: 'context', tags: [`pr:${identity}`], description: `Delivered by PR #${number}` }));
   }
   assert.doesNotThrow(() => verifyOwnership({ id: 'external', tags: ['gh:unbraind/pm-cli#1609'] }));
@@ -88,7 +90,7 @@ test('SDK and JSON and TOON CLI reads preserve issue ownership in a non-git trac
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/GIT_|^PM_|TOKEN|SECRET|PASSWORD|CREDENTIAL|API_KEY|NPM_MEDIA_SERVER|^NODE_TEST_CONTEXT$/i.test(key)));
     const environment = { ...inherited, HOME: root, PM_PATH: pmRoot, GIT_CEILING_DIRECTORIES: root, GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: devNull };
     for (const format of ['json', 'toon']) {
-      const child = spawnSync(process.execPath, [join(repository, 'node_modules/.bin/pm'), 'list', '--all', '--full', '--strict-read', '--output-budget', 'unbounded', '--output-limit', 'unbounded', '--no-extensions', '--format', format], { cwd: root, env: environment, encoding: 'utf8', timeout: 60000 });
+      const child = spawnSync(process.execPath, [join(repository, 'node_modules/@unbrained/pm-cli/dist/cli.js'), 'list', '--all', '--full', '--strict-read', '--output-budget', 'unbounded', '--output-limit', 'unbounded', '--no-extensions', '--format', format], { cwd: root, env: environment, encoding: 'utf8', timeout: 60000 });
       assert.equal(child.status, 0, child.stderr);
       const result = (format === 'json' ? JSON.parse(child.stdout) : decodeToon(child.stdout)) as { items: OwnershipItem[] };
       assert.equal(result.items.length, sdk.items.length);
