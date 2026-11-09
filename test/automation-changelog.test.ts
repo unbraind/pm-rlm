@@ -5,6 +5,16 @@ import { devNull, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
+
+test('the changelog work item references the sync PR without claiming issue ownership', () => {
+  const item = decodeToon(readFileSync(new URL('../.agents/pm/issues/pm-rlm-sync-changelog.toon', import.meta.url), 'utf8')) as {
+    tags: string[];
+    comments: { text: string }[];
+  };
+  assert.ok(!item.tags.includes('gh:unbraind/pm-rlm#57'), 'PR #57 must not be selected as an owned issue by GitHub refresh');
+  assert.ok(item.comments.some(comment => comment.text.includes('PR #57')), 'retain the PR context in the audit trail');
+});
 
 test('the configured sync regeneration passes the package changelog check in a real temporary tracker', () => {
   const root = fileURLToPath(new URL('../', import.meta.url));
