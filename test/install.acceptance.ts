@@ -11,7 +11,7 @@ import type { RlmAdaptiveResult } from '../src/adaptive.ts';
 import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
 import { verifyPackedInvariants } from './answer-invariants-consumer.ts';
 import { verifyPackedRepairBudget } from './repair-consumer.ts';
-import { assertOwnershipRead, readOwnershipItems, type OwnershipItem } from './issue-ownership-support.ts';
+import { assertOwnershipRead, decodeOwnershipList, readOwnershipItems, type OwnershipItem } from './issue-ownership-support.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
 function execute(cwd: string, args: string[], executable: string, env: NodeJS.ProcessEnv): string {
@@ -188,8 +188,7 @@ console.log(JSON.stringify(await client.listAllComplete()));
     for (const transport of [prefix, [join(consumer, 'node_modules', '@unbrained', 'pm-cli', 'dist', 'cli.js')]]) {
       for (const format of ['json', 'toon']) {
         const output = execute(consumer, [...transport, 'list', '--all', '--full', '--strict-read', '--output-budget', 'unbounded', '--output-limit', 'unbounded', '--no-extensions', '--format', format], transport === prefix ? executable : process.execPath, hostEnv);
-        const result = (format === 'json' ? JSON.parse(output) : decodeToon(output)) as { items: OwnershipItem[] };
-        assertOwnershipRead(native, result.items, `packed ${manager} ${format}`);
+        assertOwnershipRead(native, decodeOwnershipList(output, format), `packed ${manager} ${format}`);
       }
     }
 });

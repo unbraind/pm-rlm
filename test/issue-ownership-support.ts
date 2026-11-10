@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { toImportTags } from '@unbrained/pm-cli/sdk';
+import { decodePmTableRows, toImportTags, type PmEncodedTableRows, type PmTableCellEncoding } from '@unbrained/pm-cli/sdk';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
 
 /** Ownership fields shared by native documents, full SDK rows and CLI projections. */
@@ -17,6 +17,14 @@ export interface OwnershipItem {
 export function readOwnershipItems(pmRoot: string): OwnershipItem[] {
   return readdirSync(pmRoot, { recursive: true }).map(String).filter(path => path.endsWith('.toon'))
     .map(path => decodeToon(readFileSync(join(pmRoot, path), 'utf8')) as unknown as OwnershipItem);
+}
+
+/** Decode declared table cells with the host codec; delimiters are data unless metadata declares them. */
+export function decodeOwnershipList(output: string, format: string): OwnershipItem[] {
+  const result = (format === 'json' ? JSON.parse(output) : decodeToon(output)) as { items: OwnershipItem[]; items_encoding?: PmTableCellEncoding };
+  return result.items_encoding
+    ? decodePmTableRows({ rows: result.items as unknown as PmEncodedTableRows['rows'], encoding: result.items_encoding }) as unknown as OwnershipItem[]
+    : result.items;
 }
 
 /** Require complete identity and normalized ownership preservation for every read transport. */

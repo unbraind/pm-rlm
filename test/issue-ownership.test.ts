@@ -4,9 +4,9 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { devNull, tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { PmClient } from '@unbrained/pm-cli/sdk';
-import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
-import { assertOwnershipRead, readOwnershipItems, type OwnershipItem } from './issue-ownership-support.ts';
+import { encodePmTableRows, PmClient } from '@unbrained/pm-cli/sdk';
+import { decodeToon, encodeToon } from '@unbrained/pm-cli/sdk/testing';
+import { assertOwnershipRead, decodeOwnershipList, readOwnershipItems, type OwnershipItem } from './issue-ownership-support.ts';
 
 /** Exhaustive issue identities among package numbers 1..63, verified with GitHub on 2026-11-09. */
 const issues = new Set([4, 5, 37, 38, 42, 49].map(number => `unbraind/pm-rlm#${number}`).concat('unbraind/pm-cli#1609'));
@@ -86,7 +86,7 @@ test('SDK and JSON and TOON CLI reads preserve issue ownership in a non-git trac
     for (const format of ['json', 'toon']) {
       const child = spawnSync(process.execPath, [join(repository, 'node_modules/@unbrained/pm-cli/dist/cli.js'), 'list', '--all', '--full', '--strict-read', '--output-budget', 'unbounded', '--output-limit', 'unbounded', '--no-extensions', '--format', format], { cwd: root, env: environment, encoding: 'utf8', timeout: 60000 });
       assert.equal(child.status, 0, child.stderr);
-      const result = (format === 'json' ? JSON.parse(child.stdout) : decodeToon(child.stdout)) as { items: OwnershipItem[] };
+      const result = { items: decodeOwnershipList(child.stdout, format) };
       assert.equal(result.items.length, sdk.items.length);
       result.items.forEach(verifyOwnership);
       assertOwnershipRead(native, result.items, format);
@@ -99,6 +99,23 @@ test('SDK and JSON and TOON CLI reads preserve issue ownership in a non-git trac
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('CLI ownership reads decode expanded and declared compact cells without guessing delimiters', () => {
+  for (const tags of [['fixture', 'gh:unbraind/pm-rlm#4'], ['literal;semicolon', 'gh:unbraind/pm-rlm#4']]) {
+    const native: { id: string; [field: string]: string | string[] }[] = [{ id: 'tagged', tags, description: 'Issue fixture' }, { id: 'empty', tags: [], description: '' }, { id: 'absent' }];
+    for (const compact of [false, true]) {
+      const table = encodePmTableRows(native, { compact });
+      for (const envelope of [{ items: native }, { items: table.rows, items_encoding: table.encoding }]) {
+        for (const format of ['json', 'toon']) {
+          const output = format === 'json' ? JSON.stringify(envelope) : encodeToon(envelope);
+          const decoded = decodeOwnershipList(output, format);
+          assert.deepEqual(decoded, native);
+          assertOwnershipRead(native, decoded, format);
+        }
+      }
+    }
   }
 });
 
