@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path';
 import test from 'node:test';
 import { PmClient } from '@unbrained/pm-cli/sdk';
 import { decodeToon } from '@unbrained/pm-cli/sdk/testing';
+import { assertOwnershipRead, readOwnershipItems, type OwnershipItem } from './issue-ownership-support.ts';
 
 /** Exhaustive issue identities among package numbers 1..63, verified with GitHub on 2026-11-09. */
 const issues = new Set([4, 5, 37, 38, 42, 49].map(number => `unbraind/pm-rlm#${number}`).concat('unbraind/pm-cli#1609'));
@@ -14,15 +15,6 @@ const issues = new Set([4, 5, 37, 38, 42, 49].map(number => `unbraind/pm-rlm#${n
  * Unknown future issues and other repositories remain allowed so automatic issue imports keep working.
  */
 const pullRequests = new Set(Array.from({ length: 63 }, (_, index) => `unbraind/pm-rlm#${index + 1}`).filter(identity => !issues.has(identity)));
-
-/** Ownership fields shared by native documents, full SDK rows and CLI projections. */
-interface OwnershipItem {
-  id: string;
-  tags?: string[];
-  description?: string;
-  github_url?: string;
-  github_number?: number;
-}
 
 /** Check ownership declarations only; prose, comments and PR references remain historical evidence. */
 function verifyOwnership(item: OwnershipItem): void {
@@ -83,10 +75,12 @@ test('SDK and JSON and TOON CLI reads preserve issue ownership in a non-git trac
       cpSync(join(repository, '.agents/pm', path), join(pmRoot, path));
     }
     assert.equal(existsSync(join(root, '.git')), false);
+    const native = readOwnershipItems(pmRoot);
     const client = new PmClient({ cwd: root, pmRoot, noExtensions: true });
     const sdk = await client.listAllComplete();
     assert.equal(sdk.items.length, paths.length);
     sdk.items.forEach(verifyOwnership);
+    assertOwnershipRead(native, sdk.items, 'SDK');
     const inherited = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/GIT_|^PM_|TOKEN|SECRET|PASSWORD|CREDENTIAL|API_KEY|NPM_MEDIA_SERVER|^NODE_TEST_CONTEXT$/i.test(key)));
     const environment = { ...inherited, HOME: root, PM_PATH: pmRoot, GIT_CEILING_DIRECTORIES: root, GIT_CONFIG_GLOBAL: devNull, GIT_CONFIG_NOSYSTEM: '1', NPM_CONFIG_USERCONFIG: devNull };
     for (const format of ['json', 'toon']) {
@@ -95,12 +89,57 @@ test('SDK and JSON and TOON CLI reads preserve issue ownership in a non-git trac
       const result = (format === 'json' ? JSON.parse(child.stdout) : decodeToon(child.stdout)) as { items: OwnershipItem[] };
       assert.equal(result.items.length, sdk.items.length);
       result.items.forEach(verifyOwnership);
+      assertOwnershipRead(native, result.items, format);
+      const originals = new Map(sdk.items.map(item => [item.id, item]));
       for (const item of result.items) {
-        const original = sdk.items.find(row => row.id === item.id)!;
+        const original = originals.get(item.id);
+        assert.ok(original, `${format}: unknown item ${item.id}`);
         for (const key of ['tags', 'github_url', 'github_number', 'description'] as const) assert.deepEqual(item[key], original[key], `${format}: ${item.id}.${key}`);
       }
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('every transport rejects ownership loss and same-count identity substitutions at every item position', () => {
+  const native: OwnershipItem[] = ['first', 'constructor', '__proto__', 'last'].map((id, index) => ({
+    id, tags: [`gh:unbraind/pm-rlm#${[4, 5, 37, 38][index]}`, 'fixture'],
+    description: `Issue fixture ${index}`, github_number: [4, 5, 37, 38][index],
+    github_url: `https://github.com/unbraind/pm-rlm/issues/${[4, 5, 37, 38][index]}`,
+  }));
+  const snapshot = structuredClone(native);
+  for (const label of ['SDK', 'json', 'toon', 'packed npm', 'packed bun']) {
+    const reordered = structuredClone(native).reverse();
+    for (const item of reordered) item.tags = item.tags!.map(tag => ` ${tag.toUpperCase()} `).reverse();
+    assert.doesNotThrow(() => assertOwnershipRead(native, reordered, label));
+    for (let index = 0; index < native.length; index++) {
+      for (const replacement of [native[(index + 1) % native.length].id, 'unknown']) {
+        const corrupted = structuredClone(native);
+        corrupted[index] = structuredClone(native.find(item => item.id === replacement) ?? { ...native[index], id: replacement });
+        assert.equal(corrupted.length, native.length);
+        assert.throws(() => assertOwnershipRead(native, corrupted, label), /item IDs differ/);
+      }
+      for (const key of ['tags', 'github_url', 'github_number', 'description'] as const) {
+        const corrupted = structuredClone(native);
+        delete corrupted[index][key];
+        // The remaining values still pass the ownership-validity oracle: preservation is a separate invariant.
+        corrupted.forEach(verifyOwnership);
+        assert.throws(() => assertOwnershipRead(native, corrupted, label), new RegExp(`\\.${key}`));
+      }
+      for (const tags of [['fixture'], ['gh:unbraind/pm-rlm#42', 'fixture'], [...native[index].tags!, 'gh:unbraind/pm-rlm#42']]) {
+        const corrupted = structuredClone(native);
+        corrupted[index].tags = tags;
+        corrupted.forEach(verifyOwnership);
+        assert.throws(() => assertOwnershipRead(native, corrupted, label), /\.tags/);
+      }
+      const missing = native.filter((_, position) => position !== index);
+      assert.throws(() => assertOwnershipRead(native, missing, label), /item IDs differ/);
+    }
+    assert.throws(() => assertOwnershipRead(native, [...native, native[0]], label), /item IDs differ/);
+    // Even unanimous transport agreement cannot excuse a native issue tag disappearing.
+    const commonLoss = native.map(item => ({ ...item, tags: ['fixture'] }));
+    assert.throws(() => assertOwnershipRead(native, commonLoss, label), /\.tags/);
+  }
+  assert.deepEqual(native, snapshot, 'comparison must not mutate the independent oracle');
 });
