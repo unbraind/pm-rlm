@@ -29,7 +29,7 @@ export async function fixture(t: Parameters<typeof tracker>[0]) {
 }
 /** Capture native host rendering with no Git executable or inherited test context. */
 async function nativeEvaluation(target: { root: string; workspace: string }, file: string, sources: Record<string, string>, options: string[]): Promise<string> {
-  const child = spawn(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'eval', file, '--sources', JSON.stringify(sources), ...options], { cwd: target.root, env: { ...testEnvironment(process.env), PM_PATH: target.workspace, PATH: join(target.root, 'no-tools'), GIT_CEILING_DIRECTORIES: target.root } });
+  const child = spawn(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', 'eval', file, '--sources', JSON.stringify(sources), ...options], { cwd: target.root, env: { ...testEnvironment(process.env), PM_PATH: target.workspace, PATH: join(target.root, 'no-tools'), GIT_CEILING_DIRECTORIES: target.root } });
   let out = ''; let error = '';
   child.stdout.on('data', chunk => { out += String(chunk); }); child.stderr.on('data', chunk => { error += String(chunk); });
   const [code] = await once(child, 'exit'); assert.equal(code, 0, error + out);

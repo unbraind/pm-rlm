@@ -151,7 +151,7 @@ test('repair CLI and SDK expose complete zero-budget receipts without git', asyn
   let run = '';
   const formats = ['--json', '--output-format=toon'];
   for (const format of formats) {
-    const argv = [join(import.meta.dirname, '../node_modules/.bin/pm'), 'rlm', 'repair', request.source, '--parts', JSON.stringify(request.parts), '--budget-tokens', '0', format];
+    const argv = [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), 'rlm', 'repair', request.source, '--parts', JSON.stringify(request.parts), '--budget-tokens', '0', format];
     const childEnv = { ...process.env, PATH: bin, GIT_CEILING_DIRECTORIES: dirname(root), PM_PATH: workspace };
     const cli = spawnSync(process.execPath, argv, { encoding: 'utf8', env: childEnv, cwd: root });
     assert.equal(cli.status, 0, cli.stderr + cli.stdout);

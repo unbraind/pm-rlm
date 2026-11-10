@@ -2,7 +2,7 @@ import { gitEnvironment, npmEnvironment } from '../scripts/environment.ts';
 /** Packed npm/npx and Bun/bunx consumers exercise the real pm host. */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { test } from 'node:test';
@@ -11,6 +11,7 @@ import type { RlmAdaptiveResult } from '../src/adaptive.ts';
 import type { RlmAnswerComponent, RlmEvidenceReport } from '../src/types.ts';
 import { verifyPackedInvariants } from './answer-invariants-consumer.ts';
 import { verifyPackedRepairBudget } from './repair-consumer.ts';
+import { assertOwnershipRead, decodeOwnershipList, readOwnershipItems, type OwnershipItem } from './issue-ownership-support.ts';
 
 /** Run a consumer process with private settings isolated from the current machine. */
 function execute(cwd: string, args: string[], executable: string, env: NodeJS.ProcessEnv): string {
@@ -101,13 +102,13 @@ console.log(JSON.stringify(result));
     verifyPackedInvariants(consumer,
       args => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', hostEnv), [
         args => execute(consumer, [...prefix, ...args], executable, hostEnv),
-        args => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), hostEnv),
+        args => execute(consumer, [join(consumer, 'node_modules', '@unbrained', 'pm-cli', 'dist', 'cli.js'), ...args], process.execPath, hostEnv),
       ]);
 
     const repairParts = JSON.stringify([{ name: 'source', question: 'Return the source id', depends_on: [], sources: [evidenceRun.components[0].answer] }]);
     verifyPackedRepairBudget(repository, consumer, join(scratch, packed[0].filename), (args, pmRoot) => execute(consumer, args, manager === 'npm' ? process.execPath : 'bun', { ...hostEnv, PM_PATH: pmRoot }), [
       (args, pmRoot) => execute(consumer, [...prefix, ...args], executable, { ...hostEnv, PM_PATH: pmRoot }),
-      (args, pmRoot) => execute(consumer, args, join(consumer, 'node_modules', '.bin', 'pm'), { ...hostEnv, PM_PATH: pmRoot }),
+      (args, pmRoot) => execute(consumer, [join(consumer, 'node_modules', '@unbrained', 'pm-cli', 'dist', 'cli.js'), ...args], process.execPath, { ...hostEnv, PM_PATH: pmRoot }),
     ]);
     for (const render of [[], ['--json']]) {
       const output = execute(consumer, [...prefix, 'rlm', 'repair', evidenceRun.run, '--parts', repairParts, '--budget-tokens', '0', ...render], executable, hostEnv);
@@ -174,4 +175,20 @@ console.log(JSON.stringify(options.sources));
     assert.equal(invalidPair.status, 2);
     assert.match(invalidPair.stderr, /remedy:/);
 
+    writeFileSync(join(consumer, 'ownership-sdk.mjs'), `import { PmClient } from '@unbrained/pm-cli/sdk';
+const client = new PmClient({ pmRoot: process.env.PM_PATH, noExtensions: true });
+for (const number of [4, 5]) await client.create({ title: 'Packed ownership fixture ' + number, tags: 'gh:unbraind/pm-rlm#' + number + ',fixture' });
+console.log(JSON.stringify(await client.listAllComplete()));
+`);
+    const ownership = JSON.parse(execute(consumer, ['ownership-sdk.mjs'], manager === 'npm' ? process.execPath : 'bun', hostEnv)) as { items: OwnershipItem[] };
+    const native = readOwnershipItems(hostEnv.PM_PATH);
+    assert.equal(existsSync(join(consumer, '.git')), false);
+    assert.ok(native.filter(item => item.tags?.some(tag => tag.startsWith('gh:'))).length >= 2);
+    assertOwnershipRead(native, ownership.items, `packed ${manager} SDK`);
+    for (const transport of [prefix, [join(consumer, 'node_modules', '@unbrained', 'pm-cli', 'dist', 'cli.js')]]) {
+      for (const format of ['json', 'toon']) {
+        const output = execute(consumer, [...transport, 'list', '--all', '--full', '--strict-read', '--output-budget', 'unbounded', '--output-limit', 'unbounded', '--no-extensions', '--format', format], transport === prefix ? executable : process.execPath, hostEnv);
+        assertOwnershipRead(native, decodeOwnershipList(output, format), `packed ${manager} ${format}`);
+      }
+    }
 });

@@ -26,6 +26,7 @@
 
 ### Fixed
 
+- Keep sync changelog regeneration consistent with the release gate ([pm-rlm-sync-changelog](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-sync-changelog.toon))
 - SDK commit fence delays dead-owner crash recovery beyond the default lock wait ([pm-rlm-sdk-dead-fence](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-sdk-dead-fence.toon))
 - Report unknown interrupted child counts and run validation portably ([pm-rlm-cu](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-cu.toon))
 - Reduce full-snapshot ledger storage amplification for large repeated runs ([pm-rlm-3isb](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-3isb.toon))
@@ -34,8 +35,8 @@
 
 ### Other
 
-- Adopt revision-safe SDK settings sections ([pm-rlm-sdk-settings](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-sdk-settings.toon))
 - Adopt the November 4 pm toolchain contracts ([pm-rlm-toolchain-1104](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-toolchain-1104.toon))
+- Adopt revision-safe SDK settings sections ([pm-rlm-sdk-settings](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-sdk-settings.toon))
 - Release readiness behind PM_RELEASE_APPROVED ([pm-rlm-release-gate](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-release-gate.toon))
 - Verify SDK adoption boundaries for recursive run ownership and scoped reads ([pm-rlm-alp8](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/tasks/pm-rlm-alp8.toon))
 - Reconcile stale in-progress tracker records (2026-10-23) ([pm-rlm-reconcile-1023](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-reconcile-1023.toon))

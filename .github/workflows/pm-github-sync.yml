@@ -16,4 +16,5 @@ jobs:
     if: github.repository == 'unbraind/pm-rlm'
     uses: unbraind/pm-github/.github/workflows/pm-github-sync.yml@da0366ac6e81f35ce66bcfe5efb3b386a1c3fd84 # pm-github 2026.10.29
     with:
+      post-import-script: "changelog:automation"
       pm-github-version: "2026.10.16"

@@ -122,12 +122,12 @@ test('native reuse CLI emits bounded JSON and TOON without git and reports typed
   const bin = join(root, 'bin'); await mkdir(bin); await symlink(process.execPath, join(bin, 'node'));
   const args = ['rlm', 'reuse', 'question', '--from', request.selection.run, '--call', request.selection.call, '--identity', JSON.stringify(identity), '--scope', JSON.stringify(request.scope), '--model', request.settings!.model!];
   for (const format of ['--json', '--output-format=toon']) {
-    const cli = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), ...args, format], { cwd: root, encoding: 'utf8', env: { ...process.env, PATH: bin, GIT_CEILING_DIRECTORIES: dirname(root), PM_PATH: workspace } });
+    const cli = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), ...args, format], { cwd: root, encoding: 'utf8', env: { ...process.env, PATH: bin, GIT_CEILING_DIRECTORIES: dirname(root), PM_PATH: workspace } });
     assert.equal(cli.status, 0, cli.stderr);
     const result = (format === '--json' ? JSON.parse(cli.stdout) : decodeToon(cli.stdout)) as { status: string; tokens_in: number };
     assert.equal(result.status, 'reused'); assert.equal(result.tokens_in, 0); assert.ok(Buffer.byteLength(cli.stdout) < 1800);
   }
-  const cli = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/.bin/pm'), ...args, '--identity', JSON.stringify({ ...identity, consent: 'changed' }), '--json'], { cwd: root, encoding: 'utf8', env: { ...process.env, PATH: bin, PM_PATH: workspace } });
+  const cli = spawnSync(process.execPath, [join(import.meta.dirname, '../node_modules/@unbrained/pm-cli/dist/cli.js'), ...args, '--identity', JSON.stringify({ ...identity, consent: 'changed' }), '--json'], { cwd: root, encoding: 'utf8', env: { ...process.env, PATH: bin, PM_PATH: workspace } });
   assert.equal(cli.status, 2); assert.match(cli.stderr, /remedy:/);
 });
 

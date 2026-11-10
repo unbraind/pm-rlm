@@ -4,18 +4,19 @@ description: "Update the grouped toolchain and diagnose new SDK contract failure
 type: Chore
 status: in_progress
 priority: 2
-tags[4]: dependencies,"gh:unbraind/pm-rlm#58",migration,sdk
+tags[3]: dependencies,migration,sdk
 created_at: "2026-11-04T18:55:38.663Z"
-updated_at: "2026-11-04T20:05:43.860Z"
+updated_at: "2026-11-09T17:59:31.187Z"
 author: codex-toolchain-1104
 acceptance_criteria: "Exact November 4 toolchain pins; targeted regressions, test, coverage, typecheck and lint pass; tracked build and changelog are current."
-comments[6]{created_at,author,text}:
+comments[7]{created_at,author,text}:
   "2026-11-04T18:56:48.468Z",codex-toolchain-1104,"Production: pm-cli 2026.10.30 GH-1614 makes typed SDK parent sentinels literal. Both question creation and repair-controller creation refused parent=none on 2026.11.4. Use unset:[parent], retain root isolation under active focus, and verify the regression with the production fix reverted."
   "2026-11-04T18:56:50.365Z",codex-toolchain-1104,"Test: GH-1614 also invalidates synthetic fixture parent=none and stores literal optional assignee/sprint/release values. Fixtures now explicitly unset those fields without dropping their null-equivalence assertions; foreign-parent mutation scenarios use unset too."
   "2026-11-04T19:00:58.899Z",codex-toolchain-1104,"Verification so far: corrected answer-invariants and SDK clear regression files pass 13/13. The regression fails independently with engine.ts reverted (typed parent refusal) and repair.ts reverted (wrapped incomplete refusal). Typecheck, lint, duplication (0%), docstring, identity and regenerated changelog checks pass. Full coverage is running at unchanged 100% thresholds."
   "2026-11-04T19:54:34.813Z",codex-toolchain-1104,"Packed acceptance on the new pins: 3/4 pass (npm consumer, Bun consumer, npm-global repair). Bun-global repair returns status=null rather than 0 from repair-budget-consumer.ts; invoke uses an unchanged 300000 ms bound, but its status assertion hid the spawn error/signal. Keep both assertions, report spawn errors first, and retry only this case. Existing pm-rlm-packed-timing owns the timing follow-up; no SDK regression is inferred from this receipt."
   "2026-11-04T20:04:46.411Z",codex-toolchain-1104,"The complete coverage run exposes a separate collector lease test failure and a later asynchronous incomplete rejection. Isolated exact-file reproduction passes 1/1 in 883 ms, so the root cause is unconfirmed; pm-rlm-collector-contention owns follow-up. No collector assertion, timing bound, SDK workaround or coverage threshold is changed. The complete run cannot certify this candidate within the remaining per-package budget."
   "2026-11-04T20:05:40.798Z",codex-toolchain-1104,"Final local evidence: corrected answer-invariants plus sdk-clears files 13/13; independent engine/repair revert probes fail and fixed regression passes. Typecheck, lint, duplication 0%, docstring, production audit, identity and changelog checks pass. Complete coverage attempted and canceled after the collector test failure; no coverage percentage is certified. Packed run 3/4; isolated Bun-global retry 1/1. pm-rlm-collector-contention and pm-rlm-packed-timing preserve the remaining evidence gaps. Keep this item in_progress for orchestrator verification."
+  "2026-11-09T17:59:31.157Z",codex-agent,"Issue-ownership audit for PR #60: GitHub confirms #58 is a pull request. Remove its gh ownership tag through the pinned CLI; preserve PR #58 as dependency-update context and retain append-only history."
 files[3]{path,scope,note}:
   src/engine.ts,project,Explicit root clear
   src/repair.ts,project,Explicit repair-controller clear
