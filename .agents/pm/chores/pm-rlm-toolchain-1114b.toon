@@ -1,0 +1,22 @@
+id: pm-rlm-toolchain-1114b
+title: Adopt current pm-cli and regenerate toolchain changelog
+description: ""
+type: Chore
+status: in_progress
+priority: 2
+tags[1]: "gh:unbraind/pm-rlm#65"
+created_at: "2026-11-14T05:08:46.009Z"
+updated_at: "2026-11-14T08:40:43.972Z"
+author: codex-toolchain-1114b
+comments[2]{created_at,author,text}:
+  "2026-11-14T05:09:06.640Z",codex-toolchain-1114b,"Failure -> cause -> fix: changelog:check reports out of date -> pm-changelog 2026.11.7 completion-time ordering requires regeneration; 2026.11.10+ adds stable itemless tagging and migration rendering -> install exact current pm-cli and pm-changelog 2026.11.13, regenerate after final tracker mutation. Local baseline reproduced stale ordering. No production source changes planned; function revert proof is inapplicable to generated/dependency changes."
+  "2026-11-14T08:40:43.968Z",codex-toolchain-1114b,"| Failure | Cause (changelog) | Fix |\n| --- | --- | --- |\n| changelog:check reports stale ordering | pm-changelog 2026.11.7 completion-time ordering requires regeneration | regenerate after final tracker write with current exact dependency pins |\n\nThe baseline changelog check fails and regenerated linked check passes. Production and test typechecking, lint, zero-duplication over 144 sources, docstrings for 183 declarations, production audit, package dry-run, changelog check and publish attestation pass. The full isolated npm release attempt reached the explicit 45-minute budget: 267 passes, zero assertion failures and 23 cancellations (290 reported). Coverage remains partial and is not certified. Full npm and Bun release certification is deferred to the unchanged CI workflow under the task time-budget exception; Bun was not run locally. No source scope, seeds, assertions or thresholds changed. No production functions changed; the baseline stale generated artifact failed before regeneration, so a function-level behavioral revert is inapplicable."
+files[3]{path,scope}:
+  CHANGELOG.md,project
+  package-lock.json,project
+  package.json,project
+tests[1]{command,scope,provenance{author,created_at,source_kind,source_ref}}:
+  "npm run changelog:check",project,codex-toolchain-1114b,"2026-11-14T05:09:26.430Z",local_mutation,chore/adopt-pm-cli-option-contract
+docs[1]{path,scope}:
+  CHANGELOG.md,project
+body: ""
