@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import assert from 'node:assert/strict';
 import { fork } from 'node:child_process';
 import { once } from 'node:events';
@@ -34,7 +35,7 @@ test('dead-owner retry is bounded, jittered and refuses live owners', async () =
   }), (error: unknown) => isPmCliExpectedError(error) && error.context.reason === 'lock_owner_dead');
   assert.ok(exhaustedAttempts > 1, 'The budget must cover at least one retry');
   assert.equal(exhaustedClock, 300, 'Backoff must spend exactly the available budget');
-  assert.ok(Date.now() - exhaustedStart < 10_000, 'A permanently blocked dead owner must fail after the budget, never hang');
+  assert.ok(Date.now() - exhaustedStart < testTime(10_000), 'A permanently blocked dead owner must fail after the budget, never hang');
   let withoutHintAttempts = 0;
   await retryDeadOwnerLock(async () => { withoutHintAttempts += 1; if (withoutHintAttempts < 2) throw lockConflict('lock_owner_dead'); return 'written'; }, 10_000);
   assert.equal(withoutHintAttempts, 2, 'The default backoff applies when no retry hint is published');
@@ -52,7 +53,7 @@ async function killLockHolder(t: Parameters<typeof tracker>[0], workspace: strin
 }
 
 /** A live owner's lock on the run lease refuses the ledger mutation immediately, without the retry budget. */
-test('live-owner lock conflicts fail fast without the dead-owner retry budget', async t => {
+test('live-owner lock conflicts fail fast without the dead-owner retry budget', { timeout: testTime(30_000) }, async t => {
   const { workspace } = await tracker(t);
   const ledger = new RlmLedger(workspace, 'pm-rlm', { deadOwnerRetryMs: 15_000 });
   const unlock = await acquireLock(workspace, 'rlm-lease-live-run', 60, 'rlm-live-owner', false, false, 200);
@@ -79,7 +80,7 @@ test('permanently fenced dead-owner lock fails with the typed error after the bu
   await assert.rejects(ledger.lease(run), (error: unknown) => isPmCliExpectedError(error) && error.code === 'lock_conflict' && error.context.reason === 'lock_owner_dead');
   const elapsedMs = Date.now() - startedAt;
   assert.ok(elapsedMs >= 1_500, 'The retry budget must be spent before failing');
-  assert.ok(elapsedMs < 15_000, 'A permanently blocked dead owner must fail bounded, never hang');
+  assert.ok(elapsedMs < testTime(15_000), 'A permanently blocked dead owner must fail bounded, never hang');
 });
 
 /** A dead owner without a fresh gate is taken over immediately; retries then converge on success. */

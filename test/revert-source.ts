@@ -12,12 +12,15 @@ export function replaceFixed(source: string, fixed: string, previous: string, na
 
 /** Scale each existing test deadline once; reject invalid configuration before spawning. */
 export function testTimeout(milliseconds: number): number {
-  const scale = Number(process.env.PM_RLM_TEST_TIMEOUT_SCALE ?? '1');
+  const scale = Number(process.env.PM_RLM_TEST_TIMEOUT_SCALE ?? process.env.PM_TEST_TIME_SCALE ?? '1');
   assert.ok(Number.isFinite(scale) && scale > 0, 'PM_RLM_TEST_TIMEOUT_SCALE must be a positive finite number');
   const timeout = Math.ceil(milliseconds * scale);
   assert.ok(Number.isSafeInteger(timeout) && timeout > 0, 'Scaled test timeout must be a positive safe integer');
   return timeout;
 }
+
+// Validate configuration before any importing test can start a child.
+testTimeout(1);
 
 /** Keep missing time-limit evidence distinct from an observed regression assertion. */
 export function assertChildCompleted(result: { error?: Error & { code?: string } }, timeout: number): void {

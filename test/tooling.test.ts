@@ -655,3 +655,21 @@ test('identity privacy distinguishes relative labels from absolute home prefixes
   fixtureGit(root, ['add', 'note.txt']); fixtureGit(root, ['commit', '-m', 'Absolute fixture']);
   assert.match(auditIdentities(root).join('\n'), /added absolute home path/);
 });
+
+
+test('quick and deep workflow shapes preserve required identities and runner boundaries', () => {
+  const ci = readFileSync(join(repositoryRoot, '.github/workflows/ci.yml'), 'utf8');
+  const deep = readFileSync(join(repositoryRoot, '.github/workflows/ci-deep.yml'), 'utf8');
+  const codeql = readFileSync(join(repositoryRoot, '.github/workflows/codeql.yml'), 'utf8');
+  assert.match(ci, /runs-on: ubuntu-latest/);
+  assert.match(ci, /node-version: \[22, 26\]/);
+  assert.doesNotMatch(ci, /  push:/);
+  assert.match(ci, /timeout-minutes: 30/);
+  assert.match(deep, /PM_LOCAL_DEEP.*self-hosted.*pm-local.*ubuntu-latest/);
+  assert.match(deep, /package-manager: \[npm, bun\]/);
+  assert.match(deep, /timeout-minutes: 120/);
+  assert.match(deep, /PM_TEST_DEPTH: full/);
+  assert.match(deep, /PM_TEST_TIME_SCALE: 3/);
+  assert.doesNotMatch(codeql, /paths-ignore|    paths:/);
+  assert.match(codeql, /timeout-minutes: 30/);
+});

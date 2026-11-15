@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { PmClient, commitItemMutations, getHistoryPath, hashHistoryStream, readHistoryEntries, readSettings, resolveRuntimeStatusRegistry } from '@unbrained/pm-cli/sdk';
@@ -46,11 +47,13 @@ test('500 seeded repair journal round trips preserve SDK state across older inpu
     controllers.push({ run: result.run, inputs, native, expectedDescription: native.description, history: [] as number[], child });
   }
   let replays = 0;
+  const generatedReplays: boolean[] = [];
   const model = new ScriptedModel(() => assert.fail('A retained answer must not invoke a model'));
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     const controller = controllers[next() % controllers.length];
     const choice = next() % controller.inputs.length;
     const replay = controller.history.length > 0 && next() % 2 === 0;
+    generatedReplays.push(replay);
     const selected = replay ? controller.history[next() % controller.history.length] : choice;
     if (replay) replays++;
     controller.history.push(choice);
@@ -85,10 +88,13 @@ test('500 seeded repair journal round trips preserve SDK state across older inpu
     controller.expectedDescription = actual.description;
     for (const field of ['id', 'title', 'type', 'status', 'tags', 'parent', 'body', 'assignee', 'dependencies']) assert.deepEqual(actual[field], controller.native[field], `native ${field} sequence=${sequence}`);
   }
-  assert.ok(replays > 200);
+  const expectedReplays = generatedReplays.filter(Boolean).length;
+  assert.ok(expectedReplays > 0, 'the generated prefix must include older-input replays');
+  assert.equal(replays, expectedReplays);
+  if (generatedReplays.length === 500) assert.ok(replays > 200);
   assert.equal(model.requests.length, 0);
   for (const id of ids) assert.equal((await client.get(id, { depth: 'full' })).item.parent, undefined);
-  t.diagnostic(`500 sequences; ${replays} older-input replays; 12 real producer journals including four completed native children; native fields read back after actual package recovery; replayed checkpoint counters cannot reset native history`);
+  t.diagnostic(`${testDepth(500)} sequences; ${replays} older-input replays; 12 real producer journals including four completed native children; native fields read back after actual package recovery; replayed checkpoint counters cannot reset native history`);
 });
 
 /** Compete at every traced controller transition on the same real non-git tracker. */

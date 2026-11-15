@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
@@ -61,7 +62,7 @@ test('500 seeded recorded refusal field mutations authenticate through the share
   let seed = 0x52656634;
   const fields = ['refused', 'reason', 'remedy'] as const;
   const seen = new Set<string>();
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const row = rows[sequence % rows.length];
     const field = fields[Math.floor(sequence / rows.length) % fields.length];
@@ -81,7 +82,7 @@ test('500 seeded recorded refusal field mutations authenticate through the share
     legacy.parser_version = 1; delete receipt(legacy, row.location).reason;
     await new RlmEngine(ledger, legacy, row.model).validateRecorded();
   }
-  t.diagnostic(`500 sequences, ${rows.length} SDK-produced refusal records, ${seen.size} independently checked field positions`);
+  t.diagnostic(`${testDepth(500)} sequences, ${rows.length} SDK-produced refusal records, ${seen.size} independently checked field positions`);
 });
 
 /** SDK imports must be rejected consistently by ordinary replay, resume and repair before writes. */

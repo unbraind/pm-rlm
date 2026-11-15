@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { cp, chmod, rename } from 'node:fs/promises';
@@ -22,7 +23,7 @@ test('repair schema fuzz keeps producer output finite and preserves arbitrary co
   assert.deepEqual(parseComponents(legacy), legacy);
   let seed = 0x572e9;
   const extremes: unknown[] = [NaN, Infinity, -Infinity, -1, 1.5, 1000000001, Number.MAX_SAFE_INTEGER, undefined, null, '2', {}, []];
-  for (let iteration = 0; iteration < 500; iteration++) {
+  for (let iteration = 0; iteration < testDepth(500); iteration++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const budget_tokens = seed % 1000000001;
     const request = { source: 'source', budget_tokens, parts: [{ name: '__proto__', question: ' exact\r\n question  ', sources: ['source'], depends_on: ['constructor'] }, { name: 'constructor', question: 'Question', sources: ['source'], depends_on: [] }] };

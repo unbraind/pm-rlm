@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { syncBuiltinESMExports } from 'node:module';
@@ -59,16 +60,18 @@ test('500 seeded operation sequences preserve SDK-read native fields relationshi
     const seen = new Set<number>();
     let olderReplays = 0;
     let legacyInputs = 0;
-    for (let sequence = 0; sequence < 500; sequence++) {
+    const cases = Array.from({ length: testDepth(500) }, () => ({
+      captureIndex: (next() >>> 16) % inputs.length,
+      replayIndex: (next() >>> 16) % inputs.length,
+      replayOlder: (next() >>> 16) % 2 === 0,
+      legacy: (next() >>> 16) % 3 === 0,
+    }));
+    for (const [sequence, { captureIndex, replayIndex, replayOlder, legacy }] of cases.entries()) {
       // Each sequence captures, exports, replays an arbitrary older input, then imports via SDK CAS.
-      const captureIndex = (next() >>> 16) % inputs.length;
-      const replayIndex = (next() >>> 16) % inputs.length;
       const captured = structuredClone(inputs[captureIndex]);
       const exported = await blobs.encode(captured);
       const replayed = structuredClone(inputs[replayIndex]);
       const oldExport = await blobs.encode(replayed);
-      const replayOlder = (next() >>> 16) % 2 === 0;
-      const legacy = (next() >>> 16) % 3 === 0;
       const selected = replayOlder ? oldExport : exported;
       const reference = replayOlder ? replayed : captured;
       seen.add(replayOlder ? replayIndex : captureIndex);
@@ -92,8 +95,11 @@ test('500 seeded operation sequences preserve SDK-read native fields relationshi
       actual = await ledger.load(prepared.run);
     }
     assert.deepEqual([...seen].sort(), inputs.map((_input, index) => index));
-    assert.deepEqual([olderReplays, legacyInputs, 500 - legacyInputs], [246, 179, 321]);
-    t.diagnostic(`500 sequences sampled all ${seen.size} source revisions with ${olderReplays} older-input replays and ${legacyInputs} native-v1 inputs and ${500 - legacyInputs} native-v2 inputs`);
+    const expected = [cases.filter(row => row.replayOlder).length, cases.filter(row => row.legacy).length, cases.filter(row => !row.legacy).length];
+    assert.ok(expected.every(count => count > 0), 'the generated corpus must exercise every interchange path');
+    assert.deepEqual([olderReplays, legacyInputs, cases.length - legacyInputs], expected);
+    if (cases.length === 500) assert.deepEqual(expected, [246, 179, 321]);
+    t.diagnostic(`${cases.length} sequences sampled all ${seen.size} source revisions with ${olderReplays} older-input replays and ${legacyInputs} native-v1 inputs and ${cases.length - legacyInputs} native-v2 inputs`);
     const sourceAfter = (await new PmClient({ pmRoot: workspace, noExtensions: true }).get(source, { depth: 'full' })).item;
     assert.deepEqual(sourceAfter, (await client.get(source, { depth: 'full' })).item);
   } finally { await release(); }
