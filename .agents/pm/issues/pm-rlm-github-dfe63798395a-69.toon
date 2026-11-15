@@ -1,0 +1,21 @@
+id: pm-rlm-github-dfe63798395a-69
+title: Daily release OIDC preflight returns package not found for published pm-rlm
+description: "GH issue #69: https://github.com/unbraind/pm-rlm/issues/69 · author @unbraind · created 2026-11-14T13:32:10Z · updated 2026-11-14T13:32:10Z"
+type: Issue
+status: open
+priority: 2
+tags[2]: "gh:unbraind/pm-rlm#69","github_author:unbraind"
+created_at: "2026-11-14T13:32:10Z"
+updated_at: "2026-11-15T11:48:49.139Z"
+author: pm-github
+github_close_reason: ""
+github_closed_at: ""
+github_created_at: "2026-11-14T13:32:10Z"
+github_link_only: false
+github_number: 69
+github_release: ""
+github_state: open
+github_state_reason: unspecified
+github_updated_at: "2026-11-14T13:32:10Z"
+github_url: "https://github.com/unbraind/pm-rlm/issues/69"
+body: "[Exact Daily Release job](https://github.com/unbraind/pm-rlm/actions/runs/43586307784/job/132450529089) on `197a4e2a82df835613620d810b40a8b3fa138aab` refused the [OIDC preflight](https://github.com/unbraind/pm-rlm/blob/197a4e2a82df835613620d810b40a8b3fa138aab/.github/workflows/release.yml#L314-L406) with HTTP 404 (`OIDC token exchange error - package not found`) on November 14. It exited before bumping, committing, tagging, or publishing.\n\nThe public [npm registry metadata](https://registry.npmjs.org/pm-rlm/latest) independently returned HTTP 200 for the same unscoped name, version `2026.10.18), and matching repository. This is an authenticated exchange failure, not proof the public package is missing or that any particular trust setting is absent. The [historical release-gate record](https://github.com/unbraind/pm-rlm/blob/197a4e2a82df835613620d810b40a8b3fa138aab/.agents/pm/chores/pm-rlm-release-gate.toon) leaves publisher setup to the owner. PR #41 addressed a different tarball-path failure.\n\n**Expected / acceptance:** After reviewing the intended npm package, owner/repository, workflow filename, environment and allowed action against [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/), a permitted release job should verify the intended identity without a long-lived token. If it still fails, distinguish the exchange refusal from public package absence and keep the fail-closed behavior. Verify the preflight on the actual release identity before claiming a delivery. No settings, credentials, or release were changed during this review."
