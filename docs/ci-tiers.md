@@ -59,3 +59,8 @@ tracker/PR when available; cross-host measurements are not a speedup claim.
 The exhaustive local coverage/revert/install combination is left to PR/deep CI
 on this overloaded host. No full local test depth is run. Release workflow,
 caller workflows and release verifier scripts remain unchanged.
+
+Round F: the shipped docs/public-eval-suite.json is code-tier input, including
+when deleted, so Node 26 runs packed installation assertions before merge.
+Ordinary prose remains cheap; executable tracker files and unknown tracker
+formats retain code gates. The routing test executes the actual detector.
