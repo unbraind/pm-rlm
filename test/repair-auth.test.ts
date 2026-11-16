@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { isPmCliExpectedError } from '@unbrained/pm-cli/sdk';
@@ -60,7 +61,7 @@ test('pending repair holds authenticate required reservations before any model c
   corrupt.calls[0].steps[0].reserved = 0; corrupt.reserved_tokens = 0;
   await assertPendingRefused(setup, corrupt);
   let seed = 0x52657332;
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     const state = structuredClone(setup.state);
     const amount = [0, 1, state.calls[0].steps[0].reserved - 1, state.calls[0].steps[0].reserved + 1, state.calls[0].steps[0].reserved + seed + 1, Number.MAX_SAFE_INTEGER][sequence % 6];

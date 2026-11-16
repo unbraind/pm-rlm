@@ -2,24 +2,49 @@ id: pm-rlm-packed-timing
 title: Keep packed npm evaluation within its unchanged subprocess bound
 description: "During toolchain candidate validation, the standalone packed npm consumer completed installation and earlier SDK/CLI exercises, then its eval-sdk.ts subprocess exceeded 300000 ms. The packed Bun consumer passed. Diagnose startup, storage and shared-load costs without changing the 20-question evaluation, assertions or deadlines."
 type: Task
-status: open
+status: in_progress
 priority: 3
-tags: []
+tags[2]: ci,performance
 created_at: "2026-10-26T21:57:04.245Z"
-updated_at: "2026-11-04T20:05:23.622Z"
+updated_at: "2026-11-16T00:37:06.846Z"
 author: codex-agent
 acceptance_criteria: Both packed consumers complete all existing checks within unchanged bounds; distinguish assertion failures from timeouts.
-comments[3]{created_at,author,text}:
+comments[8]{created_at,author,text}:
   "2026-10-26T21:57:19.467Z",codex-agent,"Separate npm run test:install result: npm consumer failed after 996076.562189 ms because eval-sdk.ts exceeded its unchanged 300000 ms subprocess limit; Bun consumer passed all installed SDK/CLI checks in 375765.42913 ms. Total 2 cases, 1 pass and 1 failure, no cancellations or skips. This is a timeout receipt, not evidence of a failed evaluation assertion. No deadline or test change was applied."
   "2026-11-04T19:54:42.103Z",codex-toolchain-1104,"New SDK 2026.11.4 toolchain candidate: complete packed run reports 3/4 passing; npm and Bun local consumers pass, npm-global repair passes, Bun-global repair returns null status in repair-budget-consumer.ts under the unchanged 300000 ms per-command bound. Reorder the existing invoke assertions to expose the actual spawn error before checking exit status; rerun only Bun-global repair at low priority. No deadline or semantic assertion is weakened."
   "2026-11-04T20:05:17.504Z",codex-toolchain-1104,"Isolated Bun-global repair retry passes 1/1 in 391913 ms total, including setup and every original native budget assertion, with unchanged 300000 ms individual invocation bounds. The preceding complete packed run remains a 3/4 receipt; this retry does not erase that failure or establish scheduling tolerance. Return this existing timing investigation to open for orchestrator review."
-files[2]:
+  "2026-11-15T21:17:53.079Z",codex-sol,"Reuse existing Task for Fleet CI v2; companion pm-cli-website-dyhg. Required contexts verified: test (22), test (26), codeql. CodeQL remains unfiltered. Preserve all existing checks in quick PR or full deep tiers, with deterministic prefixes and harness-only scaling. No release workflows or verifier scripts will change."
+  "2026-11-15T21:28:00.876Z",codex-sol,"Local touched suites: initial 225/226 passed in 380.0s; the only failure was the quick journal replay threshold (18 generated replays versus an incorrectly proportional threshold >20). Replaced proportional assumptions with exact generated-case counters and positive-case assertions; retained original full-depth thresholds. Focused final property rerun passed 3/3 in 65.8s; journal 49.8s, repair identity 64.4s, answer model 1.21s. Historical full journal/identity were 97.5s/135.1s on different hardware. Lock contract rerun passed 4/4 in 7.12s; scale regression passed, including standard and legacy settings, fractional rounding and invalid input before children. Typecheck, lint, YAML, identity, attestation and regenerated changelog checks passed. No full local depth or complete quick coverage; PR/deep CI retains unchanged 100% thresholds and all revert/install proofs. Existing collector-contention follow-up remains outside this CI/harness scope."
+  "2026-11-16T00:23:17.665Z",codex-sol,"Round F: classify shipped evaluation JSON as code, add executable routing regression, audit related contracts, and run focused gates."
+  "2026-11-16T00:35:31.970Z",codex-sol,"Round F: PRRT_kwDOVOym8863u9Vv is valid. Route the shipped public evaluation JSON through code checks, including its deletion; an executable detector regression retains ordinary docs on the cheap path. Only known inert tracker record formats stay cheap. Starting Actions checks passed. Typecheck, lint, routing and workflow tests passed; strict YAML and author-email checks passed. Required CodeQL remains unfiltered. No coverage source changed."
+  "2026-11-16T00:37:02.264Z",codex-sol,"Round F focused and PM-linked regression gates passed. Strict YAML and branch commit identity checks passed. Changelog verification completed without weakening checks. No thread replies, resolutions, reactions or merges were performed. Final CI status remains for the orchestrator to verify after push."
+files[12]:
+  - path: .github/workflows/ci-deep.yml
+    scope: project
+  - path: .github/workflows/ci.yml
+    scope: project
+  - path: .github/workflows/codeql.yml
+    scope: project
+  - path: CHANGELOG.md
+    scope: project
+  - path: docs/ci-tiers.md
+    scope: project
+  - path: test/ci-routing.test.ts
+    scope: project
   - path: test/install.acceptance.ts
     scope: project
   - path: test/repair-install.acceptance.ts
     scope: project
     note: Expose spawn errors and isolate Bun-global retry
-tests[2]:
+  - path: test/revert-source.ts
+    scope: project
+  - path: test/support/depth.ts
+    scope: project
+  - path: test/support/time.ts
+    scope: project
+  - path: test/tooling.test.ts
+    scope: project
+tests[5]:
   - command: "npm run test:install"
     scope: project
     provenance:
@@ -34,4 +59,28 @@ tests[2]:
       created_at: "2026-11-04T19:54:47.537Z"
       source_kind: local_mutation
       source_ref: dependabot/npm_and_yarn/pm-toolchain-f7b0fd4832
+  - command: npm run typecheck
+    scope: project
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T21:23:15.052Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: PM_TEST_DEPTH=quick PM_TEST_TIME_SCALE=3 node --test --test-concurrency=2 test/reuse-state.test.ts test/answer-invariants.test.ts test/repair-refusals.test.ts test/repair-authority.test.ts test/repair-auth.test.ts test/refusal-fields.test.ts test/repair-state.test.ts test/ledger-lock-retry.test.ts test/validation-portability.test.ts test/tooling.test.ts
+    scope: project
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-15T21:27:59.835Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+  - command: node --test test/ci-routing.test.ts test/tooling.test.ts test/release-workflow.test.ts
+    scope: project
+    timeout_seconds: 600
+    provenance:
+      author: codex-sol
+      created_at: "2026-11-16T00:33:33.604Z"
+      source_kind: local_mutation
+      source_ref: ci/quick-pr-tier-deep-local-tier
+docs[1]{path,scope}:
+  docs/ci-tiers.md,project
 body: ""

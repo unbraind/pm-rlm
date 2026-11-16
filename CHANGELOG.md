@@ -42,6 +42,7 @@
 - Reconcile stale in-progress tracker records (2026-10-23) ([pm-rlm-reconcile-1023](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-reconcile-1023.toon))
 - Adopt revision-safe SDK settings sections ([pm-rlm-sdk-settings](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-sdk-settings.toon))
 - Adopt the November 4 pm toolchain contracts ([pm-rlm-toolchain-1104](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-toolchain-1104.toon))
+- Keep packed npm evaluation within its unchanged subprocess bound ([pm-rlm-packed-timing](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/tasks/pm-rlm-packed-timing.toon))
 
 ### Closed
 

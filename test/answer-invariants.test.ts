@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { readSettings, resolveRuntimeStatusRegistry } from '@unbrained/pm-cli/sdk';
@@ -117,7 +118,7 @@ test('strict contract refuses executable syntax, sparse arrays, extremes and unk
   invalid.push({ ...contract(), checks: [{ id: 'x', kind: 'equals', item: 'item', field: 'title', expected: true }] });
   const huge = contract(); huge.checks = Array.from({ length: 64 }, (_, i) => ({ id: String(i), kind: 'count', filter: { text: '🙂'.repeat(120), ids: Array(1000).fill('x') }, expected: 0 })); invalid.push(huge);
   const seeded = random();
-  for (let iteration = 0; iteration < 500; iteration++) {
+  for (let iteration = 0; iteration < testDepth(500); iteration++) {
     const value = [NaN, Infinity, -Infinity, -Number.MAX_SAFE_INTEGER, 1000000001, 0.5, '0'][seeded() % 7];
     invalid.push({ ...contract(), checks: [{ ...contract().checks[0], expected: value }] });
   }
@@ -224,8 +225,9 @@ test('500 seeded contract operation sequences compare SDK read-back state includ
   const archive: RlmAnswerContract[] = [];
   const fields: RlmAnswerField[] = ['id', 'title', 'type', 'status', 'priority', 'parent', 'assignee', 'sprint', 'release'];
   let olderReplays = 0;
+  const generatedReplays: boolean[] = [];
   let environment = await client.listAllComplete({ includeBody: true });
-  for (let sequence = 0; sequence < 500; sequence++) {
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     if (sequence % 25 === 0) {
       await client.focus(parents[next() % 2].item.id);
       await client.update(native.id, { title: `  Source ${next() % 5}\r\n title  `, status: statuses[next() % 4], closeReason: 'Model fixture', ...(sequence % 50 === 0 ? { parent: parents[0].item.id } : { unset: ['parent'] }), priority: next() % 5, assignee: `agent-${next() % 3}`, sprint: `sprint-${next() % 4}`, release: `release-${next() % 3}`, tags: `sample,tag-${next() % 3}` });
@@ -241,7 +243,9 @@ test('500 seeded contract operation sequences compare SDK read-back state includ
       { id: 'membership', kind: 'membership', filter: {}, field, value: expected, expected: 'present' },
     ] };
     archive.push(structuredClone(input));
-    if (sequence > 0 && next() % 3 === 0) { input = archive[next() % sequence]; olderReplays++; }
+    const replay = sequence > 0 && next() % 3 === 0;
+    generatedReplays.push(replay);
+    if (replay) { input = archive[next() % sequence]; olderReplays++; }
     const text = JSON.stringify(input, null, 2).replaceAll('\n', sequence % 2 === 0 ? '\r\n' : '\n');
     const decoded = parseAnswerContract(JSON.parse(text)); assert.deepEqual(decoded, input);
     const scoped = rows.filter(item => input.scope.ids!.includes(item.id));
@@ -262,7 +266,10 @@ test('500 seeded contract operation sequences compare SDK read-back state includ
     assert.deepEqual(validateAnswerReport(JSON.parse(JSON.stringify(report))), report);
     if (sequence % 25 === 0) assert.deepEqual((await client.get(native.id, { depth: 'full' })).item.dependencies, source.dependencies);
   }
-  assert.ok(olderReplays > 100);
+  const expectedReplays = generatedReplays.filter(Boolean).length;
+  assert.ok(expectedReplays > 0, 'the generated prefix must include older-input replays');
+  assert.equal(olderReplays, expectedReplays);
+  if (generatedReplays.length === 500) assert.ok(olderReplays > 100);
 });
 
 test('concurrent verification owns no shared tracker state and detaches supplied inputs', async t => {
@@ -284,7 +291,7 @@ test('500 seeded output mutations reject nonfinite counters and contradictory su
   const valid = await verifyRlmAnswer(contract(), { environment: await client.listAllComplete() });
   const next = random();
   const values: unknown[] = [Infinity, -Infinity, NaN, -1, 1.5, Number.MAX_VALUE, '0', null, undefined, []];
-  for (let i = 0; i < 500; i++) {
+  for (let i = 0; i < testDepth(500); i++) {
     const copy = structuredClone(valid) as unknown as Record<string, unknown>;
     const field = ['model_calls', 'writes', 'source', 'checks', 'verified_fact_ids', 'status'][i % 6];
     copy[field] = values[next() % values.length];

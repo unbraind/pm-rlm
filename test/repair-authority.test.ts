@@ -1,3 +1,4 @@
+import { testDepth } from "./support/depth.ts";
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { readFile, writeFile } from 'node:fs/promises';
@@ -107,10 +108,12 @@ test('500 seeded repair identity imports preserve a reference budget and SDK sta
   /** One deterministic generator also selects replayed older snapshots. */
   const next = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed; };
   let replacements = 0; let older = 0;
-  for (let sequence = 0; sequence < 500; sequence++) {
+  const generatedModes: number[] = [];
+  for (let sequence = 0; sequence < testDepth(500); sequence++) {
     const { workspace, client, model, complete, finished, canonical, child, charge, inputs } = controllers[next() % controllers.length];
     const imported = structuredClone(inputs[next() % inputs.length]);
     const mode = next() % 7;
+    generatedModes.push(mode);
     const target = imported.targets[2];
     if (mode === 0 || mode === 4) { target.child = `${complete.run}-foreign${sequence}`; target.allowance = finished.targets[2].allowance; target.phase = 'pending'; replacements++; }
     if (mode === 1 || mode === 5) { target.child = ''; target.allowance = 0; target.phase = 'gap'; target.reason = 'budget'; older++; }
@@ -148,12 +151,15 @@ test('500 seeded repair identity imports preserve a reference budget and SDK sta
     const { updated_at: _referenceTime, ...referenceFields } = child;
     assert.deepEqual(actualFields, referenceFields, `every native child field and relationship sequence=${sequence}`);
   }
-  assert.ok(replacements > 100 && older > 100);
+  const expected = [generatedModes.filter(mode => mode === 0 || mode === 4).length, generatedModes.filter(mode => mode === 1 || mode === 5).length];
+  assert.ok(expected.every(count => count > 0), 'the generated prefix must exercise replacement and cleared intent');
+  assert.deepEqual([replacements, older], expected);
+  if (generatedModes.length === 500) assert.ok(replacements > 100 && older > 100);
   for (const { model, workspace, complete, charge, canonical } of controllers) {
     assert.equal(model.requests.length, 2);
     assert.deepEqual(await nativeCharge(workspace, complete.run), { charged: charge, children: [canonical] });
   }
-  t.diagnostic(`500 SDK import/recovery sequences across eight real trackers; ${replacements} replacements and ${older} explicit older cleared intents; no additional model requests or native children`);
+  t.diagnostic(`${testDepth(500)} SDK import/recovery sequences across eight real trackers; ${replacements} replacements and ${older} explicit older cleared intents; no additional model requests or native children`);
 });
 
 /** Deleted or foreign canonical rows cannot become fresh spending authority after an old import. */

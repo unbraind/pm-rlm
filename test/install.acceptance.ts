@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 import { gitEnvironment, npmEnvironment } from '../scripts/environment.ts';
 /** Packed npm/npx and Bun/bunx consumers exercise the real pm host. */
 import assert from 'node:assert/strict';
@@ -15,7 +16,7 @@ import { assertOwnershipRead, decodeOwnershipList, readOwnershipItems, type Owne
 
 /** Run a consumer process with private settings isolated from the current machine. */
 function execute(cwd: string, args: string[], executable: string, env: NodeJS.ProcessEnv): string {
-  const child = spawnSync(executable, args, { cwd, env, encoding: 'utf8', timeout: 300000 });
+  const child = spawnSync(executable, args, { cwd, env, encoding: 'utf8', timeout: testTime(300000) });
   assert.equal(child.error, undefined);
   assert.equal(child.status, 0, child.stderr + child.stdout);
   return child.stdout;

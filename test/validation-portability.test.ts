@@ -26,11 +26,16 @@ test('public parity skips clearly in a standalone checkout without fleet fixture
 /** One knob scales default and explicit limits without retries or false regression evidence. */
 test('regression deadlines scale and timeouts remain distinct from assertion proofs', async t => {
   const previous = process.env.PM_RLM_TEST_TIMEOUT_SCALE;
+  const standard = process.env.PM_TEST_TIME_SCALE;
   t.after(() => {
+    if (standard === undefined) delete process.env.PM_TEST_TIME_SCALE; else process.env.PM_TEST_TIME_SCALE = standard;
     if (previous === undefined) delete process.env.PM_RLM_TEST_TIMEOUT_SCALE;
     else process.env.PM_RLM_TEST_TIMEOUT_SCALE = previous;
   });
   delete process.env.PM_RLM_TEST_TIMEOUT_SCALE;
+  process.env.PM_TEST_TIME_SCALE = '3';
+  assert.equal(testTimeout(120000), 360000);
+  delete process.env.PM_TEST_TIME_SCALE;
   assert.equal(testTimeout(120000), 120000);
   process.env.PM_RLM_TEST_TIMEOUT_SCALE = '2.5';
   assert.equal(testTimeout(120000), 300000);

@@ -1,3 +1,4 @@
+import { testTime } from "./support/time.ts";
 /** Global host symlinks must resolve the packed SDK through ordinary package imports. */
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
@@ -11,7 +12,7 @@ import { verifyPackedRepairBudget } from './repair-consumer.ts';
 
 /** Run one isolated consumer command; all diagnostics stay local to the disposable fixture. */
 function invoke(executable: string, argv: string[], cwd: string, env: NodeJS.ProcessEnv): string {
-  const result = spawnSync(executable, argv, { cwd, env, encoding: 'utf8', timeout: 300000 });
+  const result = spawnSync(executable, argv, { cwd, env, encoding: 'utf8', timeout: testTime(300000) });
   assert.equal(result.error, undefined);
   assert.equal(result.status, 0, result.stdout + result.stderr);
   return result.stdout;

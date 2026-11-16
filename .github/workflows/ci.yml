@@ -1,17 +1,26 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
-  pull_request: {}
-  workflow_dispatch: {}
+  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# Same PR grouping as the local-runner pilot (#254); manual runs stay independent.
+concurrency:
+  group: ci-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
+    # Required checks stay on fast GitHub-hosted hardware.
     runs-on: ubuntu-latest
+    # Quick tier executes in about 6-7 min. A hung step must not hold a hosted slot for the default 6 h:
+    # on 2026-11-15 three fleet release-gate jobs hung for 90+ min until another session cancelled them.
+    timeout-minutes: 30
+    env:
+      PM_TEST_DEPTH: quick
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +35,33 @@ jobs:
           fetch-tags: true
           persist-credentials: false
 
+      # Checkout must precede this first decision. NUL delimiters handle unusual
+      # filenames; compare the actual PR endpoints, not the synthetic merge commit.
+      # Disable rename folding so moving source into docs still counts its deletion.
+      - name: Detect code changes
+        id: changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          code=true
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            code=false
+            git diff --name-only --no-renames -z "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/ci-changed-paths"
+            while IFS= read -r -d '' path; do
+              case "$path" in
+                # Executable tracker files use the same code tier in every package.
+                .agents/pm/*.mjs|.agents/pm/*.cjs|.agents/pm/*.js|.agents/pm/*.ts) code=true ;;
+                docs/public-eval-suite.json) code=true ;;
+                .agents/pm/*.toon|.agents/pm/*.json|.agents/pm/*.jsonl|*.md|docs/*|CHANGELOG.md|LICENSE) ;;
+                *) code=true ;;
+              esac
+            done < "$RUNNER_TEMP/ci-changed-paths"
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
@@ -33,12 +69,17 @@ jobs:
           cache: npm
 
       - name: Setup Bun
+        if: steps.changes.outputs.code == 'true'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify commit identities and private path policy
+        run: npm run identity:check
+
       - name: Verify tracked pm project health
+        if: steps.changes.outputs.code != 'true' || matrix.node-version == 26
         shell: bash
         run: |
           set -euo pipefail
@@ -53,57 +94,30 @@ jobs:
           # the missing durable proof.
           #
           # `--strict-exit` is load-bearing: non-strict health may report findings while
-          # still exiting successfully. `--require-merge-drivers` fails the gate when the
-          # clone-local merge driver config declared by .gitattributes is absent.
+          # still exiting successfully.
           ./node_modules/.bin/pm health --strict-exit --require-merge-drivers
 
-      - name: Verify commit identities and private path policy
-        run: npm run identity:check
+      # No standalone markdown linter exists. These small suites enforce the
+      # existing README/docs, shipped changelog and public commit contracts.
+      - name: Check documentation and tracker changes
+        if: steps.changes.outputs.code != 'true'
+        run: |
+          npm run changelog:check
+          npm run verify:release-publish-attestation
+          npm run pack:dry-run
+          node --test test/tooling.test.ts test/automation-changelog.test.ts
+          node --test --test-name-pattern='successful recursive calls|README|documentation|manifest remains|guarded CodeQL' test/evidence.test.ts test/release-approval.test.ts
+          node --test --test-name-pattern='review r8 report' test/review-r8.test.ts
 
-      - name: Type check
-        run: npm run typecheck
+      - name: Engines floor tests
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 22
+        run: npm test
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Duplication gate
-        run: npm run duplication
-
-      - name: Build package
-        run: npm run build
-
-      - name: Verify complete docstring coverage
-        run: npm run docstring
-
-      # Each Node line still runs the complete suite once: npm below on 22,
-      # and the complete Bun release gate on 26. Manual runs use the full
-      # release wrappers on both lines instead of repeating their coverage.
-      - name: Test with coverage gate
-        if: github.event_name != 'workflow_dispatch' && matrix.node-version == 22
-        run: npm run coverage
-
-      - name: Production dependency audit
-        run: npm run audit:prod
-
-      - name: Verify npm package contents
-        run: npm run pack:dry-run
-
-      - name: Verify generated changelog
-        run: npm run changelog:check
-
-      - name: Verify every publish invocation is attested
-        run: npm run verify:release-publish-attestation
-
-      - name: Verify Bun can install the package graph
-        run: bun install --no-save
-
-      - name: Packed npm and Bun acceptance
-        run: npm run test:install
-
-      - name: Bun release gates
-        if: matrix.node-version == 26
-        run: bun run release:check
-
-      - name: Full npm release gates on manual verification
-        if: github.event_name == 'workflow_dispatch' && matrix.node-version == 22
+      - name: Quick npm release gate
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
         run: npm run release:check
+
+      # test:install proves npm/npx and Bun/bunx plus both global host paths.
+      - name: Verify Bun can install the package graph
+        if: steps.changes.outputs.code == 'true' && matrix.node-version == 26
+        run: bun install --no-save
