@@ -41,7 +41,7 @@ To evaluate a source commit, start in the checkout and install the packed archiv
 
 ```sh
 npm ci
-tarball=$(npm pack --silent)
+tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
 archive="$(pwd)/$tarball"
 consumer=$(mktemp -d -t pm-rlm.XXXXXX)
 cd "$consumer"
@@ -51,7 +51,10 @@ npx --no-install pm package install ./node_modules/pm-rlm
 npx --no-install pm rlm --help
 ```
 
-Daily and manual releases run from `main` when `PM_RELEASE_APPROVED` is enabled. The workflow publishes through npm trusted publishing with provenance.
+Automated npm publication requires the maintainer to configure a GitHub Actions
+[trusted publisher](https://docs.npmjs.com/trusted-publishers/) for this repository
+with workflow filename `release.yml`. `PM_RELEASE_APPROVED=true` gates daily and manual
+releases on `main`. The trusted publisher authorizes the workflow to publish to npm through OIDC. The workflow publishes with provenance.
 
 The package exports its SDK through `main` and `types` and registers commands
 with pm. It has no standalone `bin`: use `npx pm` or `bunx --bun pm` through
