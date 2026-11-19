@@ -2,28 +2,7 @@
 
 pm is context management for agents. Recursive Language Models keep a large context in an environment, inspect it through tools, delegate subgoals, and compose the results. `pm-rlm` makes a pm workspace that environment and its durable execution ledger. Each recursive call is a visible Task with its parent, model, digest, usage, claim and result evidence.
 
-This package is **unreleased**. Publication needs maintainer approval; the release workflow has no schedule and is guarded by `PM_RELEASE_APPROVED`. The deterministic model exists only in the test suite. Model weights are not bundled.
-
-Install from a reviewed local artifact now:
-
-```sh
-npm ci
-npm pack
-pm package install ./pm-rlm-2026.10.18.tgz
-```
-
-After publication, the supported entry points are:
-
-```sh
-pm package install pm-rlm
-npm install --save-dev @unbrained/pm-cli pm-rlm
-npx pm package install pm-rlm
-bun add --dev @unbrained/pm-cli pm-rlm
-bunx pm package install pm-rlm
-# Without a preinstalled host:
-npx --package=@unbrained/pm-cli pm package install pm-rlm
-bunx --package=@unbrained/pm-cli pm package install pm-rlm
-```
+Model weights are separate from the package. The deterministic model exists only in the test suite.
 
 The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are verified by `npm run test:install`: each creates a real SDK run and queries its closed call through the installed `pm rlm tree --json` command. `pm package install` performs extension discovery; npm or Bun dependency installation alone is not the activation step.
 
@@ -37,25 +16,42 @@ The host requires Node 22.18 or newer. npm/npx and Bun/bunx packed consumers are
 
 ## Install and release approval
 
-The first npm release is pending the maintainer's interactive bootstrap. After
-that first publish, the maintainer configures npm trusted publishing for
-`release.yml` and sets the repository variable `PM_RELEASE_APPROVED` to `true`.
-The daily workflow and manual dispatch both require this variable and `main`.
-Publishing uses OIDC with provenance; no stored npm token is needed.
-
-Once published, install the package and compatible pm host, then activate the
-extension in an initialized pm project:
+In an initialized pm project, choose npm or Bun to install and activate the extension from the registry.
 
 ```sh
 npm install pm-rlm @unbrained/pm-cli
 npx --no-install pm package install ./node_modules/pm-rlm
+```
 
+```sh
 bun add pm-rlm @unbrained/pm-cli
 bunx --bun --no-install pm package install ./node_modules/pm-rlm
+```
 
+If the pm host is already installed, it can install and activate the extension directly.
+
+```sh
 pm package install npm:pm-rlm
 pm rlm --help
 ```
+
+### Local archive
+
+To evaluate a source commit, start in the checkout and install the packed archive in a fresh consumer directory.
+
+```sh
+npm ci
+tarball=$(npm pack --silent)
+archive="$(pwd)/$tarball"
+consumer=$(mktemp -d -t pm-rlm.XXXXXX)
+cd "$consumer"
+npm install "$archive" @unbrained/pm-cli
+npx --no-install pm init rlm --defaults --agent-guidance skip
+npx --no-install pm package install ./node_modules/pm-rlm
+npx --no-install pm rlm --help
+```
+
+Daily and manual releases run from `main` when `PM_RELEASE_APPROVED` is enabled. The workflow publishes through npm trusted publishing with provenance.
 
 The package exports its SDK through `main` and `types` and registers commands
 with pm. It has no standalone `bin`: use `npx pm` or `bunx --bun pm` through
