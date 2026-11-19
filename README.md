@@ -40,15 +40,17 @@ pm rlm --help
 To evaluate a source commit, start in the checkout and install the packed archive in a fresh consumer directory.
 
 ```sh
-npm ci
-tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
-archive="$(pwd)/$tarball"
-consumer=$(mktemp -d -t pm-rlm.XXXXXX)
-cd "$consumer"
-npm install "$archive" @unbrained/pm-cli
-npx --no-install pm init rlm --defaults --agent-guidance skip
-npx --no-install pm package install ./node_modules/pm-rlm
-npx --no-install pm rlm --help
+(
+  npm ci
+  tarball=$(npm pack --silent) && test -n "$tarball" && test -f "$tarball" || exit 1
+  archive="$(pwd)/$tarball"
+  consumer=$(mktemp -d -t pm-rlm.XXXXXX)
+  cd "$consumer"
+  npm install "$archive" @unbrained/pm-cli
+  npx --no-install pm init rlm --defaults --agent-guidance skip
+  npx --no-install pm package install ./node_modules/pm-rlm
+  npx --no-install pm rlm --help
+)
 ```
 
 Automated npm publication requires the maintainer to configure a GitHub Actions
