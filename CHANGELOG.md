@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026.11.20 - 2026-11-20
+
+### Dependencies
+
+- Bump the pm-toolchain group with 2 updates ([#86](https://github.com/unbraind/pm-rlm/pull/86))
+- Bump @unbrained/pm-cli ([#83](https://github.com/unbraind/pm-rlm/pull/83))
+
 ## 2026.11.19 - 2026-11-19
 
 ### Added
