@@ -1,6 +1,6 @@
 {
   "name": "pm-rlm",
-  "version": "2026.11.20",
+  "version": "2026.11.22",
   "description": "Recursive language models with a typed pm environment and durable call ledger",
   "author": "@unbraind",
   "entry": "./dist/index.js",
