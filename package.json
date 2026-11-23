@@ -1,6 +1,6 @@
 {
   "name": "pm-rlm",
-  "version": "2026.11.22",
+  "version": "2026.11.23",
   "description": "Recursive language models with a typed pm environment and durable call ledger",
   "repository": {
     "type": "git",
