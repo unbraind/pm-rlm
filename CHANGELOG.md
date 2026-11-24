@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Other
+
+- Keep published dependency updates in the generated changelog ([pm-rlm-sanx](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/chores/pm-rlm-sanx.toon))
+
 ## 2026.11.23 - 2026-11-23
 
 ### Dependencies
@@ -70,3 +76,36 @@
 - Closed: Plain replay skips execution-refusal integrity validation ([pm-rlm-github-dfe63798395a-42](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-42.toon))
 - Closed: Checkpoint validation rejects engine-generated empty response steps and blocks recovery ([pm-rlm-github-dfe63798395a-5](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-5.toon))
 - Closed: Failed recursive child leaves successful runs unreplayable and unrecovered ([pm-rlm-github-dfe63798395a-4](https://github.com/unbraind/pm-rlm/blob/main/.agents/pm/issues/pm-rlm-github-dfe63798395a-4.toon))
+
+### Dependencies
+
+- Bump the pm-toolchain group with 2 updates ([#80](https://github.com/unbraind/pm-rlm/pull/80))
+- Bump eslint ([#79](https://github.com/unbraind/pm-rlm/pull/79))
+- Bump @unbrained/pm-cli ([#78](https://github.com/unbraind/pm-rlm/pull/78))
+- Bump @babel/eslint-parser ([#75](https://github.com/unbraind/pm-rlm/pull/75))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#72](https://github.com/unbraind/pm-rlm/pull/72))
+- Bump jscpd ([#66](https://github.com/unbraind/pm-rlm/pull/66))
+- Bump the pm-toolchain group with 3 updates ([#64](https://github.com/unbraind/pm-rlm/pull/64))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#62](https://github.com/unbraind/pm-rlm/pull/62))
+- Bump the codeql-action group across 1 directory with 2 updates ([#61](https://github.com/unbraind/pm-rlm/pull/61))
+- Bump the pm-toolchain group with 3 updates ([#63](https://github.com/unbraind/pm-rlm/pull/63))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#58](https://github.com/unbraind/pm-rlm/pull/58))
+- Bump eslint ([#56](https://github.com/unbraind/pm-rlm/pull/56))
+- Bump @types/node ([#51](https://github.com/unbraind/pm-rlm/pull/51))
+- Bump the pm-toolchain group with 3 updates ([#50](https://github.com/unbraind/pm-rlm/pull/50))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#48](https://github.com/unbraind/pm-rlm/pull/48))
+- Bump the pm-toolchain group with 3 updates ([#46](https://github.com/unbraind/pm-rlm/pull/46))
+- Bump @unbrained/pm-cli ([#44](https://github.com/unbraind/pm-rlm/pull/44))
+- Bump the pm-toolchain group across 1 directory with 3 updates ([#35](https://github.com/unbraind/pm-rlm/pull/35))
+- Bump jscpd ([#33](https://github.com/unbraind/pm-rlm/pull/33))
+- Bump the pm-toolchain group with 3 updates ([#32](https://github.com/unbraind/pm-rlm/pull/32))
+- Bump unbraind/pm-github/.github/workflows/pm-github-sync.yml ([#25](https://github.com/unbraind/pm-rlm/pull/25))
+- Bump the codeql-action group with 2 updates ([#24](https://github.com/unbraind/pm-rlm/pull/24))
+- Bump fast-uri from 3.1.8 to 3.1.9 ([#21](https://github.com/unbraind/pm-rlm/pull/21))
+- Bump the pm-toolchain group with 3 updates ([#17](https://github.com/unbraind/pm-rlm/pull/17))
+- Bump the pm-toolchain group with 3 updates ([#16](https://github.com/unbraind/pm-rlm/pull/16))
+- Bump the pm-toolchain group with 2 updates ([#12](https://github.com/unbraind/pm-rlm/pull/12))
+- Bump eslint ([#11](https://github.com/unbraind/pm-rlm/pull/11))
+- Bump pm-ops ([#10](https://github.com/unbraind/pm-rlm/pull/10))
+- Bump the pm-toolchain group across 1 directory with 2 updates ([#1](https://github.com/unbraind/pm-rlm/pull/1))
+- Bump the codeql-action group with 2 updates ([#3](https://github.com/unbraind/pm-rlm/pull/3))
