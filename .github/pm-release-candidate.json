@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "repository": "unbraind/pm-rlm",
-  "baseSha": "9af53062349d01b265a4ad0a2271ca09258e8493",
-  "version": "2026.11.23",
-  "runId": 45181472543,
+  "baseSha": "1ba010066729480b475303cb0134825b8d76655d",
+  "version": "2026.11.24",
+  "runId": 45408686146,
   "runAttempt": 1,
   "configDigest": "19f861084767fcd1b42ece3bc60c873d40cadd652aba909211d2aaf4f1e1ede6"
 }

@@ -37,7 +37,7 @@ export type { RlmRunOptions } from './src/engine.ts';
 /** Expose independent environment options. */
 export type { RlmContextOptions } from './src/environment.ts';
 /** Activate native host commands and registered call fields. */
-export default defineExtension({ name: 'pm-rlm', version: "2026.11.23", description: 'Recursive language models use pm as environment and ledger', activate: register });
+export default defineExtension({ name: 'pm-rlm', version: "2026.11.24", description: 'Recursive language models use pm as environment and ledger', activate: register });
 /** Expose measured paired evaluation over frozen public tracker copies. */
 export { evaluateRlm, parseEvalSuite, evalDigest, truncatedEvalPrompt, RlmEvalError } from './src/evaluation.ts';
 /** Public suite, measurement and durable fault-boundary contracts. */
