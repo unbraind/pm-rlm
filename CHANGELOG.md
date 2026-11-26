@@ -4,7 +4,7 @@
 
 ### Dependencies
 
-- Bump unbraind/pm-ops/.github/workflows/daily-release.yml
+- Bump unbraind/pm-ops/.github/workflows/daily-release.yml from 2026.11.18 to 2026.11.22 ([#97](https://github.com/unbraind/pm-rlm/pull/97))
 
 ## 2026.11.24 - 2026-11-24
 

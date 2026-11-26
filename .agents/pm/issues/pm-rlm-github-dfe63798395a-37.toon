@@ -6,10 +6,11 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-rlm#37","github_author:unbraind"
 created_at: "2026-10-27T14:03:57Z"
-updated_at: "2026-11-02T21:14:52.010Z"
+updated_at: "2026-11-26T12:37:41.884Z"
 closed_at: "2026-11-02T09:26:54Z"
 completed_at: "2026-11-02T09:26:54Z"
 author: pm-github
+release: v2026.11.19
 comments[1]{created_at,author,text}:
   "2026-11-02T09:18:16.786Z",pi-glm,"Triage 2026-11-02 (missed-watch sweep): FIXED on main, suitable for closure. src/lock-retry.ts now runs attempts through retryWithinBudget, which rechecks the deadline before every attempt and caps backoff to the remaining budget (sleep(Math.min(delay, remainingMs)); throws the last typed refusal at exhaustion) — exactly the requested enforcement. Landed via PR #36 (merge d2d8c06, 2026-10-28). Green run exercising the retry suite on main: CI run 41082228407 (2026-10-30T15:36Z)."
 close_reason: "Closed on GitHub as completed on 2026-11-02T09:26:54Z"
@@ -18,7 +19,7 @@ github_closed_at: "2026-11-02T09:26:54Z"
 github_created_at: "2026-10-27T14:03:57Z"
 github_link_only: false
 github_number: 37
-github_release: ""
+github_release: v2026.11.19
 github_state: closed
 github_state_reason: completed
 github_updated_at: "2026-11-02T09:26:54Z"

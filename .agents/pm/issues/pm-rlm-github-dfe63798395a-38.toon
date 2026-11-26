@@ -6,10 +6,11 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-rlm#38","github_author:unbraind"
 created_at: "2026-10-27T15:50:48Z"
-updated_at: "2026-11-02T21:14:51.993Z"
+updated_at: "2026-11-26T12:37:41.842Z"
 closed_at: "2026-11-02T09:26:51Z"
 completed_at: "2026-11-02T09:26:51Z"
 author: pm-github
+release: v2026.11.19
 comments[1]{created_at,author,text}:
   "2026-11-02T09:18:17.985Z",pi-glm,"Triage 2026-11-02 (missed-watch sweep): FIXED on main, suitable for closure. The behavioral-revert proof targets (test/review-r4-revert.ts, test/reconcile-revert.ts) were updated together with the history-fenced ledger writer in the merged PR #39 head (merge 727fcb8, 2026-10-29); the later counterproof targets reported against pre-merge heads were resolved before merge. Main runs the shallow-clone revert gates green: CI run 41082228407 (2026-10-30T15:36Z)."
 close_reason: "Closed on GitHub as completed on 2026-11-02T09:26:51Z"
@@ -18,7 +19,7 @@ github_closed_at: "2026-11-02T09:26:51Z"
 github_created_at: "2026-10-27T15:50:48Z"
 github_link_only: false
 github_number: 38
-github_release: ""
+github_release: v2026.11.19
 github_state: closed
 github_state_reason: completed
 github_updated_at: "2026-11-02T09:26:51Z"
