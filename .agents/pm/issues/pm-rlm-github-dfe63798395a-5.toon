@@ -6,17 +6,18 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-rlm#5","github_author:unbraind"
 created_at: "2026-10-19T00:32:53Z"
-updated_at: "2026-11-02T21:14:52.026Z"
+updated_at: "2026-11-26T12:37:41.920Z"
 closed_at: "2026-10-19T05:49:22Z"
 completed_at: "2026-10-19T05:49:22Z"
 author: pm-github
+release: v2026.11.19
 close_reason: "Closed on GitHub as completed on 2026-10-19T05:49:22Z; closing PR https://github.com/unbraind/pm-rlm/pull/2 (\"Add pm-rlm: Recursive Language Models that use a pm workspace as their environment and a resumable call ledger\")"
 github_close_reason: "Closed on GitHub as completed on 2026-10-19T05:49:22Z; closing PR https://github.com/unbraind/pm-rlm/pull/2 (\"Add pm-rlm: Recursive Language Models that use a pm workspace as their environment and a resumable call ledger\")"
 github_closed_at: "2026-10-19T05:49:22Z"
 github_created_at: "2026-10-19T00:32:53Z"
 github_link_only: false
 github_number: 5
-github_release: ""
+github_release: v2026.11.19
 github_state: closed
 github_state_reason: completed
 github_updated_at: "2026-10-19T05:49:22Z"

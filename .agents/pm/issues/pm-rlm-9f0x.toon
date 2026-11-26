@@ -6,7 +6,7 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-rlm#49","github_author:unbraind"
 created_at: "2026-11-01T10:56:35Z"
-updated_at: "2026-11-16T11:23:40.054Z"
+updated_at: "2026-11-26T12:37:41.617Z"
 closed_at: "2026-11-03T01:55:37Z"
 completed_at: "2026-11-03T01:55:37Z"
 author: pi-glm
@@ -26,7 +26,7 @@ github_closed_at: "2026-11-03T01:55:37Z"
 github_created_at: "2026-11-01T10:56:35Z"
 github_link_only: false
 github_number: 49
-github_release: ""
+github_release: v2026.11.19
 github_state: closed
 github_state_reason: completed
 github_updated_at: "2026-11-03T01:55:37Z"

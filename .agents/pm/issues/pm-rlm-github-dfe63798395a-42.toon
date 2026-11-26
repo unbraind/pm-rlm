@@ -6,10 +6,11 @@ status: closed
 priority: 2
 tags[2]: "gh:unbraind/pm-rlm#42","github_author:unbraind"
 created_at: "2026-10-28T19:12:44Z"
-updated_at: "2026-11-02T21:14:51.977Z"
+updated_at: "2026-11-26T12:37:41.800Z"
 closed_at: "2026-11-02T09:26:48Z"
 completed_at: "2026-11-02T09:26:48Z"
 author: pm-github
+release: v2026.11.19
 comments[1]{created_at,author,text}:
   "2026-11-02T09:18:19.273Z",pi-glm,"Triage 2026-11-02 (missed-watch sweep): FIXED on main, suitable for closure. src/engine.ts now validates recorded refusals unconditionally again: the run path awaits this.validateRecorded() after the reuse/replay block, and replayRlm() calls validateRecorded(false, true) before traversal (the regression that skipped plain-run integrity validation is gone from current main). Landed via PR #39 (merge 727fcb8, 2026-10-29). Green run exercising the replay/refusal-tampering suite on main: CI run 41082228407 (2026-10-30T15:36Z)."
 close_reason: "Closed on GitHub as completed on 2026-11-02T09:26:48Z"
@@ -18,7 +19,7 @@ github_closed_at: "2026-11-02T09:26:48Z"
 github_created_at: "2026-10-28T19:12:44Z"
 github_link_only: false
 github_number: 42
-github_release: ""
+github_release: v2026.11.19
 github_state: closed
 github_state_reason: completed
 github_updated_at: "2026-11-02T09:26:48Z"
